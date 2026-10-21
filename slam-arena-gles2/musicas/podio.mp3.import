@@ -1,0 +1,15 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+path="res://.import/podio.mp3-e74f46ada5e927acfdf84cf28196c361.mp3str"
+
+[deps]
+
+source_file="res://musicas/podio.mp3"
+dest_files=[ "res://.import/podio.mp3-e74f46ada5e927acfdf84cf28196c361.mp3str" ]
+
+[params]
+
+loop=true
+loop_offset=0

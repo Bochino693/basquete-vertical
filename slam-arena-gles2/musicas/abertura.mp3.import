@@ -1,0 +1,15 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+path="res://.import/abertura.mp3-086217384db4cf0e765a8d7ae1803491.mp3str"
+
+[deps]
+
+source_file="res://musicas/abertura.mp3"
+dest_files=[ "res://.import/abertura.mp3-086217384db4cf0e765a8d7ae1803491.mp3str" ]
+
+[params]
+
+loop=true
+loop_offset=0

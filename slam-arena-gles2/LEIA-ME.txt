@@ -1,0 +1,225 @@
+SLAM ARENA - BASQUETE ARCADE VERTICAL (1 A 4 JOGADORES POR TURNOS)
+====================================================================
+EDICAO OPENGL ES 2.0 - Godot 3.6.3 - para TV Box com Mali-400 / Mali-450
+(TX9 "comum": Amlogic S905X/S905W, Rockchip RK3229; MXQ, X96...).
+
+O jogo de basquete vertical refeito do zero no Godot 3 (o motor que ainda
+desenha com OpenGL ES 2.0: o Godot 4 do jogo antigo exige OpenGL ES 3 e
+nao abre na Mali-450). A arte (poster SLAM ARENA e o fundo de neon), as
+musicas, os sons de combo e os comandos de LED sao os do jogo antigo; todo
+o resto - placar, cronometro, efeitos, telas, apresentacao - e desenhado
+pelo proprio jogo, em codigo.
+
+
+O JOGO
+------
+  * APRESENTACAO (abre o jogo e volta a cada 4 ciclos de espera): o
+    letreiro LAZER & SPORT GAMES acende como neon, a quadra de neon se
+    desenha no escuro, a bola cai e quica (cada quique: onda de luz e a
+    grade inteira treme), a cesta se desenha, a bola voa girando e passa
+    pela rede (a rede balanca), dois raios caem na cesta e o poster SLAM
+    ARENA entra com impacto. START ou uma cesta pulam.
+  * ABERTURA VIVA: o poster respira e aproxima devagar, um brilho atravessa
+    o letreiro, os raios azuis da arte piscam como relampago, brasas sobem,
+    estrelas cintilam, dois holofotes varrem a arena. Ciclo de atracao:
+    POSTER -> COMO JOGAR (com icones animados) -> POSTER -> RECORDES
+    (recorde da arena + 5 melhores de hoje).
+  * START abre a janela de jogadores (1 a 4): SELECT passa, START confirma,
+    segurar SELECT fecha (fecha sozinha em 30 s).
+  * PARTIDA: "CARREGANDO ARENA", a arena liga como neon (cada parte
+    acende piscando), ORDEM DE JOGO, START (ou uma cesta) e a contagem
+    3-2-1 com ondas vindo das bordas, VAI! com apito.
+  * Cada cesta: a grade de quadrados afunda e acende em onda a partir da
+    cesta, aneis de neon e raios de luz, faiscas, as LINHAS DE NEON DA
+    PROPRIA ARTE acendem quando a onda passa por elas, "+N" subindo, texto
+    do combo (BOA! COMBO 2... SUPER 4! MEGA 5! BLUE 6! NEON 9! MAX 13!),
+    tremor da tela, som do combo (1 a 12), LED "HIT".
+  * PONTOS (modo ARCADE, o padrao): cestas seguidas (menos de 4 s entre
+    elas) multiplicam - 3 seguidas = x2, 6 = x3, 10 = x4 = SLAM MODE (a
+    arena vira azul eletrico, raios caem na cesta, trovao). A barrinha do
+    MULTIPLICADOR mostra quanto tempo falta para o combo acabar.
+    BOLA DE OURO: 1 ou 2 vezes por turno aparece por 6 s; a cesta nesse
+    tempo vale +5. (Modo CLASSICO: 1 ponto por cesta, como o jogo antigo.)
+  * RECORDE DA ARENA (ALL-TIME HIGH): bateu, "RECORDE BATIDO!", moldura
+    dourada, a grade vira ondas douradas sem fim e o LED faz "RECORD"
+    (depois "BOOST" a cada cesta). Fica gravado na hora.
+  * JOGADORES 2 A 4: o SCORE PASS mostra quanto precisa para passar o
+    LIDER; passou, "PASSOU O LIDER!".
+  * ULTIMOS 10 SEGUNDOS: cronometro vermelho piscando, a arena puxa para o
+    vermelho, tique a cada segundo e coracao nos 5 finais.
+  * Sem cesta por 6 s: "ARREMESSE!".
+  * PODIO: colunas sobem do menor para o maior, pontos contando, coroa
+    caindo no campeao, linha com a diferenca de pontos, holofotes, confete
+    e a musica de vitoria. START joga de novo (no modo credito, se tiver
+    fichas); sem nada, volta para a abertura em 12 s.
+  * Cronometro, placar e recorde em DISPLAY DE 7 SEGMENTOS desenhado a mao
+    (com brilho e os segmentos apagados aparecendo, como LED de verdade).
+  * MODO CREDITO (opcional): 1 ficha por jogador; as fichas ficam gravadas
+    (nao somem se a luz cair). Botao/sinal de FICHA na Zero Delay (ou "5"
+    no PC).
+
+
+LISO NA TX9 (MALI-400/450) - O QUE FOI FEITO
+---------------------------------------------
+  * NADA E DESENHADO EM GDSCRIPT A CADA QUADRO. As ondas, a grade de
+    quadrados, o cronometro redondo, as barras de energia, o fundo vivo e
+    a linha de neon que se desenha sao MALHAS feitas uma vez; o que mexe e
+    calculado na placa de video, no VERTICE (onde a Mali tem precisao alta
+    e sobra), e o pixel so pinta. Por quadro o script so passa alguns
+    numeros ao shader.
+  * Pixel barato: na Mali-400/450 cada pixel e caro - nenhum efeito de
+    tela inteira com conta pesada; os brilhos sao geometria com degrade
+    (so pintam onde aparecem); nada de "highp" no pixel (a Mali-400/450
+    nao tem); o tempo das animacoes por pixel vem calculado do vertice.
+  * DISPLAY DE 7 SEGMENTOS: cada numero de cada tamanho e uma malha pronta
+    (guardada); trocar o numero so troca a malha.
+  * PREPARACAO POR TRAS DA CAPA: ao abrir, uma capa igual a imagem de
+    abertura da TV Box (com barrinha) cobre o jogo enquanto TODAS as telas
+    sao montadas e desenhadas uma vez (shaders prontos na placa) e cada
+    fonte desenha todas as letras (as gigantes, so os numeros e "VAI!").
+    Depois disso nenhuma tela carrega nada do disco: trocar de tela e so
+    mostrar/esconder.
+  * GRAVAR EM DISCO NUMA LINHA DE TRABALHO SEPARADA (recorde, fichas,
+    ajustes): na memoria da TV Box gravar pode levar 20-80 ms - no meio da
+    partida seria um tranco.
+  * Sons curtos em WAV (tocam na hora, sem decodificar), musicas em MP3 em
+    fluxo; efeitos feitos a mao (bip, tique, trovao, moeda, swish...)
+    sintetizados por tools/gerar_sons.py e gravados em WAV.
+  * QUALIDADE AUTOMATICA: se na partida a TV Box ficar 6 s abaixo de 45
+    quadros por segundo, o jogo passa a desenhar em 900 linhas (e depois
+    720) e amplia: a placa pinta 30% / 55% menos pixels. Fica gravado; o
+    operador pode fixar a qualidade no menu.
+  * Medido no PC (Godot 3.6.3, sem placa de video, so o processador):
+    uma cesta com todos os efeitos 0,45 ms; aviso 0,14 ms; bola de ouro
+    0,07 ms; trocar de jogador 0,3 ms.
+  NA TX9 NAO FOI TESTADO AQUI (nao ha TV Box neste computador): veja os
+  quadros por segundo de verdade com "MOSTRAR DESEMPENHO" no menu (ou F3
+  no PC).
+
+
+BOTOES (PLACA ZERO DELAY)
+-------------------------
+  START ............ START da placa
+  SELECT ........... SELECT da placa
+  SENSOR DA CESTA .. botao 2 da placa (cada sinal = uma cesta; o sensor
+                     tem de SOLTAR antes da proxima e ha a TRAVA DO SENSOR)
+  CONFIGURACAO ..... R2 da placa, ou segurar SELECT 4 s na abertura
+  Sem nada gravado valem as duas numeracoes em que a Zero Delay pode
+  chegar: a do jogo antigo (START 6, SELECT 4) e a do Godot 3 no Android
+  (START 11, SELECT 10). Se a TV Box numerar diferente: CONFIGURACAO >
+  BOTOES DA PLACA (ou segure QUALQUER botao 10 s na abertura) - o
+  assistente pede START, SELECT, SENSOR, FICHA e CONFIGURACAO (os dois
+  ultimos pulam sozinhos se a maquina nao tiver) e grava na TV Box.
+  No PC: 1/Espaco/Enter = START, 2/Tab = SELECT, C/3 = cesta, 5 = ficha,
+  9/F10 = configuracao, F3 = desempenho.
+
+
+CONFIGURACAO DO OPERADOR
+------------------------
+  SELECT passa para o proximo item, START muda o valor (no PC: setas,
+  Enter e Esc). So vale em SALVAR E SAIR.
+  - TEMPO de cada jogador (-60, -10, +10, +60 s; de 10 s a 10 min)
+  - MODO: LIVRE ou CREDITO (1 ficha por jogador)
+  - PONTUACAO: ARCADE (combo x2 x3 x4 + bola de ouro) ou CLASSICA
+  - BOLA DE OURO: sim/nao
+  - TRAVA DO SENSOR: tempo minimo entre duas cestas (padrao 0,7 s, o
+    mesmo do Swish Arena)
+  - JANELA DO COMBO: tempo maximo entre cestas para o combo continuar
+  - VOLUME da musica e dos efeitos
+  - GIRO DA TELA: topo a esquerda / a direita / sem giro (monitor em pe no
+    HDMI deitado; sem giro, numa TV deitada, o jogo fica no meio)
+  - QUALIDADE DA IMAGEM: automatica, 1080, 900, 720
+  - APRESENTACAO NA ESPERA, MOSTRAR DESEMPENHO
+  - LEDS: ligados/desligados, porta COM (so no PC Windows), TESTAR LEDS
+    (passa por todos os efeitos e pede de novo a permissao do USB)
+  - BOTOES DA PLACA (assistente), ZERAR FICHAS, ZERAR RECORDE
+  Embaixo: estado do Arduino, contador de sinais do SENSOR DA CESTA
+  (jogue uma bola para testar), os botoes de cada comando, partidas e
+  cestas da maquina.
+
+
+LEDS (ARDUINO)
+--------------
+  O MESMO Arduino e os MESMOS comandos do jogo antigo (uma linha por
+  comando, 9600 baud): ATTRACT, MENU_LOCK, SELECT1..4, STARTING, PLAY,
+  HIT, RECORD, BOOST, OFF. Na TV Box vai pelo cabo USB (plugin USB no APK:
+  Arduino original, CH340, FTDI e CP210x). Na 1a vez o Android pergunta se
+  o jogo pode usar o aparelho USB: marque "Usar por padrao" e OK (o jogo
+  pede uma vez so, na abertura). No PC com Windows: a ponte PowerShell do
+  jogo antigo, na porta COM escolhida no menu (padrao COM5).
+  Firmware OPCIONAL (para regravar ou maquina nova):
+  arduino/slam_arena/slam_arena.ino - os mesmos comandos, responde ao
+  PING (o menu mostra "conectado") e aceita um sensor de cesta no pino 4.
+
+
+APK PARA A TV BOX
+-----------------
+  Android 5.0 ou mais novo; 32 E 64 bits; aparece no inicio da TV Box
+  (icone e banner) e no menu de apps. Pacote com.lazersport.slamarena.gles2
+  (instala ao lado de qualquer outro jogo). Assinado com a chave do
+  projeto (tools/android/slamarena.keystore - guarde: atualizar o jogo na
+  TV Box exige a mesma chave).
+
+  NO WINDOWS: dois cliques no GERAR_APK.bat (nesta pasta). Ele faz tudo
+  sozinho e mostra cada passo: acha ou BAIXA o Godot 3.6.3, o Java, o adb
+  e o modelo Android do Godot (so o android_release.apk, ~50 MB), trabalha
+  numa COPIA do projeto em C:\SlamArenaGLES2, monta o modelo do Slam Arena
+  (oficial + android\modelo_android\extras.zip: o plugin do Arduino, o
+  filtro USB e o banner da TV), exporta, assina e confere.
+  1a vez: 5 a 20 min (downloads). Depois: 2 a 4 min.
+  Sai em APK-Pronto\SlamArena_GLES2.apk.
+  Opcoes (Prompt de Comando, nesta pasta):
+     GERAR_APK.bat -Giro -1          topo do jogo na DIREITA do HDMI
+     GERAR_APK.bat -Giro 0           TV deitada, sem giro
+     GERAR_APK.bat -Instalar         ja instala na TV Box pelo adb
+     GERAR_APK.bat -Versao 1.1-gles2 muda o nome da versao
+  (O giro tambem muda no menu do operador, sem gerar outro APK.)
+  Se der erro, envie o arquivo build\android\GERACAO-COMPLETA.log.
+
+  NO LINUX:
+     bash tools/android/montar_apk.sh SlamArena_GLES2.apk 1.0-gles2
+  Ferramentas em ~/strikekids_ferramentas (as mesmas do Strike Kids:
+  Godot 3.6.3 headless, uber-apk-signer, venv com androguard para
+  conferir) e o modelo do Godot 3.6.3 em
+  ~/.local/share/godot/templates/3.6.3.stable. Veja o comeco do script.
+  Se mudar o banner ou o filtro USB:
+     python3 -I tools/android/modelo_android.py <android_release.apk> <apktool.jar>
+
+
+COMO TESTAR NO PC
+-----------------
+  1. Instale o Godot 3.6.3 (o comum, nao o "Mono").
+  2. Abra o project.godot desta pasta e aperte F5.
+     Numa janela em pe: godot --path . -- --janela=540x960
+     Simular o giro da TV Box: -- --giro=1
+     Comecar numa tela: -- --tela=abertura (jogo, config, botoes)
+  3. Teste automatico (joga uma partida inteira e tira fotos):
+     godot --path . res://tools/testes/roteiro.tscn -- --fotos=/pasta
+     Com o Godot "headless" mede o processador de cada tela; e
+     res://tools/testes/medir_funcoes.tscn mede cada acao do jogo.
+     Conferir se tudo compila:
+     godot --no-window --path . -s tools/testes/conferir_scripts.gd
+
+
+PASTAS
+------
+  cenas/      principal.tscn (a unica cena: monta todas as telas)
+  scripts/    principal (preparacao e troca de telas), apresentacao,
+              abertura, jogo, podio, config, mapear (assistente de botoes)
+  scripts/fx/ efeitos feitos a mao: grade, onda_luz, anel_crono, display7,
+              traco_neon, raio_eletrico, rede, bola, barras, malhas
+  autoload/   Tela (giro e qualidade), Ajustes (ajustes, recorde, ranking,
+              fichas), Arte (fontes, texturas, estilos), Sons, Controles
+              (Zero Delay), Arduino (LEDs)
+  shaders/    fundo_vivo, poster, grade, onda, anel, traco, barras, bola
+  imagens/    poster, fundo_jogo (o fundo sem o cronometro desenhado na
+              arte), icones, aberturas, fx_* (texturas de efeito feitas a
+              mao)
+  sons/ musicas/ fontes/
+  android/    plugins/ (StrikeSerial: o Arduino no USB, o mesmo do Strike
+              Kids) e modelo_android/extras.zip
+  arduino/    firmware opcional dos LEDs
+  tools/      preparar_arte.py (fundo, poster, icones, aberturas, sons a
+              partir das pastas images/ e songs/ do jogo antigo),
+              gerar_sons.py, gerar_texturas.py, android/ (APK no Linux),
+              testes/ (conferir_scripts, roteiro, medir_funcoes)
