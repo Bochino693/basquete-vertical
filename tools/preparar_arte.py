@@ -1,8 +1,11 @@
 """Prepara a arte e os sons do Slam Arena (edicao GLES2) a partir dos
-arquivos originais do jogo (pastas images/ e songs/ na raiz do
-repositorio). Rode de novo so se a arte original mudar:
+arquivos originais do jogo antigo (Godot 4: as pastas images/ e songs/,
+que estao no historico do repositorio, commit 1ba5184 - o jogo pronto ja
+tem tudo o que este script faz, em imagens/, sons/ e musicas/). Rode de
+novo so se a arte original mudar:
 
-    python3 -I tools/preparar_arte.py
+    git worktree add ../jogo-antigo 1ba5184
+    python3 -I tools/preparar_arte.py ../jogo-antigo
 
 O que faz:
   * imagens/fundo_jogo.png - o fundo da partida SEM os tracinhos e o arco
@@ -26,10 +29,10 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
-P = os.path.dirname(AQUI)                      # slam-arena-gles2/
-RAIZ = os.path.dirname(P)                      # repositorio
-ORIG_IMG = os.path.join(RAIZ, "images")
-ORIG_SOM = os.path.join(RAIZ, "songs")
+P = os.path.dirname(AQUI)                      # o projeto
+ORIGINAIS = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(P), "jogo-antigo")
+ORIG_IMG = os.path.join(ORIGINAIS, "images")
+ORIG_SOM = os.path.join(ORIGINAIS, "songs")
 
 # Cronometro da arte (fundo_play.png, 941 x 1672): centro e faixa dos
 # tracinhos/arco (medidos pixel a pixel; tools/README no LEIA-ME)

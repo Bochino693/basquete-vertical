@@ -839,11 +839,26 @@ function Preparar-Copia {
 # A chave de assinatura do Slam Arena vai JUNTO do projeto
 # (tools\android\slamarena.keystore): o APK gerado em qualquer PC (e o APK
 # pronto) instala POR CIMA do anterior na TV Box, sem perder os recordes.
+# Se ela faltar, a geracao NAO para: usa (ou cria uma vez) uma chave deste
+# PC, guardada na pasta de trabalho - avisando que esse APK so instala por
+# cima de outro feito com a mesma chave.
 function Preparar-Chave {
     $origem = Join-Path $Projeto "tools\android\slamarena.keystore"
-    if (-not (Test-Path -LiteralPath $origem)) { throw "falta a chave do projeto: $origem" }
     $script:Chave = Join-Path (Pasta (Join-Path $script:Trabalho "chave")) "slamarena.keystore"
-    Copy-Item -LiteralPath $origem -Destination $script:Chave -Force
+    if (Test-Path -LiteralPath $origem) {
+        Copy-Item -LiteralPath $origem -Destination $script:Chave -Force
+        Ok "chave do projeto (tools\android\slamarena.keystore)"
+        return
+    }
+    $doPc = Join-Path $script:Trabalho "chave\slamarena-deste-pc.keystore"
+    if (-not (Test-Path -LiteralPath $doPc)) {
+        $keytool = Join-Path $script:JavaHome "bin\keytool.exe"
+        if (-not (Test-Path -LiteralPath $keytool)) { $keytool = Join-Path $script:JavaHome "bin\keytool" }
+        [void](Executar $keytool @("-genkeypair", "-keystore", $doPc, "-storetype", "PKCS12", "-storepass", "slamarena", "-keypass", "slamarena", "-alias", "slamarena", "-dname", "CN=Slam Arena,O=Lazer e Sport,C=BR", "-keyalg", "RSA", "-keysize", "2048", "-validity", "10000") -Log (Join-Path $script:Logs "keytool.log") -LimiteMin 5 -Rotulo "keytool" -Quieto)
+        if (-not (Test-Path -LiteralPath $doPc)) { throw "falta tools\android\slamarena.keystore e nao consegui criar uma chave (veja keytool.log)." }
+    }
+    Copy-Item -LiteralPath $doPc -Destination $script:Chave -Force
+    Aviso "falta tools\android\slamarena.keystore: o APK sai com uma chave DESTE PC. Ele so instala por cima de outro APK feito com esta mesma chave (se a TV Box recusar, desinstale o Slam Arena antes)."
 }
 
 # O Godot (autocontido) le daqui o Java, o "SDK" e a chave de depuracao
@@ -949,9 +964,9 @@ function Principal {
     Write-Host " aperte ESC (o Windows pausa a janela quando se seleciona texto)."
     Write-Host " Projeto: $Projeto"
     if (-not (Test-Path -LiteralPath (Join-Path $Projeto "project.godot"))) {
-        throw "project.godot nao encontrado. Extraia o ZIP inteiro e rode o GERAR_APK.bat de dentro da pasta slam-arena-gles2."
+        throw "project.godot nao encontrado. Extraia o ZIP inteiro e rode o GERAR_APK.bat de dentro da pasta do jogo (junto do project.godot)."
     }
-    foreach ($f in @("android\modelo_android\extras.zip", "tools\android\remendo_apk.jar", "tools\android\slamarena.keystore")) {
+    foreach ($f in @("android\modelo_android\extras.zip", "tools\android\remendo_apk.jar")) {
         if (-not (Test-Path -LiteralPath (Join-Path $Projeto $f))) { throw "falta $f no projeto (extraia o ZIP inteiro)." }
     }
     if (-not [Environment]::Is64BitOperatingSystem) { throw "este gerador precisa do Windows 64 bits." }

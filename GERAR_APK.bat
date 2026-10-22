@@ -12,7 +12,7 @@ rem   GERAR_APK.bat -Versao 1.1-gles2
 if exist "%~dp0project.godot" goto projeto_ok
 echo.
 echo ERRO: extraia o ZIP inteiro antes e rode o GERAR_APK.bat de dentro
-echo da pasta slam-arena-gles2 (junto do arquivo project.godot).
+echo da pasta do jogo (junto do arquivo project.godot).
 echo.
 pause
 exit /b 1

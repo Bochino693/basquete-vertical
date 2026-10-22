@@ -1,8 +1,0 @@
-# Godot 3: cache de importação e saídas de build
-.import/
-build/
-APK-Pronto/
-*.apk
-*.idsig
-tools/android/.cache/
-__pycache__/

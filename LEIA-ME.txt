@@ -3,6 +3,20 @@ SLAM ARENA - BASQUETE ARCADE VERTICAL (1 JOGADOR, 3 FASES, SEM BOTAO)
 EDICAO OPENGL ES 2.0 - Godot 3.6.3 - para TV Box com Mali-400 / Mali-450
 (TX9 "comum": Amlogic S905X/S905W, Rockchip RK3229; MXQ, X96...).
 
+GERAR O APK (WINDOWS), PASSO A PASSO
+------------------------------------
+  1. No GitHub (Bochino693/basquete-vertical): Code > Download ZIP.
+     (Se ja tinha uma pasta de uma versao anterior, apague-a antes.)
+  2. Extraia o ZIP INTEIRO e abra a pasta que tem o GERAR_APK.bat e o
+     project.godot.
+  3. Dois cliques no GERAR_APK.bat. A 1a vez baixa o que faltar (5 a 20
+     min); depois, 2 a 4 min.
+  4. O APK sai em APK-Pronto\SlamArena_GLES2.apk: copie para o pendrive e
+     instale na TV Box (ele instala por cima da versao anterior).
+  Se der erro, envie o arquivo build\android\GERACAO-COMPLETA.log.
+  Onde ligar cada fio na maquina: docs\diagrama_montagem.png.
+
+
 O jogo de basquete vertical refeito do zero no Godot 3 (o motor que ainda
 desenha com OpenGL ES 2.0: o Godot 4 do jogo antigo exige OpenGL ES 3 e
 nao abre na Mali-450). A arte (poster SLAM ARENA e o fundo de neon), as
@@ -220,10 +234,12 @@ APK PARA A TV BOX
   Android 5.0 ou mais novo; 32 E 64 bits; aparece no inicio da TV Box
   (icone e banner) e no menu de apps. Pacote com.lazersport.slamarena.gles2
   (instala ao lado de qualquer outro jogo). Assinado com a chave do
-  projeto (tools/android/slamarena.keystore - guarde: atualizar o jogo na
-  TV Box exige a mesma chave).
+  projeto (tools/android/slamarena.keystore, que vai junto no repositorio:
+  o APK gerado em qualquer PC instala por cima do anterior, sem perder os
+  recordes). Se ela faltar, o GERAR_APK.bat nao para: usa uma chave do
+  proprio PC e avisa (esse APK so atualiza outro feito com a mesma chave).
 
-  NO WINDOWS: dois cliques no GERAR_APK.bat (nesta pasta). Ele faz tudo
+  NO WINDOWS: dois cliques no GERAR_APK.bat (na pasta do jogo). Ele faz tudo
   sozinho e mostra cada passo: acha ou BAIXA o Godot 3.6.3, o Java, o adb
   e o modelo Android do Godot (so o android_release.apk, ~50 MB), trabalha
   numa COPIA do projeto em C:\SlamArenaGLES2, monta o modelo do Slam Arena
@@ -288,7 +304,8 @@ PASTAS
   docs/       diagrama_montagem.png (ONDE LIGAR CADA FIO: Zero Delay, TV
               Box, monitor, moedeiro, Arduino e LEDs) e o .html dele
   tools/      preparar_arte.py (fundo, poster, icones, aberturas, sons a
-              partir das pastas images/ e songs/ do jogo antigo),
+              partir das pastas images/ e songs/ do jogo antigo, que
+              ficou no historico do repositorio: commit 1ba5184),
               gerar_sons.py, gerar_texturas.py, android/ (APK no Linux),
               diagrama/ (o diagrama de montagem), testes/ (conferir_scripts,
               roteiro, medir_funcoes, foto_rapida, gravar_splash - a

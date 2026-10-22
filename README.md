@@ -1,21 +1,24 @@
-# Basquete vertical — SLAM ARENA
+# SLAM ARENA — basquete arcade vertical (TV Box TX9, Mali-450)
 
-Jogo de basquete arcade **vertical** (monitor em pé) para a máquina com sensor de
-cesta na placa Zero Delay e LEDs no Arduino.
+Jogo de basquete arcade **vertical** (monitor em pé) da Lazer & Sport, feito no
+**Godot 3.6.3 (OpenGL ES 2.0)** para TV Box com placa de vídeo Mali-400/450 (TX9):
+sem botão (a primeira cesta já começa), 1 jogador, **3 fases com SCORE PASS**,
+multiplicador x2/x3/x4 e SLAM MODE, bola de ouro, apresentação animada, torcida
+(vaias e aplausos), recorde e ranking do dia, modo crédito, sensor e botões na
+placa Zero Delay e LEDs no Arduino.
 
-> **Edição OpenGL ES 2.0** (TV Box com placa de vídeo Mali-400/450, como a TX9):
-> [`slam-arena-gles2/`](slam-arena-gles2/) — o jogo refeito no **Godot 3.6.3**
-> (renderizador GLES2): **sem botão** (a primeira cesta já começa), 1 jogador,
-> **3 fases com SCORE PASS** (FASE 1, FASE 2 e a FINAL com multiplicador turbinado),
-> apresentação animada, placar de 7 segmentos e efeitos desenhados em código, combo
-> que multiplica os pontos, bola de ouro, SLAM MODE, bônus de sequência, recorde da
-> arena, ranking do dia, tela de resultado, modo crédito e o mesmo Arduino de LEDs.
-> Para gerar o APK no Windows: dois cliques em `slam-arena-gles2/GERAR_APK.bat`.
-> Onde ligar cada fio (Zero Delay, TV Box, monitor, moedeiro, LEDs):
-> [`slam-arena-gles2/docs/diagrama_montagem.png`](slam-arena-gles2/docs/diagrama_montagem.png).
-> Tudo sobre o jogo, a TV Box e o APK: [`slam-arena-gles2/LEIA-ME.txt`](slam-arena-gles2/LEIA-ME.txt).
+## Gerar o APK (Windows)
+1. **Code → Download ZIP** e extraia o ZIP inteiro.
+2. Dois cliques em **`GERAR_APK.bat`** (na pasta com o `project.godot`).
+3. O APK sai em `APK-Pronto\SlamArena_GLES2.apk` — instale na TV Box pelo pendrive.
 
-A versão original (Godot 4.6, renderizador Compatibility / OpenGL ES 3) continua na
-raiz deste repositório (`project.godot`, `scenes/`, `scripts/`, `images/`, `songs/`):
-ela não abre em TV Box com Mali-450. A pasta da edição GLES2 é um projeto separado
-(o Godot 4 ignora a subpasta com o seu próprio `project.godot`).
+Se der erro, envie `build\android\GERACAO-COMPLETA.log`.
+
+## Montagem
+Onde ligar cada fio (Zero Delay, TV Box, monitor, moedeiro, Arduino e LEDs):
+[`docs/diagrama_montagem.png`](docs/diagrama_montagem.png).
+
+Tudo sobre o jogo, a configuração do operador e a TV Box: [`LEIA-ME.txt`](LEIA-ME.txt).
+
+> O jogo antigo (Godot 4, que não abre na Mali-450) ficou no histórico do
+> repositório: commit `1ba5184`.
