@@ -22,6 +22,15 @@ extends Node
 ## CADA APERTO É UM CLIQUE: um botão (ou o sensor) só vale de novo depois
 ## de SOLTO — sensor preso ou bola parada no sensor não faz ponto; repique
 ## do contato em menos de 60 ms também não conta.
+##
+## O CONTROLE REMOTO DA TV BOX também opera a máquina: na abertura (ou na
+## apresentação) MENU, VOLTAR ou qualquer seta abre a configuração; lá
+## CIMA/BAIXO escolhem, ESQUERDA/DIREITA mudam o valor, OK (= START) muda /
+## executa e VOLTAR salva e sai. A Zero Delay é joystick e nunca manda essas
+## teclas: o público não chega nelas. O VOLTAR do Android chega ao Godot 3.6
+## só como aviso (GO_BACK_REQUEST), sem tecla: aqui ele vira a tecla
+## KEY_BACK, que as telas tratam como o Esc do PC (e nunca fecha o jogo:
+## quit_on_go_back=false no project.godot).
 
 const ARQUIVO := "user://slam_botoes.cfg"
 
@@ -64,6 +73,7 @@ var _ultimo_clique := {}
 var _segurado_desde := {}
 var _evento_visto: InputEvent = null
 var _veredito_visto := false
+var _voltar_ms := -1000
 
 
 func _ready() -> void:
@@ -264,8 +274,42 @@ func injetar(acao: String) -> void:
 	Input.parse_input_event(solta)
 
 
+# ------------------------------------------------ controle remoto da TV Box
+func _notification(what: int) -> void:
+	if what == MainLoop.NOTIFICATION_WM_GO_BACK_REQUEST:
+		call_deferred("_tecla_voltar")
+
+
+func _tecla_voltar() -> void:
+	if Time.get_ticks_msec() - _voltar_ms < 250:
+		return   # (já chegou como tecla)
+	for apertada in [true, false]:
+		var ev := InputEventKey.new()
+		ev.scancode = KEY_BACK
+		ev.pressed = apertada
+		Input.parse_input_event(ev)
+
+
+## Tecla do controle remoto (ou do teclado do PC) apertada agora? Com
+## "repetir", segurar a tecla repete (andar na lista).
+static func tecla(event: InputEvent, teclas: Array, repetir := false) -> bool:
+	return event is InputEventKey and event.pressed and (repetir or not event.echo) and teclas.has(int(event.scancode))
+
+
+## VOLTAR do controle (Esc no PC).
+static func voltou(event: InputEvent) -> bool:
+	return tecla(event, [KEY_BACK, KEY_ESCAPE])
+
+
+## MENU, VOLTAR ou uma seta do controle (F10 no PC): abre a configuração.
+static func pede_config(event: InputEvent) -> bool:
+	return tecla(event, [KEY_MENU, KEY_BACK, KEY_ESCAPE, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_F10])
+
+
 # --------------------------------------------- botões segurados (abertura)
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and event.scancode == KEY_BACK:
+		_voltar_ms = Time.get_ticks_msec()
 	if not (event is InputEventJoypadButton or event is InputEventKey) or event.is_echo():
 		return
 	eh_da_placa(event)

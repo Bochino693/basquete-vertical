@@ -593,7 +593,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		tw.tween_property(_fichas_pop, "modulate:a", 0.0, 0.9).set_delay(0.3)
 		_atualizar_info()
 		return
-	if Controles.config(event) or (event is InputEventKey and event.pressed and not event.echo and event.scancode == KEY_F10):
+	# R2 da Zero Delay, ou MENU / VOLTAR / seta do controle remoto da TV Box
+	if Controles.config(event) or Controles.pede_config(event):
+		Controles.esquecer_segurados()
 		ir("config", {})
 		return
 	if Controles.cesta(event) or Controles.start(event):

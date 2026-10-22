@@ -109,7 +109,7 @@ func _input(event: InputEvent) -> void:
 		if codigo == _soltar:
 			_soltar = ""
 		return
-	if event is InputEventKey and event.scancode == KEY_ESCAPE:
+	if Controles.voltou(event):
 		ir(_de)
 		return
 	if _soltar != "":

@@ -183,11 +183,23 @@ BOTOES (PLACA ZERO DELAY)
   No PC: 1/Espaco/Enter = START, 2/Tab = SELECT, C/3 = cesta, 5 = ficha,
   9/F10 = configuracao, F3 = desempenho.
 
+  CONTROLE REMOTO DA TV BOX (o do Android): opera a configuracao.
+    Na abertura (ou na apresentacao): MENU, VOLTAR ou qualquer SETA abre
+    a CONFIGURACAO.
+    Na CONFIGURACAO: CIMA/BAIXO escolhem o item (segurar anda direto),
+    ESQUERDA/DIREITA mudam o valor, OK muda / executa (OK e o mesmo que
+    START), VOLTAR salva e sai. Nas perguntas (zerar, fechar): OK
+    confirma, VOLTAR cancela.
+    O VOLTAR nunca fecha o jogo. Para sair para o Android:
+    CONFIGURACAO > FECHAR O JOGO (ANDROID), OK e OK de novo (salva antes).
+  A placa Zero Delay nunca manda essas teclas: o jogador nao chega nelas.
+
 
 CONFIGURACAO DO OPERADOR
 ------------------------
-  SELECT passa para o proximo item, START muda o valor (no PC: setas,
-  Enter e Esc). So vale em SALVAR E SAIR.
+  SELECT passa para o proximo item, START muda o valor; ou pelo CONTROLE
+  REMOTO DA TV BOX (setas, OK e VOLTAR; no PC: setas, Enter e Esc).
+  So vale em SALVAR E SAIR (ou VOLTAR); SAIR SEM SALVAR desfaz tudo.
   - TEMPO DA FASE 1 / FASE 2 / FINAL (padrao 40 / 35 / 30 s)
   - META DA FASE 1 / FASE 2 (pontos a fazer na fase; padrao 20 / 30)
   - MODO: LIVRE ou CREDITO (1 ficha por partida)
@@ -210,6 +222,7 @@ CONFIGURACAO DO OPERADOR
   - LEDS: ligados/desligados, porta COM (so no PC Windows), TESTAR LEDS
     (passa por todos os efeitos e pede de novo a permissao do USB)
   - BOTOES DA PLACA (assistente), ZERAR FICHAS, ZERAR RECORDE
+  - FECHAR O JOGO (ANDROID): salva e volta para o Android
   Embaixo: estado do Arduino, contador de sinais do SENSOR DA CESTA
   (jogue uma bola para testar), os botoes de cada comando, partidas e
   cestas da maquina.

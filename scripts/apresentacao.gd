@@ -542,5 +542,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		Arduino.led("STARTING")
 		Sons.tocar("selecao")
 		ir("jogo", {})
+	elif Controles.config(event) or Controles.pede_config(event):
+		# controle remoto da TV Box: direto para a configuração
+		ir("config", {})
 	elif Controles.start(event) or Controles.cesta(event):
 		ir("abertura", {})

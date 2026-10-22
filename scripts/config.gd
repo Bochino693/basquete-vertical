@@ -1,9 +1,13 @@
 extends "res://scripts/tela_base.gd"
 
 ## CONFIGURAÇÃO DO OPERADOR (segurar SELECT 4 s na abertura, R2 da Zero
-## Delay, ou 9/F10 no PC). SELECT passa para o próximo item, START muda o
-## valor / executa. No PC: setas, Enter e Esc.
-## As mudanças só valem em SALVAR E SAIR (SAIR SEM SALVAR desfaz tudo).
+## Delay, MENU / VOLTAR / seta do controle remoto da TV Box, ou 9/F10 no
+## PC). SELECT passa para o próximo item, START muda o valor / executa.
+## CONTROLE REMOTO DA TV BOX (no PC, o teclado): CIMA/BAIXO escolhem,
+## ESQUERDA/DIREITA mudam o valor, OK (= START) muda / executa e VOLTAR
+## (Esc) salva e sai.
+## As mudanças só valem em SALVAR E SAIR (ou VOLTAR); SAIR SEM SALVAR
+## desfaz tudo.
 
 var _itens: Array = []          # [{id, nome, linha (Panel), valor (Label)}]
 var _sel := 0
@@ -47,7 +51,10 @@ const ITENS := [
 	["recorde", "ZERAR RECORDE"],
 	["salvar", "SALVAR E SAIR"],
 	["voltar", "SAIR SEM SALVAR"],
+	["fechar", "FECHAR O JOGO (ANDROID)"],
 ]
+## os itens que executam (OK / START); os outros têm valor (ESQUERDA/DIREITA)
+const ACOES := ["testar_leds", "botoes", "fichas", "recorde", "salvar", "voltar", "fechar"]
 
 
 func _ready() -> void:
@@ -75,16 +82,16 @@ func _ready() -> void:
 	var y := 214.0
 	for item in ITENS:
 		var nome = Arte.texto(item[1], 30, Color(1, 1, 1), 3, Color(0, 0, 0), Label.ALIGN_LEFT)
-		pos(nome, 90, y, 560, 58)
+		pos(nome, 90, y, 560, 56)
 		_rolagem.add_child(nome)
 		var valor = Arte.texto("", 30, Arte.LARANJA_CLARO, 3, Color(0, 0, 0), Label.ALIGN_RIGHT)
-		pos(valor, 560, y, 420, 58)
+		pos(valor, 560, y, 420, 56)
 		_rolagem.add_child(valor)
 		_itens.append({"id": item[0], "nome": nome, "valor": valor, "y": y})
-		y += 59.0
+		y += 57.0
 	_rodape = Arte.texto("", 24, Color(0.8, 0.85, 0.95), 3, Color(0, 0, 0))
 	_rodape.autowrap = true
-	pos(_rodape, 70, 1660, 940, 200)
+	pos(_rodape, 70, 1648, 940, 222)
 	add_child(_rodape)
 	_confirma = Control.new()
 	_confirma.rect_size = Vector2(LARGURA, ALTURA)
@@ -186,7 +193,7 @@ func _atualizar() -> void:
 			"recorde":
 				v = "%d PONTOS" % Ajustes.recorde
 		it["valor"].text = v
-	_rodape.text = "%s\nSENSOR DA CESTA: %d SINAIS (jogue uma bola para testar)\nSTART: %s   •   SELECT: %s   •   CESTA: %s   •   FICHA: %s\nPARTIDAS: %d   •   CESTAS: %d   •   Slam Arena %s" % [
+	_rodape.text = "CONTROLE DA TV BOX: CIMA/BAIXO ESCOLHE  •  ESQUERDA/DIREITA MUDA  •  OK CONFIRMA  •  VOLTAR SALVA E SAI\n%s\nSENSOR DA CESTA: %d SINAIS (jogue uma bola para testar)\nSTART: %s   •   SELECT: %s   •   CESTA: %s   •   FICHA: %s\nPARTIDAS: %d   •   CESTAS: %d   •   Slam Arena %s" % [
 		Arduino.status, _sinais, Controles.texto_de("input_start"), Controles.texto_de("input_select"),
 		Controles.texto_de("input_cesta"), Controles.texto_de("input_credito"), Ajustes.partidas_total, Ajustes.cestas_total, Ajustes.VERSAO]
 
@@ -194,7 +201,7 @@ func _atualizar() -> void:
 func _mover_cursor(direto := false) -> void:
 	var it: Dictionary = _itens[_sel]
 	var alvo := Vector2(66, it["y"] - 1)
-	_cursor.rect_size = Vector2(948, 60)
+	_cursor.rect_size = Vector2(948, 58)
 	if direto:
 		_cursor.rect_position = alvo
 	else:
@@ -211,55 +218,28 @@ func _process(delta: float) -> void:
 		_atualizar()
 
 
+const CONFIRMA := "\n\nSTART OU OK CONFIRMA\nSELECT OU VOLTAR CANCELA"
+
+
+## START / OK: executa o item (ou muda o valor para o próximo).
 func _executar() -> void:
 	var id: String = _itens[_sel]["id"]
+	if not id in ACOES:
+		_mudar(1)
+		return
 	Sons.tocar("cursor", -6.0)
 	match id:
-		"tempo_1", "tempo_2", "tempo_3":
-			var i := int(id.right(6)) - 1
-			c["tempo"][i] = int(_proximo(Ajustes.TEMPOS_FASE[i], float(c["tempo"][i])))
-		"meta_1", "meta_2":
-			var i := int(id.right(5)) - 1
-			c["meta"][i] = int(_proximo(Ajustes.METAS_FASE[i], float(c["meta"][i])))
-		"modo":
-			c["modo"] = not c["modo"]
-		"arcade":
-			c["arcade"] = not c["arcade"]
-		"ouro":
-			c["ouro"] = not c["ouro"]
-		"trava":
-			c["trava"] = _proximo(Ajustes.TRAVAS, float(c["trava"]))
-		"janela":
-			c["janela"] = _proximo(Ajustes.JANELAS_COMBO, float(c["janela"]))
-		"musica":
-			c["musica"] = _proximo(VOLUMES, float(c["musica"]))
-		"efeitos":
-			c["efeitos"] = _proximo(VOLUMES, float(c["efeitos"]))
-			Sons.tocar("combo_3", linear2db(max(0.01, c["efeitos"])) - linear2db(max(0.01, Ajustes.vol_efeitos)))
-		"giro":
-			# automático -> topo à esquerda -> topo à direita -> sem giro
-			var ordem := [Tela.AUTO, 1, -1, 0]
-			c["giro"] = ordem[(ordem.find(int(c["giro"])) + 1) % ordem.size()]
-		"qualidade":
-			c["qualidade"] = (int(c["qualidade"]) + 1) % Ajustes.QUALIDADES.size()
-		"apresentacao":
-			c["apresentacao"] = not c["apresentacao"]
-		"fps":
-			c["fps"] = not c["fps"]
-		"leds":
-			c["leds"] = not c["leds"]
-		"porta":
-			var n := int(str(c["porta"]).replace("COM", "")) % 20 + 1
-			c["porta"] = "COM%d" % n
 		"testar_leds":
 			_testar_leds()
 		"botoes":
 			ir("botoes", {"de": "config"})
 			return
 		"fichas":
-			_perguntar("fichas", "ZERAR AS FICHAS?\n\n%d fichas pagas vão sumir.\n\nSTART CONFIRMA  •  SELECT CANCELA" % Ajustes.creditos)
+			_perguntar("fichas", "ZERAR AS FICHAS?\n\n%d fichas pagas vão sumir." % Ajustes.creditos + CONFIRMA)
 		"recorde":
-			_perguntar("recorde", "ZERAR O RECORDE?\n\nO recorde (%d) e o ranking de hoje vão sumir.\n\nSTART CONFIRMA  •  SELECT CANCELA" % Ajustes.recorde)
+			_perguntar("recorde", "ZERAR O RECORDE?\n\nO recorde (%d) e o ranking de hoje vão sumir." % Ajustes.recorde + CONFIRMA)
+		"fechar":
+			_perguntar("fechar", "FECHAR O JOGO?\n\nOs ajustes são salvos e a TV Box volta para o Android." + CONFIRMA)
 		"salvar":
 			_salvar()
 			return
@@ -270,10 +250,64 @@ func _executar() -> void:
 	pop(_itens[_sel]["valor"], 1.12, 0.18)
 
 
-static func _proximo(lista: Array, atual: float) -> float:
+## Valor anterior (-1) ou próximo (1) do item; dá a volta na lista.
+func _mudar(passo: int) -> void:
+	var id: String = _itens[_sel]["id"]
+	if id in ACOES:
+		return
+	Sons.tocar("cursor", -6.0)
+	match id:
+		"tempo_1", "tempo_2", "tempo_3":
+			var i := int(id.right(6)) - 1
+			c["tempo"][i] = int(_proximo(Ajustes.TEMPOS_FASE[i], float(c["tempo"][i]), passo))
+		"meta_1", "meta_2":
+			var i := int(id.right(5)) - 1
+			c["meta"][i] = int(_proximo(Ajustes.METAS_FASE[i], float(c["meta"][i]), passo))
+		"modo":
+			c["modo"] = not c["modo"]
+		"arcade":
+			c["arcade"] = not c["arcade"]
+		"ouro":
+			c["ouro"] = not c["ouro"]
+		"trava":
+			c["trava"] = _proximo(Ajustes.TRAVAS, float(c["trava"]), passo)
+		"janela":
+			c["janela"] = _proximo(Ajustes.JANELAS_COMBO, float(c["janela"]), passo)
+		"musica":
+			c["musica"] = _proximo(VOLUMES, float(c["musica"]), passo)
+		"efeitos":
+			c["efeitos"] = _proximo(VOLUMES, float(c["efeitos"]), passo)
+			Sons.tocar("combo_3", linear2db(max(0.01, c["efeitos"])) - linear2db(max(0.01, Ajustes.vol_efeitos)))
+		"giro":
+			# automático -> topo à esquerda -> topo à direita -> sem giro
+			var ordem := [Tela.AUTO, 1, -1, 0]
+			c["giro"] = ordem[(ordem.find(int(c["giro"])) + passo + ordem.size()) % ordem.size()]
+		"qualidade":
+			var n := Ajustes.QUALIDADES.size()
+			c["qualidade"] = (int(c["qualidade"]) + passo + n) % n
+		"apresentacao":
+			c["apresentacao"] = not c["apresentacao"]
+		"fps":
+			c["fps"] = not c["fps"]
+		"leds":
+			c["leds"] = not c["leds"]
+		"porta":
+			var n := int(str(c["porta"]).replace("COM", ""))
+			c["porta"] = "COM%d" % ((n - 1 + passo + 20) % 20 + 1)
+	_atualizar()
+	pop(_itens[_sel]["valor"], 1.12, 0.18)
+
+
+func _andar(passo: int) -> void:
+	_sel = (_sel + passo + _itens.size()) % _itens.size()
+	_mover_cursor()
+	Sons.tocar("cursor", -10.0)
+
+
+static func _proximo(lista: Array, atual: float, passo := 1) -> float:
 	for i in lista.size():
 		if abs(float(lista[i]) - atual) < 0.01:
-			return float(lista[(i + 1) % lista.size()])
+			return float(lista[(i + passo + lista.size()) % lista.size()])
 	return float(lista[0])
 
 
@@ -284,6 +318,12 @@ func _perguntar(qual: String, texto: String) -> void:
 
 
 func _responder(sim: bool) -> void:
+	if sim and _confirmando == "fechar":
+		# salva e fecha: a TV Box volta para o Android (os LEDs apagam)
+		_gravar()
+		Arduino.apagar_e_fechar()
+		get_tree().quit()
+		return
 	if sim:
 		if _confirmando == "recorde":
 			Ajustes.zerar_recorde()
@@ -311,6 +351,12 @@ func _testar_leds() -> void:
 
 
 func _salvar() -> void:
+	_gravar()
+	Sons.tocar("selecao")
+	ir("abertura")
+
+
+func _gravar() -> void:
 	var giro_mudou := int(c["giro"]) != Tela.giro_pedido()
 	Ajustes.tempo_fase = c["tempo"].duplicate()
 	Ajustes.meta_fase = c["meta"].duplicate()
@@ -335,8 +381,6 @@ func _salvar() -> void:
 	Sons.reaplicar_volume()
 	if porta_mudou:
 		Arduino.reiniciar_ponte_windows()
-	Sons.tocar("selecao")
-	ir("abertura")
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -350,24 +394,24 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _confirmando != "":
 		if Controles.start(event):
 			_responder(true)
-		elif Controles.select(event) or (event is InputEventKey and event.pressed and event.scancode == KEY_ESCAPE):
+		elif Controles.select(event) or Controles.voltou(event):
 			_responder(false)
 		return
 	if Controles.select(event):
-		_sel = (_sel + 1) % _itens.size()
-		_mover_cursor()
-		Sons.tocar("cursor", -10.0)
+		_andar(1)
 		return
 	if Controles.start(event):
+		# (o OK do controle remoto é o Enter: START)
 		_executar()
 		return
-	if event is InputEventKey and event.pressed and not event.echo:
-		match event.scancode:
-			KEY_DOWN, KEY_RIGHT:
-				_sel = (_sel + 1) % _itens.size()
-				_mover_cursor()
-			KEY_UP, KEY_LEFT:
-				_sel = (_sel - 1 + _itens.size()) % _itens.size()
-				_mover_cursor()
-			KEY_ESCAPE:
-				ir("abertura")
+	# controle remoto da TV Box (segurar CIMA/BAIXO anda direto)
+	if Controles.tecla(event, [KEY_DOWN], true):
+		_andar(1)
+	elif Controles.tecla(event, [KEY_UP], true):
+		_andar(-1)
+	elif Controles.tecla(event, [KEY_RIGHT]):
+		_mudar(1)
+	elif Controles.tecla(event, [KEY_LEFT]):
+		_mudar(-1)
+	elif Controles.voltou(event):
+		_salvar()
