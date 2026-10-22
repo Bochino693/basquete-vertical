@@ -2,7 +2,7 @@ SLAM ARENA - BASQUETE ARCADE VERTICAL (1 JOGADOR, 3 FASES, SEM BOTAO)
 ======================================================================
 EDICAO OPENGL ES 2.0 - Godot 3.6.3 - para TV Box com Mali-400 / Mali-450
 (TX9 "comum": Amlogic S905X/S905W, Rockchip RK3229; MXQ, X96...).
-VERSAO 1.4-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
+VERSAO 1.5-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
 em Aplicativos > Slam Arena). VERSAO NOVA: aumente version/code e
 version/name no export_presets.cfg e o VERSAO do autoload/Ajustes.gd.
 
@@ -15,7 +15,7 @@ GERAR O APK (WINDOWS), PASSO A PASSO
   3. Dois cliques no GERAR_APK.bat. A 1a vez baixa o que faltar (5 a 20
      min); depois, 2 a 4 min.
   4. O APK sai em APK-Pronto\SlamArena-<versao>.apk (a pasta abre sozinha
-     no fim; ex.: SlamArena-1.4-gles2.apk): copie para o pendrive e
+     no fim; ex.: SlamArena-1.5-gles2.apk): copie para o pendrive e
      instale na TV Box (ele instala por cima da versao anterior).
   Se der erro, envie o arquivo build\android\GERACAO-COMPLETA.log.
   Onde ligar cada fio na maquina: docs\diagrama_montagem.png.
@@ -57,20 +57,22 @@ O JOGO
     fase entra batendo, os 3 cartoes FASE 1 / FASE 2 / FINAL com a meta e
     o tempo de cada uma) e a contagem 3-2-1 com ondas vindo das bordas,
     VAI! com apito. Tudo sozinho (uma cesta pula o mapa).
-  * SCORE PASS (o toque do Slam): FASE 1 e FASE 2 tem META (padrao 20 e
-    30 pontos feitos NA fase). A caixa SCORE PASS mostra o TOTAL a
+  * META (o toque do Slam): FASE 1 e FASE 2 tem META (padrao 20 e
+    30 pontos feitos NA fase). A caixa META mostra o TOTAL a
     alcancar (os pontos com que a fase comecou + a meta) ao lado do
-    CURRENT SCORE. Alcancou: "PASSOU! RUMO A FASE 2", a caixa fica verde,
+    PONTOS. Alcancou: "PASSOU! RUMO A FASE 2", a caixa fica verde,
     onda verde, LED "BOOST" - e a fase continua valendo ate o tempo acabar.
     Nao alcancou: "NAO PASSOU!", a arena apaga e e o fim do jogo.
-  * FINAL: sem meta, vale tudo; o SCORE PASS vira o RECORDE a bater e o
+  * FINAL: sem meta, vale tudo; a META vira o RECORDE a bater e o
     MULTIPLICADOR e TURBINADO (ja comeca em x2, 3 seguidas = x3, 6 = x4 =
-    SLAM MODE).
+    MODO ENTERRADA).
   * BONUS DE SEQUENCIA: ao passar de fase, o maior combo da fase vira
     pontos, contados no display.
   * Rodape: a TRILHA DAS FASES (FASE 1, FASE 2, FINAL) com os pontos de
     cada uma e PASSOU / NAO PASSOU; a bola quica em cima da fase atual.
-    No topo: ALL-TIME HIGH e o TOP DE HOJE (4 melhores do dia).
+    No topo: RECORDE e MELHORES DE HOJE (os 3 melhores do dia); no
+    circulo do relogio, "TEMPO" em cima dos numeros. Tudo em portugues e
+    grande (o jogador fica a uns 2 metros da tela).
   * PLACAR DE LED: os numeros sao displays de 7 segmentos com o miolo
     quase branco (o LED quente), brilho em volta e os segmentos apagados
     escuros, numa placa de vidro escuro (redonda no cronometro): nenhum
@@ -78,29 +80,31 @@ O JOGO
   * PISO DE LED: a quadra tem ladrilhos de LED em perspectiva, nas linhas
     da quadra do fundo (nunca em cima do placar). Parados, cintilam de leve
     e uma faixa de luz corre do fundo para a frente de tempos em tempos;
-    na cesta acendem e sobem em onda (azuis no SLAM MODE, dourados no
+    na cesta acendem e sobem em onda (azuis no MODO ENTERRADA, dourados no
     recorde).
   * Cada cesta: o piso acende em onda a partir da cesta, aneis de neon e
     raios de luz, faiscas, as LINHAS DE NEON DA PROPRIA ARTE acendem quando
-    a onda passa por elas, "+N" subindo, texto do combo (BOA! COMBO 2...
-    SUPER 4! MEGA 5! BLUE 6! NEON 9! MAX 13!), tremor da tela, som do
+    a onda passa por elas, "+N" subindo, texto da sequencia (BOA! 2
+    SEGUIDAS!... ESQUENTOU 4! PEGOU FOGO 5! EM CHAMAS 6! IMPARAVEL 9!
+    LENDARIO 13!), tremor da tela, som do
     combo (1 a 12), LED "HIT".
   * A BOLA SAI DA CESTA E CAI PARA FORA DA TELA: cai na quadra la no
     fundo, quica vindo para a frente (cresce: perspectiva, com sombra e o
     "toc" no piso) e sai pela borda de baixo. Com muitas cestas saem
     varias, abrindo para os lados (2 com 3 seguidas, 3 com 6, 4 com 10);
-    no SLAM MODE elas nao param de sair, com rastro de fogo azul; no
+    no MODO ENTERRADA elas nao param de sair, com rastro de fogo azul; no
     recorde e na bola de ouro sao de ouro.
   * HOLOFOTES varrem a quadra o tempo todo (mais fortes com o combo, azuis
-    no SLAM MODE, dourados no recorde) e, com 6 cestas seguidas ou mais,
+    no MODO ENTERRADA, dourados no recorde) e, com 6 cestas seguidas ou mais,
     FLASHES de cameras da torcida piscam nas laterais.
-  * PONTOS (modo ARCADE, o padrao): cestas seguidas (menos de 4 s entre
-    elas) multiplicam - 3 seguidas = x2, 6 = x3, 10 = x4 = SLAM MODE (a
+  * PONTOS (COM MULTIPLICADOR, o padrao): cestas seguidas (menos de 4 s
+    entre elas) multiplicam - 3 seguidas = x2, 6 = x3, 10 = x4 = MODO
+    ENTERRADA (a
     arena vira azul eletrico, raios caem na cesta, trovao). A barrinha do
     MULTIPLICADOR mostra quanto tempo falta para o combo acabar.
     BOLA DE OURO: uma vez por fase aparece por 6 s; a cesta nesse tempo
     vale +5. (Modo CLASSICO: 2 pontos por cesta, sem multiplicador.)
-  * RECORDE DA ARENA (ALL-TIME HIGH): bateu, "RECORDE BATIDO!", moldura
+  * RECORDE DA ARENA: bateu, "RECORDE BATIDO!", moldura
     dourada, o piso vira ondas douradas sem fim e o LED faz "RECORD"
     (depois "BOOST" a cada cesta). Fica gravado na hora.
   * ULTIMOS 10 SEGUNDOS: cronometro vermelho piscando, a arena puxa para o
@@ -222,12 +226,12 @@ CONFIGURACAO DO OPERADOR
   - TEMPO DA FASE 1 / FASE 2 / FINAL (padrao 40 / 35 / 30 s)
   - META DA FASE 1 / FASE 2 (pontos a fazer na fase; padrao 20 / 30)
   - MODO: LIVRE ou CREDITO (1 ficha por partida)
-  - PONTUACAO: ARCADE (combo x2 x3 x4 + bola de ouro) ou CLASSICA (2 por
+  - PONTUACAO: COM MULTIPLICADOR (x2 x3 x4 + bola de ouro) ou CLASSICA (2 por
     cesta)
   - BOLA DE OURO: sim/nao
   - TRAVA DO SENSOR: tempo minimo entre duas cestas (padrao 0,7 s, o
     mesmo do Swish Arena)
-  - JANELA DO COMBO: tempo maximo entre cestas para o combo continuar
+  - TEMPO DA SEQUENCIA: tempo maximo entre cestas para a sequencia continuar
   - VOLUME da musica e dos efeitos
   - GIRO DA TELA: AUTOMATICO (padrao) / topo a esquerda / topo a direita /
     sem giro. No AUTOMATICO, se a TV Box ja entrega a tela em pe (Android
@@ -236,7 +240,12 @@ CONFIGURACAO DO OPERADOR
     jogo gira 90 graus (topo a esquerda; se ficar de cabeca para baixo,
     escolha TOPO A DIREITA). Em qualquer caso a imagem vai ate as bordas:
     TELA CHEIA, sem faixas pretas (16:9, 16:10, 4:3, 5:4).
-  - QUALIDADE DA IMAGEM: automatica, 1080, 900, 720
+  - QUALIDADE DA IMAGEM: automatica, 1080, 900, 720. O padrao desenha na
+    resolucao da tela (1080 linhas, nitido); TV Box em 4K desenha em 1080
+    e amplia LISO. A automatica so desce para 900 se a TV Box nao segurar
+    60 quadros, e mesmo assim a imagem e ampliada lisa (sem "blocos").
+    Para o jogo mais nitido possivel: na TV Box, Configuracoes > Tela >
+    Resolucao em 1080p 60Hz, e aqui QUALIDADE MAXIMA (1080).
   - APRESENTACAO NA ESPERA, MOSTRAR DESEMPENHO
   - LEDS: ligados/desligados, porta COM (so no PC Windows), TESTAR LEDS
     (passa por todos os efeitos e pede de novo a permissao do USB)
@@ -252,7 +261,7 @@ LEDS (ARDUINO)
   O MESMO Arduino e os MESMOS comandos do jogo antigo (uma linha por
   comando, 9600 baud): ATTRACT (abertura), STARTING (a cesta comecou),
   MENU_LOCK (mapa da fase), PLAY (fase valendo), HIT (cesta), BOOST
-  (passou do SCORE PASS / cesta depois do recorde), RECORD, OFF (fim da
+  (passou da META / cesta depois do recorde), RECORD, OFF (fim da
   fase / do jogo). SELECT1..4 nao e mais mandado (nao ha escolha de
   jogadores). Na TV Box vai pelo cabo USB (plugin USB no APK:
   Arduino original, CH340, FTDI e CP210x). Na 1a vez o Android pergunta se

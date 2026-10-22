@@ -81,7 +81,7 @@ func _ready() -> void:
 		var st := Arte.texto("", 28, Color(1, 1, 1), 4, Color(0, 0, 0))
 		add_child(st)
 		_status.append(st)
-	var nomes := ["CESTAS", "MAIOR COMBO", "HOJE"]
+	var nomes := ["CESTAS", "MAIOR SEQUÊNCIA", "HOJE"]
 	for i in 3:
 		var cx := Arte.painel(Arte.AMBAR, 0.85, 26, 2, 10)
 		_por(cx, 80 + i * 315, 1262, 290, 128)
@@ -235,7 +235,7 @@ func mostrar(d: Dictionary) -> void:
 		_por(col["txt"], 0, 154, w, 32)
 		col["txt"].visible = jogou
 		_por(col["extra"], 8, 188, w - 16, 58)
-		col["extra"].text = "%d CESTAS • COMBO %d" % [int(cf[i]), int(kf[i])]
+		col["extra"].text = "%d CESTAS • SEQUÊNCIA %d" % [int(cf[i]), int(kf[i])]
 		col["extra"].visible = jogou
 		col["valor"] = int(pf[i])
 		var st: Label = _status[i]

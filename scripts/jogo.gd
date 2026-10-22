@@ -4,17 +4,17 @@ extends "res://scripts/tela_base.gd"
 ## botão: a cesta da abertura trouxe o jogador e daqui em diante tudo anda
 ## sozinho (cada fase abre com o MAPA DAS FASES e a contagem 3-2-1).
 ##
-##   * FASE 1 e FASE 2 têm META. O SCORE PASS (caixa da esquerda) mostra o
+##   * FASE 1 e FASE 2 têm META. A META (caixa da esquerda) mostra o
 ##     total a alcançar: os pontos com que a fase começou + a meta dela.
 ##     Alcançou: PASSOU! (a arena acende em verde) e a fase segue valendo
 ##     até o tempo acabar. Não alcançou: fim de jogo. A FINAL não tem meta:
-##     vale tudo (e o SCORE PASS vira o RECORDE a bater).
+##     vale tudo (e a META vira o RECORDE a bater).
 ##   * CESTA = sinal do sensor (input_cesta), com a trava do operador
 ##     (tempo mínimo entre duas cestas) e o sensor tendo de soltar.
 ##   * MULTIPLICADOR (modo arcade): cestas seguidas (menos de "janela do
-##     combo" entre elas): 3 = x2, 6 = x3, 10 = x4 = SLAM MODE (arena azul
+##     combo" entre elas): 3 = x2, 6 = x3, 10 = x4 = MODO ENTERRADA (arena azul
 ##     elétrica, raios caindo na cesta). Na FINAL ele é TURBINADO: já
-##     começa em x2, 3 seguidas = x3 e 6 seguidas = SLAM MODE.
+##     começa em x2, 3 seguidas = x3 e 6 seguidas = MODO ENTERRADA.
 ##   * BOLA DE OURO (modo arcade): uma vez por fase, por 6 s; vale +5.
 ##   * Entre as fases: BÔNUS DE SEQUÊNCIA (o maior combo da fase vira
 ##     pontos, contados no display).
@@ -48,6 +48,8 @@ const ANEL := Vector2(539.4, 299.0)
 const CESTA := Vector2(540.0, 776.0)
 const BOLA_OURO := Vector2(540.0, 1010.0)
 const PASS_POS := Vector2(214.0, 562.0)
+const RELOGIO_DESCE := 26.0     # os dígitos do relógio descem para caber o "TEMPO"
+const COR_PONTOS := Color(1.0, 0.86, 0.18)
 const MAPA_SEGUNDOS := 2.4
 const CORES_FASE := [Color(1.0, 0.46, 0.04), Color(0.25, 0.62, 1.0), Color(1.0, 0.80, 0.12)]
 const VERDE := Color(0.3, 1.0, 0.5)
@@ -64,7 +66,7 @@ var cestas_fase := [0, 0, 0]
 var combo_fase := [0, 0, 0]
 var passou := [false, false, false]
 
-var _alvo := 0                  # SCORE PASS da fase (0 = final)
+var _alvo := 0                  # META da fase (0 = final)
 var _tempo := 40.0              # que resta
 var _total := 40.0
 var _decorrido := 0.0
@@ -103,6 +105,7 @@ var _barras: Array = []
 var _ondas: Array = []
 var _anel: AnelCrono
 var _crono: Display7
+var _tempo_lbl: Node2D
 var _hud: Control
 var _disp_high: Display7
 var _disp_pass: Display7
@@ -188,9 +191,14 @@ func _montar_fundo() -> void:
 	_anel.position = ANEL
 	_mundo.add_child(_anel)
 	_crono = Display7.new()
+	_crono.diametro_placa = 338.0
+	_crono.desvio_placa = Vector2(0, -RELOGIO_DESCE)
 	_crono.configurar(2, 150, Arte.LARANJA, -1.0, Display7.PLACA_REDONDA)
-	_crono.position = ANEL
+	_crono.position = ANEL + Vector2(0, RELOGIO_DESCE)
 	_mundo.add_child(_crono)
+	_tempo_lbl = Arte.texto_solto("TEMPO", 42, Color(1, 1, 1), 6, Arte.LARANJA, 300)
+	_tempo_lbl.position = ANEL + Vector2(0, -98)
+	_mundo.add_child(_tempo_lbl)
 
 
 func _montar_hud() -> void:
@@ -198,78 +206,79 @@ func _montar_hud() -> void:
 	_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hud.rect_size = Vector2(LARGURA, ALTURA)
 	_mundo.add_child(_hud)
-	# ALL-TIME HIGH (topo esquerdo)
-	var t1 := Arte.texto("ALL-TIME HIGH", 26, Arte.LARANJA_CLARO, 3, Color(0.15, 0.04, 0.0), Label.ALIGN_LEFT)
-	pos(t1, 62, 56, 240, 36)
+	# RECORDE (topo esquerdo)
+	# (tudo grande e em português: o jogador fica a uns 2 metros da tela)
+	var t1 := Arte.texto("RECORDE", 34, Color(1, 1, 1), 5, Arte.LARANJA, Label.ALIGN_LEFT)
+	pos(t1, 60, 48, 270, 44)
 	_hud.add_child(t1)
 	_disp_high = Display7.new()
-	_disp_high.configurar(4, 70, Arte.LARANJA)
-	_disp_high.position = Vector2(170, 150)
+	_disp_high.configurar(4, 80, Arte.OURO)
+	_disp_high.position = Vector2(172, 152)
 	_hud.add_child(_disp_high)
-	# TOP DE HOJE (topo direito): os 4 melhores do dia
-	var t2 := Arte.texto("TOP DE HOJE", 26, Arte.LARANJA_CLARO, 3, Color(0.15, 0.04, 0.0), Label.ALIGN_RIGHT)
-	pos(t2, 778, 56, 240, 36)
+	# MELHORES DE HOJE (topo direito): os 3 melhores do dia
+	var t2 := Arte.texto("MELHORES DE HOJE", 30, Color(1, 1, 1), 5, Arte.LARANJA, Label.ALIGN_RIGHT)
+	pos(t2, 720, 50, 300, 42)
 	_hud.add_child(t2)
 	_lista_top = VBoxContainer.new()
 	_lista_top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_lista_top.add_constant_override("separation", 0)
-	pos(_lista_top, 768, 96, 250, 118)
+	pos(_lista_top, 760, 96, 258, 120)
 	_hud.add_child(_lista_top)
-	for i in 4:
-		var l = Arte.texto("", 26, Arte.OURO if i == 0 else Arte.LARANJA_CLARO, 3, Color(0, 0, 0), Label.ALIGN_RIGHT)
-		l.rect_min_size = Vector2(250, 29)
+	for i in 3:
+		var l = Arte.texto("", 34, Arte.OURO if i == 0 else Color(1.0, 0.82, 0.55), 4, Color(0, 0, 0), Label.ALIGN_RIGHT)
+		l.rect_min_size = Vector2(258, 40)
 		_lista_top.add_child(l)
-	# SCORE PASS (caixa esquerda) e CURRENT SCORE (caixa direita)
-	_lbl_pass = Arte.texto("SCORE PASS", 24, Arte.AMBAR, 3, Color(0.15, 0.04, 0.0))
-	pos(_lbl_pass, 85, 478, 260, 34)
+	# META (caixa esquerda) e PONTOS (caixa direita)
+	_lbl_pass = Arte.texto("META", 32, Arte.CIANO, 5, Color(0.0, 0.1, 0.18))
+	pos(_lbl_pass, 85, 470, 260, 42)
 	_hud.add_child(_lbl_pass)
 	_disp_pass = Display7.new()
-	_disp_pass.configurar(3, 66, Arte.AMBAR)
+	_disp_pass.configurar(3, 82, Arte.CIANO)
 	_disp_pass.position = PASS_POS
 	_hud.add_child(_disp_pass)
-	var t3 := Arte.texto("CURRENT SCORE", 24, Arte.LARANJA_CLARO, 3, Color(0.15, 0.04, 0.0))
-	pos(t3, 735, 478, 260, 34)
+	var t3 := Arte.texto("PONTOS", 32, COR_PONTOS, 5, Color(0.2, 0.08, 0.0))
+	pos(t3, 735, 470, 260, 42)
 	_hud.add_child(t3)
 	_disp_atual = Display7.new()
-	_disp_atual.configurar(3, 66, Arte.LARANJA)
+	_disp_atual.configurar(3, 82, COR_PONTOS)
 	_disp_atual.position = Vector2(866, 562)
 	_hud.add_child(_disp_atual)
 	# multiplicador (caixa do meio)
-	_mult_titulo = Arte.texto("MULTIPLICADOR", 18, Arte.LARANJA_CLARO, 2, Color(0, 0, 0))
-	pos(_mult_titulo, 384, 530, 310, 24)
+	_mult_titulo = Arte.texto("MULTIPLICADOR", 20, Color(1, 1, 1), 3, Arte.LARANJA)
+	pos(_mult_titulo, 384, 536, 310, 26)
 	_hud.add_child(_mult_titulo)
-	_mult_lbl = Arte.texto_solto("x1", 50, Color(1, 1, 1), 6, Arte.LARANJA, 300)
-	_mult_lbl.position = Vector2(539, 576)
+	_mult_lbl = Arte.texto_solto("x1", 56, Color(1, 1, 1), 7, Arte.LARANJA, 300)
+	_mult_lbl.position = Vector2(539, 582)
 	_hud.add_child(_mult_lbl)
 	_mult_barra = ColorRect.new()
 	_mult_barra.color = Arte.LARANJA
-	pos(_mult_barra, 404, 603, 270, 6)
+	pos(_mult_barra, 404, 610, 270, 6)
 	_mult_barra.rect_pivot_offset = Vector2(135, 3)
 	_hud.add_child(_mult_barra)
 	# a fase (caixa central)
-	_nome_fase = Arte.texto("", 46, Color(1, 1, 1), 6, Color(0, 0, 0))
-	pos(_nome_fase, 378, 700, 324, 64)
+	_nome_fase = Arte.texto("", 58, Color(1, 1, 1), 7, Color(0, 0, 0))
+	pos(_nome_fase, 372, 692, 336, 76)
 	_hud.add_child(_nome_fase)
-	_sub_fase = Arte.texto("", 25, Color(1.0, 0.85, 0.6), 3, Color(0, 0, 0))
+	_sub_fase = Arte.texto("", 31, Color(1.0, 0.9, 0.62), 4, Color(0, 0, 0))
 	_sub_fase.autowrap = true
-	pos(_sub_fase, 384, 768, 312, 86)
+	pos(_sub_fase, 380, 766, 320, 96)
 	_hud.add_child(_sub_fase)
 	# trilha das fases (rodapé): FASE 1, FASE 2, FINAL
 	for i in 3:
 		var card = Panel.new()
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		pos(card, 29 + i * 346, 1708, 330, 128)
-		var nome = Arte.texto(Ajustes.NOMES_FASE[i], 28, Color(1, 1, 1), 3, Color(0, 0, 0), Label.ALIGN_LEFT)
+		var nome = Arte.texto(Ajustes.NOMES_FASE[i], 34, Color(1, 1, 1), 4, Color(0, 0, 0), Label.ALIGN_LEFT)
 		nome.name = "Nome"
-		pos(nome, 52, 0, 160, 56)
+		pos(nome, 50, 0, 180, 58)
 		card.add_child(nome)
-		var info = Arte.texto("", 22, Arte.LARANJA_CLARO, 3, Color(0, 0, 0), Label.ALIGN_RIGHT)
+		var info = Arte.texto("", 25, Arte.LARANJA_CLARO, 3, Color(0, 0, 0), Label.ALIGN_RIGHT)
 		info.name = "Info"
-		pos(info, 150, 6, 166, 48)
+		pos(info, 140, 8, 178, 48)
 		card.add_child(info)
-		var pts = Arte.texto("-", 52, CORES_FASE[i], 5, Color(0, 0, 0), Label.ALIGN_RIGHT)
+		var pts = Arte.texto("-", 64, CORES_FASE[i], 6, Color(0, 0, 0), Label.ALIGN_RIGHT)
 		pts.name = "Pts"
-		pos(pts, 14, 50, 300, 72)
+		pos(pts, 14, 44, 300, 82)
 		card.add_child(pts)
 		var bolinha = Polygon2D.new()
 		bolinha.polygon = Malhas.elipse(Vector2.ZERO, Vector2(13, 13), 16)
@@ -279,7 +288,7 @@ func _montar_hud() -> void:
 		_hud.add_child(card)
 		_cards.append(card)
 	_bola_card = Bola.new()
-	_bola_card.tamanho(44)
+	_bola_card.tamanho(58)
 	_hud.add_child(_bola_card)
 
 
@@ -317,19 +326,19 @@ func _montar_efeitos() -> void:
 	_faiscas_ouro.initial_velocity = 1000.0
 	_faiscas_ouro.position = BOLA_OURO
 	_mundo.add_child(_faiscas_ouro)
-	# raios do SLAM MODE
+	# raios do MODO ENTERRADA
 	for i in 3:
 		var r = Raio.new()
 		_mundo.add_child(r)
 		_raios.append(r)
 	# "+N" que sobem
 	for i in 6:
-		var f = Arte.texto_solto("+1", 74, Color(1, 1, 1), 8, Arte.LARANJA, 300)
+		var f = Arte.texto_solto("+1", 100, Color(1, 1, 1), 10, Arte.LARANJA, 360)
 		f.visible = false
 		_mundo.add_child(f)
 		_flutuantes.append(f)
 	# texto do combo
-	_combo_banner = Arte.texto_solto("", 96, Color(1, 1, 1), 12, Arte.LARANJA, 1040)
+	_combo_banner = Arte.texto_solto("", 112, Color(1, 1, 1), 13, Arte.LARANJA, 1060)
 	_combo_banner.position = Vector2(540, 1185)
 	_combo_banner.visible = false
 	_mundo.add_child(_combo_banner)
@@ -342,7 +351,7 @@ func _montar_efeitos() -> void:
 	_banner_painel.rect_position = Vector2(-450, -78)
 	_banner_painel.rect_size = Vector2(900, 156)
 	_banner.add_child(_banner_painel)
-	_banner_txt = Arte.texto("", 58, Color(1, 1, 1), 7, Arte.LARANJA)
+	_banner_txt = Arte.texto("", 64, Color(1, 1, 1), 8, Arte.LARANJA)
 	_banner_txt.rect_position = Vector2(-450, -78)
 	_banner_txt.rect_size = Vector2(900, 156)
 	_banner_txt.autowrap = true
@@ -352,9 +361,10 @@ func _montar_efeitos() -> void:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0, 0, 0, 0)
 	sb.border_color = Arte.OURO
-	sb.set_border_width_all(12)
-	sb.shadow_color = Color(1.0, 0.78, 0.14, 0.6)
-	sb.shadow_size = 44
+	sb.set_border_width_all(18)
+	sb.border_blend = true
+	# (sem sombra: a sombra do StyleBoxFlat pinta o painel inteiro - com a
+	# moldura do tamanho da tela, a tela toda ficava amarela)
 	_borda.add_stylebox_override("panel", sb)
 	_borda.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_borda.rect_size = Vector2(LARGURA, ALTURA)
@@ -448,7 +458,7 @@ func _montar_entrada() -> void:
 	var t := Arte.texto("CARREGANDO ARENA", 76, Color(1, 1, 1), 9, Arte.LARANJA)
 	pos(t, 0, 920, LARGURA, 110)
 	_entrada.add_child(t)
-	var s := Arte.texto("3 FASES  •  BATA O SCORE PASS", 36, Color(0.85, 0.9, 1.0), 4, Color(0, 0, 0))
+	var s := Arte.texto("3 FASES  •  BATA A META", 36, Color(0.85, 0.9, 1.0), 4, Color(0, 0, 0))
 	pos(s, 0, 1030, LARGURA, 60)
 	_entrada.add_child(s)
 	var trilho := Arte.painel(Arte.LARANJA, 0.9, 12, 2, 10)
@@ -599,13 +609,13 @@ func _iniciar_fase(i: int) -> void:
 	_mapa_painel.add_stylebox_override("panel", Arte.estilo_neon(cor, 0.96, 36, 3, 30))
 	if final:
 		_mapa_sub.text = "SEM META: FAÇA O MÁXIMO!"
-		_mapa_info.text = "SLAM FINAL: MULTIPLICADOR TURBINADO!\nCOMEÇA EM x2  •  SLAM MODE COM 6 SEGUIDAS"
+		_mapa_info.text = "FINAL: MULTIPLICADOR TURBINADO!\nCOMEÇA EM x2  •  MODO ENTERRADA COM 6 SEGUIDAS"
 	else:
 		_mapa_sub.text = "FAÇA %d PONTOS EM %d SEGUNDOS" % [int(f["meta"]), int(f["tempo"])]
 		if i == 0:
-			_mapa_info.text = "CESTAS SEGUIDAS MULTIPLICAM OS PONTOS\nx2  •  x3  •  x4 = SLAM MODE" if Ajustes.modo_arcade else "CADA CESTA VALE 2 PONTOS"
+			_mapa_info.text = "CESTAS SEGUIDAS MULTIPLICAM OS PONTOS\nx2  •  x3  •  x4 = MODO ENTERRADA" if Ajustes.modo_arcade else "CADA CESTA VALE 2 PONTOS"
 		else:
-			_mapa_info.text = "SCORE PASS %d  •  VOCÊ TEM %d PONTOS\nPASSE PARA CHEGAR NA FINAL" % [_alvo, pontos]
+			_mapa_info.text = "META %d  •  VOCÊ TEM %d PONTOS\nBATA A META PARA CHEGAR NA FINAL" % [_alvo, pontos]
 	for k in 3:
 		var card: Panel = _mapa_cards[k]
 		var fk: Dictionary = fases[k]
@@ -736,7 +746,7 @@ func _preparar_fase_hud(i: int) -> void:
 	_anel.alerta(false)
 	_nome_fase.text = Ajustes.NOMES_FASE[i]
 	_nome_fase.add_color_override("font_color", CORES_FASE[i])
-	_mult_titulo.text = "MULTIPLICADOR TURBO" if i == FINAL and Ajustes.modo_arcade else "MULTIPLICADOR"
+	_mult_titulo.text = "MULTIPLICADOR TURBINADO" if i == FINAL and Ajustes.modo_arcade else "MULTIPLICADOR"
 	_combo = 0
 	_mult = _mult_base()
 	_atualizar_mult(false)
@@ -844,7 +854,7 @@ func _cesta() -> void:
 	_atualizar_alvo()
 
 
-## Quantas bolas saem da cesta: mais com o combo (no SLAM MODE, uma a mais).
+## Quantas bolas saem da cesta: mais com o combo (no MODO ENTERRADA, uma a mais).
 func _bolas_da_cesta(nivel: int) -> int:
 	var n := 1
 	if nivel >= 10:
@@ -929,20 +939,18 @@ func _mostrar_combo(nivel: int) -> void:
 	match nivel:
 		1:
 			txt = "BOA!"
-		2:
-			txt = "COMBO 2"
-		3:
-			txt = "COMBO 3"
+		2, 3:
+			txt = "%d SEGUIDAS!" % nivel
 		4:
-			txt = "SUPER 4!"
+			txt = "ESQUENTOU 4!"
 		5:
-			txt = "MEGA 5!"
+			txt = "PEGOU FOGO 5!"
 		6, 7, 8:
-			txt = "BLUE %d!" % nivel
+			txt = "EM CHAMAS %d!" % nivel
 		9, 10, 11, 12:
-			txt = "NEON %d!" % nivel
+			txt = "IMPARÁVEL %d!" % nivel
 		_:
-			txt = "MAX %d!" % nivel
+			txt = "LENDÁRIO %d!" % nivel
 	var cor_contorno := Color(1.0, 0.38, 0.02)
 	var cor_texto := Color(1, 1, 1)
 	if nivel >= 13:
@@ -990,7 +998,7 @@ func _atualizar_mult(_mudou: bool) -> void:
 	var txt := "x%d" % _mult
 	if not Ajustes.modo_arcade:
 		txt = str(_combo)
-		_mult_titulo.text = "COMBO"
+		_mult_titulo.text = "SEQUÊNCIA"
 	if l.text != txt:
 		l.text = txt
 	var cor := Arte.LARANJA
@@ -1005,7 +1013,7 @@ func _atualizar_mult(_mudou: bool) -> void:
 
 
 # ================================================== score pass, recorde...
-## Alcançou o SCORE PASS da fase: PASSOU! (a fase continua valendo).
+## Alcançou o META da fase: PASSOU! (a fase continua valendo).
 func _conferir_pass() -> void:
 	if fase >= FINAL or passou[fase] or pontos < _alvo:
 		return
@@ -1053,7 +1061,7 @@ func _festa_recorde() -> void:
 	_tremer(16.0)
 
 
-## SCORE PASS (caixa da esquerda) e a frase da caixa central.
+## META (caixa da esquerda) e a frase da caixa central.
 func _atualizar_alvo() -> void:
 	var recorde_meu := _festa_feita or (_recorde_antigo < 3 and pontos > _recorde_antigo and pontos > 0 and pontos >= Ajustes.recorde)
 	if fase < FINAL:
@@ -1064,9 +1072,9 @@ func _atualizar_alvo() -> void:
 			_disp_pass.cor = VERDE
 			_sub_fase.text = "VOCÊ É O RECORDE!" if recorde_meu else "PASSOU! SIGA PONTUANDO"
 		else:
-			_lbl_pass.text = "SCORE PASS"
-			_lbl_pass.add_color_override("font_color", Arte.AMBAR)
-			_disp_pass.cor = Arte.AMBAR
+			_lbl_pass.text = "META"
+			_lbl_pass.add_color_override("font_color", Arte.CIANO)
+			_disp_pass.cor = Arte.CIANO
 			_sub_fase.text = "FALTAM %d PARA PASSAR" % (_alvo - pontos)
 	else:
 		_lbl_pass.text = "RECORDE"
@@ -1112,12 +1120,12 @@ func _tremer(forca: float) -> void:
 	_tremor = max(_tremor, forca)
 
 
-# ================================================================ SLAM MODE
+# ================================================================ MODO ENTERRADA
 func _entrar_slam() -> void:
 	_slam = true
 	_proximo_raio = 0.0
 	Sons.tocar("trovao")
-	_avisar("SLAM MODE!  PONTOS x4", Arte.CIANO, 1.4, 3)
+	_avisar("MODO ENTERRADA!  PONTOS x4", Arte.CIANO, 1.4, 3)
 	_tremer(18.0)
 	_holofotes.modo(Holofotes.SLAM)
 	_holofotes.flashes(6)
@@ -1202,6 +1210,8 @@ func _alertar(ligado: bool) -> void:
 	_alerta = ligado
 	_anel.alerta(ligado)
 	_crono.cor = Arte.VERMELHO_ALERTA if ligado else Arte.LARANJA
+	if _tempo_lbl != null:
+		Arte.pintar(Arte.rotulo_de(_tempo_lbl), Color(1, 1, 1), Arte.VERMELHO_ALERTA if ligado else Arte.LARANJA)
 	if not ligado:
 		_mat_fundo.set_shader_param("alerta", 0.0)
 
@@ -1363,7 +1373,7 @@ func _atualizar_card(i: int) -> void:
 
 func _atualizar_lista_top() -> void:
 	var lista: Array = Ajustes.ranking_dia
-	for k in 4:
+	for k in _lista_top.get_child_count():
 		var l: Label = _lista_top.get_child(k)
 		if k < lista.size():
 			l.text = "%dº   %d" % [k + 1, int(lista[k].get("pontos", 0))]
@@ -1440,7 +1450,7 @@ func _jogando(delta: float) -> void:
 				Sons.tocar("batida", -3.0)
 	if _alerta:
 		_mat_fundo.set_shader_param("alerta", 0.35 + 0.3 * sin(_t * 9.0))
-	# SLAM MODE: a máquina transborda - bolas de fogo saindo da cesta
+	# MODO ENTERRADA: a máquina transborda - bolas de fogo saindo da cesta
 	if _slam and _t >= _proxima_bola_slam:
 		_proxima_bola_slam = _t + _r.randf_range(0.45, 0.85)
 		_bolas_fx.soltar(1, Arte.CIANO, BolasCaindo.FOGO)
@@ -1482,7 +1492,7 @@ func _jogando(delta: float) -> void:
 		_ouro.position.y = BOLA_OURO.y - abs(sin(_t * 3.2)) * 20.0
 		if _ouro_resta <= 0.0:
 			_perder_ouro()
-	# SLAM MODE: raios caindo na cesta
+	# MODO ENTERRADA: raios caindo na cesta
 	if _slam:
 		_proximo_raio -= delta
 		if _proximo_raio <= 0.0:

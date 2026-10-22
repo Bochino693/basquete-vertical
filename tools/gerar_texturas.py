@@ -10,6 +10,7 @@ fx_feixe    cone de holofote
 fx_anel     anel suave
 fx_fumaca   nuvem macia de bordas irregulares
 fx_confete  papelzinho de confete
+fx_linha    perfil macio de linha (raio eletrico: borda lisa)
 fx_ladrilho ladrilho de LED do piso (quadrado de cantos redondos: borda
             acesa, miolo suave e um ponto de luz no centro)
 (Na TV Box gerar isto em GDScript levaria meio segundo; pronto, abre na hora.)
@@ -88,6 +89,8 @@ def main():
     borda = np.clip(1 - np.abs(fora + 0.07) / 0.06, 0, 1) ** 1.3
     r = np.sqrt(px * px + py * py)
     gravar("fx_ladrilho", np.maximum(borda, dentro * (0.30 + 0.45 * np.clip(1 - r / 0.75, 0, 1) ** 2)))
+    x, y = grade(64, 4)
+    gravar("fx_linha", np.clip(1 - np.abs(x) / 31.5, 0, 1) ** 1.5)
     print("ok: texturas feitas a mao em imagens/fx_*.png")
 
 

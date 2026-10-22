@@ -2,12 +2,12 @@
 
 Jogo de basquete arcade **vertical** (monitor em pé) da Lazer & Sport, feito no
 **Godot 3.6.3 (OpenGL ES 2.0)** para TV Box com placa de vídeo Mali-400/450 (TX9):
-sem botão (a primeira cesta já começa), 1 jogador, **3 fases com SCORE PASS**,
-multiplicador x2/x3/x4 e SLAM MODE, bola de ouro, apresentação animada, torcida
+sem botão (a primeira cesta já começa), 1 jogador, **3 fases com META**,
+multiplicador x2/x3/x4 e MODO ENTERRADA, bola de ouro, apresentação animada, torcida
 (vaias e aplausos), recorde e ranking do dia, modo crédito, sensor e botões na
 placa Zero Delay e LEDs no Arduino.
 
-**Versão 1.4-gles2** (aparece no rodapé da tela de configuração). A configuração
+**Versão 1.5-gles2** (aparece no rodapé da tela de configuração). A configuração
 opera também pelo **controle remoto da TV Box**: MENU, VOLTAR ou uma seta na
 abertura abre; setas escolhem e mudam, OK confirma, VOLTAR salva e sai.
 

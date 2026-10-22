@@ -37,6 +37,7 @@ var tex_feixe: Texture
 var tex_anel: Texture
 var tex_fumaca: Texture
 var tex_confete: Texture
+var tex_linha: Texture
 var tex_branco: ImageTexture
 
 var mat_aditivo: CanvasItemMaterial
@@ -250,6 +251,7 @@ func _gerar_texturas() -> void:
 	tex_anel = load("res://imagens/fx_anel.png")
 	tex_fumaca = load("res://imagens/fx_fumaca.png")
 	tex_confete = load("res://imagens/fx_confete.png")
+	tex_linha = load("res://imagens/fx_linha.png")
 	# branco liso 4x4 (base dos desenhos com shader: bola, feixes)
 	var im := Image.new()
 	im.create(4, 4, false, Image.FORMAT_RGBA8)

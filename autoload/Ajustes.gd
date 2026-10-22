@@ -12,7 +12,7 @@ extends Node
 
 signal mudou
 
-const VERSAO := "1.4-gles2"
+const VERSAO := "1.5-gles2"
 
 const ARQ_AJUSTES := "user://slam_ajustes.cfg"
 const ARQ_RECORDES := "user://slam_recordes.cfg"
@@ -122,7 +122,12 @@ func carregar() -> void:
 		vol_efeitos = clamp(float(c.get_value("som", "efeitos", vol_efeitos)), 0.0, 1.0)
 		giro = int(c.get_value("tela", "giro", giro))
 		qualidade = int(clamp(int(c.get_value("tela", "qualidade", qualidade)), 0, QUALIDADES.size() - 1))
-		escala_auto = clamp(float(c.get_value("tela", "escala_auto", escala_auto)), 0.6667, 1.0)
+		escala_auto = clamp(float(c.get_value("tela", "escala_auto", escala_auto)), 0.8333, 1.0)
+		# 1.5: a ampliação agora é lisa e o jogo ficou mais leve; a qualidade
+		# automática que a versão anterior gravou (900/720 linhas, ampliadas
+		# em blocos) é medida de novo, começando em 1080
+		if int(c.get_value("tela", "versao_escala", 1)) < 2:
+			escala_auto = 1.0
 		mostrar_fps = bool(c.get_value("tela", "mostrar_fps", mostrar_fps))
 		apresentacao = bool(c.get_value("tela", "apresentacao", apresentacao))
 		porta_com = str(c.get_value("leds", "porta_com", porta_com))
@@ -162,6 +167,7 @@ func salvar() -> void:
 	c.set_value("tela", "giro", giro)
 	c.set_value("tela", "qualidade", qualidade)
 	c.set_value("tela", "escala_auto", escala_auto)
+	c.set_value("tela", "versao_escala", 2)
 	c.set_value("tela", "mostrar_fps", mostrar_fps)
 	c.set_value("tela", "apresentacao", apresentacao)
 	c.set_value("leds", "porta_com", porta_com)

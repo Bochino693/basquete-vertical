@@ -36,7 +36,7 @@ const ITENS := [
 	["arcade", "PONTUAÇÃO"],
 	["ouro", "BOLA DE OURO"],
 	["trava", "TRAVA DO SENSOR"],
-	["janela", "JANELA DO COMBO"],
+	["janela", "TEMPO DA SEQUÊNCIA"],
 	["musica", "VOLUME DA MÚSICA"],
 	["efeitos", "VOLUME DOS EFEITOS"],
 	["giro", "GIRO DA TELA"],
@@ -155,9 +155,9 @@ func _atualizar() -> void:
 			"modo":
 				v = "CRÉDITO (1 FICHA POR PARTIDA)" if c["modo"] else "LIVRE"
 			"arcade":
-				v = "ARCADE (COMBO x2 x3 x4)" if c["arcade"] else "CLÁSSICA (2 POR CESTA)"
+				v = "MULTIPLICADOR (x2 x3 x4)" if c["arcade"] else "CLÁSSICA (2 POR CESTA)"
 			"ouro":
-				v = _txt(c["ouro"]) if c["arcade"] else "(SÓ NO ARCADE)"
+				v = _txt(c["ouro"]) if c["arcade"] else "(SÓ COM MULTIPLICADOR)"
 			"trava":
 				v = ("%.1f s" % float(c["trava"])).replace(".", ",")
 			"janela":
