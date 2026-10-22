@@ -16,6 +16,9 @@ trovao          raio do SLAM MODE
 impacto         pancada grave (apresentacao, enterrada)
 neon            zumbido da lampada neon acendendo (paineis ligando)
 swish           bola passando pela rede
+passou          bateu o SCORE PASS da fase (subida + arpejo)
+fase            fase concluida (fanfarra curta)
+fim_jogo        nao passou de fase (tres notas que caem)
 Precisa de numpy.
 """
 import os
@@ -131,6 +134,32 @@ def main():
     ru = R.uniform(-1, 1, len(t))
     agudo = ru - passa_baixa(ru, 0.18)
     gravar("swish", agudo * np.sin(np.pi * u) ** 0.6 * np.exp(-u * 2.2), 0.55)
+    # passou: subida rapida + arpejo brilhante por cima
+    sub = varredura(380, 1500, 0.28)
+    arp = arpejo([784.0, 987.8, 1174.7, 1568.0, 1975.5], 0.05, 0.45, 0.4)
+    x = np.zeros(max(len(sub), len(arp) + int(0.12 * TAXA)))
+    x[:len(sub)] += 0.55 * sub
+    x[int(0.12 * TAXA):int(0.12 * TAXA) + len(arp)] += arp
+    gravar("passou", x, 0.7)
+    # fase: fanfarra (arpejo + acorde que fica)
+    arp = arpejo([523.3, 659.3, 784.0, 1046.5], 0.1, 0.2, 0.3)
+    t = t_de(0.9)
+    acorde = sum(np.sin(2 * np.pi * f * t) + 0.3 * np.sin(4 * np.pi * f * t) for f in [523.3, 659.3, 784.0, 1046.5])
+    acorde *= np.minimum(1, t / 0.01) * np.exp(-t * 2.6) * (1 + 0.04 * np.sin(2 * np.pi * 6 * t))
+    x = np.zeros(int(0.4 * TAXA) + len(acorde))
+    x[:len(arp)] += arp
+    x[int(0.4 * TAXA):] += 0.6 * acorde
+    gravar("fase", x, 0.75)
+    # fim_jogo: tres notas que caem e uma longa com vibrato (timbre quadrado suave)
+    partes = []
+    for f, d in [(392.0, 0.22), (370.0, 0.22), (349.2, 0.22), (329.6, 0.75)]:
+        t = t_de(d)
+        vib = 1 + (0.012 * np.sin(2 * np.pi * 5.5 * t) if d > 0.5 else 0)
+        fase = np.cumsum(2 * np.pi * f * vib / TAXA)
+        onda = np.sin(fase) + 0.35 * np.sign(np.sin(fase))
+        env = np.minimum(1, t / 0.01) * np.exp(-t * (2.0 if d > 0.5 else 4.0))
+        partes.append(passa_baixa(onda * env, 0.25))
+    gravar("fim_jogo", np.concatenate(partes), 0.6)
     print("ok: sons feitos a mao em", os.path.relpath(SAIDA, os.path.dirname(AQUI)))
 
 

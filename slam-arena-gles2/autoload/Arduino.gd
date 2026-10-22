@@ -3,14 +3,15 @@ extends Node
 ## OS LEDS DA MÁQUINA (Arduino), COM OS MESMOS COMANDOS DO JOGO ANTIGO:
 ## uma linha por comando, 9600 baud:
 ##   ATTRACT    abertura (efeito chamativo)
-##   MENU_LOCK  janela de jogadores aberta (aceso parado)
-##   SELECT1..4 jogadores escolhidos (1 = aceso, 2..4 = ondas)
-##   STARTING   entrando no jogo
-##   PLAY       turno começou
+##   STARTING   a cesta começou a partida
+##   MENU_LOCK  mapa da fase na tela (aceso parado)
+##   PLAY       fase valendo
 ##   HIT        cesta
-##   RECORD     recorde batido (1ª vez no turno)
-##   BOOST      cesta depois do recorde
-##   OFF        apaga (fim do turno, saída)
+##   BOOST      bateu o SCORE PASS / cesta depois do recorde
+##   RECORD     recorde batido (e no resultado com recorde)
+##   OFF        apaga (fim da fase, fim do jogo, saída)
+##   (SELECT1..4 era da janela de jogadores do jogo antigo: não é mais
+##   mandado, o firmware continua entendendo)
 ## O Arduino que já está na máquina não precisa ser regravado. Se ele
 ## responder ao PING com "PONG:SLAM_ARENA" (firmware novo em
 ## arduino/slam_arena), ele também pode mandar CESTA / START / SELECT /

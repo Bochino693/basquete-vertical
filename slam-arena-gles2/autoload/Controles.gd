@@ -2,16 +2,20 @@ extends Node
 
 ## OS COMANDOS DA MÁQUINA (placa Zero Delay e, se tiver, o Arduino).
 ##
-##   input_start    START                 (PC: 1, Espaço, Enter)
+## Na Zero Delay (cada borne: o fio do sinal + o GND):
+##   input_start    START (STR)           (PC: 1, Espaço, Enter)
 ##   input_select   SELECT                (PC: 2, Tab)
-##   input_cesta    SENSOR DA CESTA       (PC: C, 3)   cada sinal = 1 cesta
-##   input_credito  FICHA (moedeiro)      (PC: 5)
-##   input_config   CONFIGURAÇÃO (R2)     (PC: 9, F10)
+##   input_cesta    QUADRADO = sensor     (PC: C, 3)   cada sinal = 1 cesta
+##   input_credito  TRIÂNGULO = moedeiro  (PC: 5)      (modo CRÉDITO)
+##   input_config   R2 = configuração     (PC: 9, F10)
 ##
 ## Sem mapeamento gravado valem os botões da Zero Delay nas DUAS numerações
 ## que ela pode chegar: a do jogo antigo (Godot 4 / Windows: START 6,
 ## SELECT 4, cesta 2) e a do Godot 3 no Android (START 11, SELECT 10,
-## cesta 2, R2 7). Se a TV Box numerar diferente, o ASSISTENTE DE BOTÕES
+## cesta 2, R2 7). Quadrado (2) e triângulo (3) têm o mesmo número nas
+## duas. A FICHA fica num borne que o jogador não alcança (o moedeiro é
+## ligado por dentro da máquina): nunca no SELECT, senão cada aperto do
+## SELECT seria uma ficha de graça. Se a TV Box numerar diferente, o ASSISTENTE DE BOTÕES
 ## (menu de configuração, ou segurar qualquer botão 10 s na abertura) pede
 ## um botão de cada vez e grava em user://slam_botoes.cfg.
 ##
@@ -36,7 +40,7 @@ const PADRAO_BOTOES := {
 	"input_start": [11, 6],
 	"input_select": [10, 4],
 	"input_cesta": [2],
-	"input_credito": [],
+	"input_credito": [3],
 	"input_config": [7],
 }
 const PADRAO_TECLAS := {

@@ -5,14 +5,14 @@
 // precisa regravar). Este firmware e para quem quiser regravar ou montar
 // uma maquina nova:
 //   ATTRACT    abertura: efeitos laranja que se alternam
-//   MENU_LOCK  janela de jogadores aberta: aceso parado
-//   SELECT1    1 jogador: aceso      SELECT2..4: 1 a 3 ondas
-//   STARTING   entrando no jogo: enche das pontas para o meio
-//   PLAY       turno valendo: respiracao suave
+//   STARTING   a cesta comecou a partida: enche das pontas para o meio
+//   MENU_LOCK  mapa da fase na tela: aceso parado
+//   PLAY       fase valendo: respiracao suave
 //   HIT        cesta: flash branco -> laranja
+//   BOOST      bateu o SCORE PASS / cesta depois do recorde: flash dourado
 //   RECORD     recorde batido: festa dourada (3 s)
-//   BOOST      cesta depois do recorde: flash dourado
-//   OFF        apaga
+//   OFF        apaga (fim da fase, fim do jogo)
+//   SELECT1..4 (jogo antigo, janela de jogadores) 1 = aceso, 2..4 = ondas
 //   PING       responde PONG:SLAM_ARENA:1 (o jogo mostra "conectado")
 // Sensor da cesta OPCIONAL no pino 4 (contato a GND, INPUT_PULLUP): cada
 // bola manda "CESTA" (com trava de 300 ms e precisa soltar) - vale junto

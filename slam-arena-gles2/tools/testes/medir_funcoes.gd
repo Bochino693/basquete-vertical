@@ -8,7 +8,7 @@ var principal: Node
 
 
 func _ready() -> void:
-	Ajustes.tempo_turno = 60
+	Ajustes.tempo_fase = [60, 35, 30]
 	principal = load("res://cenas/principal.tscn").instance()
 	add_child(principal)
 	_rodar()
@@ -31,7 +31,7 @@ func _rodar() -> void:
 	yield(get_tree().create_timer(0.5), "timeout")
 	var ap = principal.telas["apresentacao"]
 	yield(_medir("apresentação: quique", ap, "_quique", [1.0]), "completed")
-	principal.ir("jogo", {"jogadores": 2, "sem_escuro": true})
+	principal.ir("jogo", {"sem_escuro": true})
 	yield(get_tree().create_timer(0.5), "timeout")
 	var jg = principal.telas["jogo"]
 	jg._comecar_tempo()
@@ -43,7 +43,12 @@ func _rodar() -> void:
 	yield(_medir("jogo: raio", jg, "_raio_slam"), "completed")
 	yield(_medir("jogo: entrar slam", jg, "_entrar_slam"), "completed")
 	yield(_medir("jogo: festa recorde", jg, "_festa_recorde"), "completed")
-	yield(_medir("jogo: atualizar HUD", jg, "_atualizar_turno_hud"), "completed")
-	yield(_medir("jogo: mostrar ordem", jg, "_mostrar_ordem", [false], 5), "completed")
+	yield(_medir("jogo: atualizar alvo", jg, "_atualizar_alvo"), "completed")
+	yield(_medir("jogo: cartão da fase", jg, "_atualizar_card", [0]), "completed")
+	yield(_medir("jogo: HUD da fase", jg, "_preparar_fase_hud", [1], 5), "completed")
+	jg.passou = [false, false, false]
+	jg._alvo = 0
+	yield(_medir("jogo: passou", jg, "_conferir_pass", [], 1), "completed")
+	yield(_medir("jogo: resultado", jg, "_mostrar_resultado", [true], 3), "completed")
 	yield(_medir("Ajustes: salvar recordes", Ajustes, "salvar_recordes"), "completed")
 	get_tree().quit()

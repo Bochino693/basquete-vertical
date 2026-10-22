@@ -11,7 +11,7 @@ extends "res://scripts/tela_base.gd"
 ##   5. dois raios caem na cesta, a tela pisca e o pôster SLAM ARENA entra
 ##      com impacto, faíscas e o brilho atravessando o letreiro;
 ##   6. segue direto para a abertura (o mesmo pôster: sem corte).
-## START ou uma cesta pulam a apresentação.
+## START pula para a abertura; uma CESTA já começa a partida (sem botão).
 
 const Malhas = preload("res://scripts/fx/malhas.gd")
 const Grade = preload("res://scripts/fx/grade.gd")
@@ -413,5 +413,14 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not ativo:
 		return
-	if Controles.start(event) or Controles.cesta(event):
+	if Controles.credito(event):
+		Ajustes.adicionar_credito(1)
+		Sons.tocar("moeda")
+		ir("abertura", {})
+	elif Controles.cesta(event) and Ajustes.pode_jogar():
+		Ajustes.gastar_credito()
+		Arduino.led("STARTING")
+		Sons.tocar("selecao")
+		ir("jogo", {})
+	elif Controles.start(event) or Controles.cesta(event):
 		ir("abertura", {})

@@ -12,23 +12,28 @@ extends Node
 
 signal mudou
 
-const VERSAO := "1.0-gles2"
+const VERSAO := "1.1-gles2"
 
 const ARQ_AJUSTES := "user://slam_ajustes.cfg"
 const ARQ_RECORDES := "user://slam_recordes.cfg"
 const ARQ_CREDITOS := "user://slam_creditos.cfg"
 
-const TEMPO_MIN := 10
-const TEMPO_MAX := 600
+## As 3 fases: tempo de cada uma e a META (pontos a fazer NA fase; o
+## SCORE PASS da tela mostra o total que precisa ter: pontos com que a fase
+## começou + a meta). A FINAL não tem meta: vale tudo.
+const TEMPOS_FASE := [[30, 35, 40, 45, 50, 60], [25, 30, 35, 40, 45, 50], [20, 25, 30, 35, 40, 45]]
+const METAS_FASE := [[10, 15, 20, 25, 30, 35, 40, 50], [15, 20, 25, 30, 35, 40, 50, 60]]
+const NOMES_FASE := ["FASE 1", "FASE 2", "FINAL"]
 const TRAVAS := [0.3, 0.5, 0.7, 0.9, 1.2, 1.5, 2.0]
 const JANELAS_COMBO := [2.5, 3.0, 4.0, 5.0, 6.0]
 const QUALIDADES := ["AUTOMÁTICA", "MÁXIMA (1080)", "MÉDIA (900)", "LEVE (720)"]
 const ESCALAS := [1.0, 1.0, 0.8333, 0.6667]
 
 # ------------------------------------------------------------ do operador
-var tempo_turno := 60              # segundos de cada jogador
-var modo_credito := false          # LIVRE ou CRÉDITO (1 ficha por jogador)
-var modo_arcade := true            # combo multiplica + bola de ouro; falso = 1 ponto por cesta
+var tempo_fase := [40, 35, 30]     # segundos de cada fase (FASE 1, FASE 2, FINAL)
+var meta_fase := [20, 30]          # pontos a fazer na FASE 1 e na FASE 2
+var modo_credito := false          # LIVRE ou CRÉDITO (1 ficha por partida)
+var modo_arcade := true            # combo multiplica + bola de ouro; falso = 2 pontos por cesta
 var bola_de_ouro := true
 var trava_sensor := 0.7            # tempo mínimo entre duas cestas (s)
 var janela_combo := 4.0            # tempo máximo entre cestas para manter o combo (s)
@@ -45,7 +50,7 @@ var apresentacao := true           # a apresentação animada no ciclo de espera
 # ------------------------------------------------------------- recordes
 var recorde := 0
 var recorde_data := ""
-var ranking_dia: Array = []        # [{pontos, cor, hora, cestas}] (5 melhores de hoje)
+var ranking_dia: Array = []        # [{pontos, cestas, fase, hora}] (5 melhores de hoje; fase 1..3)
 var dia := ""
 var partidas_hoje := 0
 var cestas_hoje := 0
@@ -104,7 +109,10 @@ func _exit_tree() -> void:
 func carregar() -> void:
 	var c := ConfigFile.new()
 	if c.load(ARQ_AJUSTES) == OK:
-		tempo_turno = int(clamp(int(c.get_value("jogo", "tempo_turno", tempo_turno)), TEMPO_MIN, TEMPO_MAX))
+		for i in 3:
+			tempo_fase[i] = _da_lista(TEMPOS_FASE[i], int(c.get_value("fases", "tempo_%d" % (i + 1), tempo_fase[i])))
+		for i in 2:
+			meta_fase[i] = _da_lista(METAS_FASE[i], int(c.get_value("fases", "meta_%d" % (i + 1), meta_fase[i])))
 		modo_credito = bool(c.get_value("jogo", "modo_credito", modo_credito))
 		modo_arcade = bool(c.get_value("jogo", "modo_arcade", modo_arcade))
 		bola_de_ouro = bool(c.get_value("jogo", "bola_de_ouro", bola_de_ouro))
@@ -125,6 +133,9 @@ func carregar() -> void:
 		recorde_data = str(r.get_value("recorde", "data", ""))
 		dia = str(r.get_value("hoje", "dia", ""))
 		ranking_dia = r.get_value("hoje", "ranking", [])
+		if r.get_value("hoje", "versao", 1) < 2:
+			# ranking do jogo antigo (turnos de 60 s): outra conta, recomeça
+			ranking_dia = []
 		partidas_hoje = int(r.get_value("hoje", "partidas", 0))
 		cestas_hoje = int(r.get_value("hoje", "cestas", 0))
 		cestas_total = int(r.get_value("total", "cestas", 0))
@@ -137,7 +148,10 @@ func carregar() -> void:
 
 func salvar() -> void:
 	var c := ConfigFile.new()
-	c.set_value("jogo", "tempo_turno", tempo_turno)
+	for i in 3:
+		c.set_value("fases", "tempo_%d" % (i + 1), tempo_fase[i])
+	for i in 2:
+		c.set_value("fases", "meta_%d" % (i + 1), meta_fase[i])
 	c.set_value("jogo", "modo_credito", modo_credito)
 	c.set_value("jogo", "modo_arcade", modo_arcade)
 	c.set_value("jogo", "bola_de_ouro", bola_de_ouro)
@@ -162,6 +176,7 @@ func salvar_recordes() -> void:
 	r.set_value("recorde", "data", recorde_data)
 	r.set_value("hoje", "dia", dia)
 	r.set_value("hoje", "ranking", ranking_dia)
+	r.set_value("hoje", "versao", 2)
 	r.set_value("hoje", "partidas", partidas_hoje)
 	r.set_value("hoje", "cestas", cestas_hoje)
 	r.set_value("total", "cestas", cestas_total)
@@ -182,17 +197,15 @@ func adicionar_credito(n := 1) -> void:
 	emit_signal("mudou")
 
 
-## Quantos jogadores podem entrar agora (no modo LIVRE, sempre 4).
-func jogadores_liberados() -> int:
-	if not modo_credito:
-		return 4
-	return int(min(4, creditos))
+## Dá para começar uma partida agora? (LIVRE: sempre; CRÉDITO: 1 ficha)
+func pode_jogar() -> bool:
+	return not modo_credito or creditos >= 1
 
 
-func gastar_creditos(n: int) -> void:
+func gastar_credito() -> void:
 	if not modo_credito:
 		return
-	creditos = int(max(0, creditos - n))
+	creditos = int(max(0, creditos - 1))
 	salvar_creditos()
 	emit_signal("mudou")
 
@@ -212,14 +225,22 @@ func _virar_o_dia() -> void:
 		cestas_hoje = 0
 
 
-## Registra um turno terminado. Devolve a posição no ranking do dia (1..5)
-## ou 0 se não entrou.
-func registrar_turno(pontos: int, cestas: int, cor: int) -> int:
+## As 3 fases desta partida: [{tempo, meta, nome}] (meta 0 = FINAL).
+func fases() -> Array:
+	var lista := []
+	for i in 3:
+		lista.append({"tempo": int(tempo_fase[i]), "meta": int(meta_fase[i]) if i < 2 else 0, "nome": NOMES_FASE[i]})
+	return lista
+
+
+## Registra a partida terminada (fase = até onde chegou, 1..3). Devolve a
+## posição no ranking do dia (1..5) ou 0 se não entrou.
+func registrar_resultado(pontos: int, cestas: int, fase: int) -> int:
 	_virar_o_dia()
 	cestas_hoje += cestas
 	cestas_total += cestas
 	var t := OS.get_time()
-	var item := {"pontos": pontos, "cestas": cestas, "cor": cor, "hora": "%02d:%02d" % [t.hour, t.minute]}
+	var item := {"pontos": pontos, "cestas": cestas, "fase": fase, "hora": "%02d:%02d" % [t.hour, t.minute]}
 	var pos := 0
 	if pontos > 0:
 		var i := 0
@@ -230,10 +251,12 @@ func registrar_turno(pontos: int, cestas: int, cor: int) -> int:
 			pos = i + 1
 			while ranking_dia.size() > 5:
 				ranking_dia.pop_back()
+	salvar_recordes()
 	return pos
 
 
-func registrar_partida() -> void:
+## Uma partida começou (contadores do dia e do total).
+func iniciar_partida() -> void:
 	_virar_o_dia()
 	partidas_hoje += 1
 	partidas_total += 1
@@ -270,3 +293,12 @@ func escala_tela() -> float:
 
 static func tempo_texto(segundos: int) -> String:
 	return "%02d:%02d" % [segundos / 60, segundos % 60]
+
+
+## O valor gravado, se for uma das opções; senão a opção mais perto.
+static func _da_lista(lista: Array, v: int) -> int:
+	var melhor: int = lista[0]
+	for x in lista:
+		if abs(int(x) - v) < abs(melhor - v):
+			melhor = int(x)
+	return melhor
