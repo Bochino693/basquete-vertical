@@ -24,6 +24,9 @@ const AZUL_RAIO := Color(0.25, 0.70, 1.0)
 const CIANO := Color(0.35, 0.95, 1.0)
 const BRANCO := Color(1, 1, 1)
 const VERMELHO_ALERTA := Color(1.0, 0.22, 0.16)
+const ROSA := Color(1.0, 0.32, 0.74)
+const PRATA := Color(0.80, 0.86, 0.96)
+const BRONZE := Color(0.90, 0.52, 0.24)
 const CORES_JOGADORES := [Color(1.0, 0.27, 0.27), Color(0.27, 0.6, 1.0), Color(0.3, 1.0, 0.5), Color(1.0, 0.82, 0.2)]
 const NOMES_CORES := ["VERMELHO", "AZUL", "VERDE", "AMARELO"]
 
@@ -145,6 +148,51 @@ func estilo_neon(cor: Color, fundo_alpha := 0.82, raio := 24, borda := 3, brilho
 	sb.anti_aliasing = true
 	sb.anti_aliasing_size = 1
 	return sb
+
+
+## ETIQUETA: um título dentro de uma "pílula" de vidro escuro com a borda
+## de neon da cor dele. O texto (na cor, com contorno escuro) nunca se
+## mistura com a moldura laranja do fundo, e cada informação tem a sua cor.
+func etiqueta(t: String, tamanho: int, cor: Color) -> Panel:
+	var p := Panel.new()
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var l := texto(t, tamanho, cor, 4, Color(0.02, 0.01, 0.03))
+	l.name = "T"
+	l.anchor_right = 1.0
+	l.anchor_bottom = 1.0
+	p.add_child(l)
+	pintar_etiqueta(p, t, cor)
+	return p
+
+
+func pintar_etiqueta(p: Panel, t: String, cor: Color) -> void:
+	var l: Label = p.get_node("T")
+	l.text = t
+	l.add_color_override("font_color", cor.linear_interpolate(Color(1, 1, 1), 0.18))
+	p.add_stylebox_override("panel", estilo_neon(cor, 0.94, 24, 3, 10, 0.10))
+
+
+## MEDALHA (ranking): disco liso da cor com o número no meio.
+func medalha(n: int, cor: Color, lado := 34.0) -> Panel:
+	var p := Panel.new()
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = cor
+	sb.border_color = cor.linear_interpolate(Color(1, 1, 1), 0.55)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(int(lado * 0.5))
+	sb.corner_detail = 10
+	sb.shadow_color = Color(cor.r, cor.g, cor.b, 0.5)
+	sb.shadow_size = 6
+	sb.anti_aliasing = true
+	sb.anti_aliasing_size = 1
+	p.add_stylebox_override("panel", sb)
+	p.rect_size = Vector2(lado, lado)
+	var l := texto(str(n), int(lado * 0.62), Color(0.16, 0.08, 0.02), 0)
+	l.anchor_right = 1.0
+	l.anchor_bottom = 1.0
+	p.add_child(l)
+	return p
 
 
 func painel(cor: Color, fundo_alpha := 0.82, raio := 24, borda := 3, brilho := 16) -> Panel:

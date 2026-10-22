@@ -34,6 +34,7 @@ const Display7 = preload("res://scripts/fx/display7.gd")
 const Grade = preload("res://scripts/fx/grade.gd")
 const OndaLuz = preload("res://scripts/fx/onda_luz.gd")
 const AnelCrono = preload("res://scripts/fx/anel_crono.gd")
+const Letreiro = preload("res://scripts/fx/letreiro.gd")
 const Barras = preload("res://scripts/fx/barras.gd")
 const Raio = preload("res://scripts/fx/raio_eletrico.gd")
 const Bola = preload("res://scripts/fx/bola.gd")
@@ -110,7 +111,8 @@ var _hud: Control
 var _disp_high: Display7
 var _disp_pass: Display7
 var _disp_atual: Display7
-var _lbl_pass: Label
+var _lbl_pass: Panel
+var _letreiro: Letreiro
 var _lista_top: VBoxContainer
 var _mult_lbl: Node2D
 var _mult_barra: ColorRect
@@ -208,45 +210,62 @@ func _montar_hud() -> void:
 	_hud.rect_size = Vector2(LARGURA, ALTURA)
 	_mundo.add_child(_hud)
 	# RECORDE (topo esquerdo)
-	# (tudo grande e em português: o jogador fica a uns 2 metros da tela)
-	var t1 := Arte.texto("RECORDE", 34, Color(1, 1, 1), 5, Arte.LARANJA, Label.ALIGN_LEFT)
-	pos(t1, 60, 48, 270, 44)
+	# (tudo grande e em português: o jogador fica a uns 2 metros da tela;
+	# cada título numa ETIQUETA de vidro com a borda de neon da cor dele:
+	# não se mistura com a moldura laranja e cada informação tem a sua cor)
+	var t1 := Arte.etiqueta("RECORDE", 30, Arte.OURO)
+	pos(t1, 44, 40, 236, 48)
 	_hud.add_child(t1)
 	_disp_high = Display7.new()
 	_disp_high.configurar(4, 80, Arte.OURO)
 	_disp_high.position = Vector2(172, 152)
 	_hud.add_child(_disp_high)
 	# MELHORES DE HOJE (topo direito): os 3 melhores do dia
-	var t2 := Arte.texto("MELHORES DE HOJE", 30, Color(1, 1, 1), 5, Arte.LARANJA, Label.ALIGN_RIGHT)
-	pos(t2, 720, 50, 300, 42)
+	var t2 := Arte.etiqueta("MELHORES DE HOJE", 27, Arte.ROSA)
+	pos(t2, 698, 40, 340, 48)
 	_hud.add_child(t2)
+	# os 3 melhores: medalha de ouro, prata e bronze + os pontos
 	_lista_top = VBoxContainer.new()
 	_lista_top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_lista_top.add_constant_override("separation", 0)
-	pos(_lista_top, 760, 96, 258, 120)
+	pos(_lista_top, 760, 98, 258, 120)
 	_hud.add_child(_lista_top)
+	var medalhas := [Arte.OURO, Arte.PRATA, Arte.BRONZE]
 	for i in 3:
-		var l = Arte.texto("", 34, Arte.OURO if i == 0 else Color(1.0, 0.82, 0.55), 4, Color(0, 0, 0), Label.ALIGN_RIGHT)
-		l.rect_min_size = Vector2(258, 40)
-		_lista_top.add_child(l)
+		var linha := Control.new()
+		linha.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		linha.rect_min_size = Vector2(258, 40)
+		_lista_top.add_child(linha)
+		var m := Arte.medalha(i + 1, medalhas[i], 32.0)
+		m.rect_position = Vector2(92, 4)
+		linha.add_child(m)
+		var l := Arte.texto("", 34, Color(1, 1, 1), 4, Color(0, 0, 0), Label.ALIGN_RIGHT)
+		l.name = "P"
+		pos(l, 130, 0, 128, 40)
+		linha.add_child(l)
 	# META (caixa esquerda) e PONTOS (caixa direita)
-	_lbl_pass = Arte.texto("META", 32, Arte.CIANO, 5, Color(0.0, 0.1, 0.18))
-	pos(_lbl_pass, 85, 470, 260, 42)
+	_lbl_pass = Arte.etiqueta("META", 30, Arte.CIANO)
+	pos(_lbl_pass, 104, 454, 220, 46)
 	_hud.add_child(_lbl_pass)
 	_disp_pass = Display7.new()
 	_disp_pass.configurar(3, 82, Arte.CIANO)
 	_disp_pass.position = PASS_POS
 	_hud.add_child(_disp_pass)
-	var t3 := Arte.texto("PONTOS", 32, COR_PONTOS, 5, Color(0.2, 0.08, 0.0))
-	pos(t3, 735, 470, 260, 42)
+	# passou: no lugar da meta, o letreiro "PASSOU DE FASE" rodando
+	_letreiro = Letreiro.new()
+	_letreiro.montar(Vector2(258, 90), 44)
+	_letreiro.rect_position = PASS_POS - Vector2(129, 45)
+	_hud.add_child(_letreiro)
+	var t3 := Arte.etiqueta("PONTOS", 30, COR_PONTOS)
+	pos(t3, 756, 454, 220, 46)
 	_hud.add_child(t3)
 	_disp_atual = Display7.new()
 	_disp_atual.configurar(3, 82, COR_PONTOS)
 	_disp_atual.position = Vector2(866, 562)
 	_hud.add_child(_disp_atual)
 	# multiplicador (caixa do meio)
-	_mult_titulo = Arte.texto("MULTIPLICADOR", 20, Color(1, 1, 1), 3, Arte.LARANJA)
-	pos(_mult_titulo, 384, 536, 310, 26)
+	_mult_titulo = Arte.texto("MULTIPLICADOR", 21, Color(1, 1, 1), 4, Color(0.05, 0.02, 0.0))
+	pos(_mult_titulo, 384, 534, 310, 28)
 	_hud.add_child(_mult_titulo)
 	_mult_lbl = Arte.texto_solto("x1", 56, Color(1, 1, 1), 7, Arte.LARANJA, 300)
 	_mult_lbl.position = Vector2(539, 582)
@@ -522,10 +541,12 @@ func sair() -> void:
 	_resultado.esconder()
 	_grade.limpar()
 	_bolas_fx.limpar()
+	_letreiro.esconder()
 
 
 func aquecer() -> void:
 	# tudo aparece uma vez (a capa cobre)
+	_letreiro.mostrar("PASSOU DE FASE", VERDE)
 	_entrada.visible = true
 	_mapa.visible = true
 	_banner.visible = true
@@ -562,6 +583,7 @@ func aquecer() -> void:
 	_grade.limpar()
 	_bolas_fx.limpar()
 	_resultado.esconder()
+	_letreiro.esconder()
 
 
 func _entrada_e_mapa(de_novo: bool) -> void:
@@ -1078,29 +1100,40 @@ func _festa_recorde() -> void:
 ## META (caixa da esquerda) e a frase da caixa central.
 func _atualizar_alvo() -> void:
 	var recorde_meu := _festa_feita or (_recorde_antigo < 3 and pontos > _recorde_antigo and pontos > 0 and pontos >= Ajustes.recorde)
+	var letreiro := ""
+	var cor_letreiro := VERDE
 	if fase < FINAL:
 		_disp_pass.valor = _alvo
 		if passou[fase]:
-			_lbl_pass.text = "PASSOU!"
-			_lbl_pass.add_color_override("font_color", VERDE)
+			Arte.pintar_etiqueta(_lbl_pass, "PASSOU!", VERDE)
 			_disp_pass.cor = VERDE
-			_sub_fase.text = "VOCÊ É O RECORDE!" if recorde_meu else "PASSOU! SIGA PONTUANDO"
+			letreiro = "PASSOU DE FASE  •  RUMO À %s" % Ajustes.NOMES_FASE[fase + 1]
+			_sub_fase.text = "VOCÊ É O RECORDE!" if recorde_meu else "PASSOU DE FASE! SIGA PONTUANDO"
 		else:
-			_lbl_pass.text = "META"
-			_lbl_pass.add_color_override("font_color", Arte.CIANO)
+			Arte.pintar_etiqueta(_lbl_pass, "META", Arte.CIANO)
 			_disp_pass.cor = Arte.CIANO
 			_sub_fase.text = "FALTAM %d PARA PASSAR" % (_alvo - pontos)
 	else:
-		_lbl_pass.text = "RECORDE"
-		_lbl_pass.add_color_override("font_color", Arte.OURO)
+		Arte.pintar_etiqueta(_lbl_pass, "RECORDE", Arte.OURO)
 		_disp_pass.cor = Arte.OURO
 		_disp_pass.valor = Ajustes.recorde
 		if recorde_meu:
+			letreiro = "VOCÊ É O RECORDE DA ARENA  •  CONTINUE ACERTANDO"
+			cor_letreiro = Arte.OURO
 			_sub_fase.text = "VOCÊ É O RECORDE DA ARENA!"
 		elif Ajustes.recorde > 0:
 			_sub_fase.text = "FALTAM %d PARA O RECORDE" % (Ajustes.recorde + 1 - pontos)
 		else:
 			_sub_fase.text = "FAÇA O PRIMEIRO RECORDE!"
+	# a frase do meio: verde quando passou
+	_sub_fase.add_color_override("font_color", VERDE if (fase < FINAL and passou[fase]) else Color(1.0, 0.9, 0.62))
+	# meta batida: o letreiro roda no lugar dos números
+	if letreiro != "":
+		_letreiro.mostrar(letreiro, cor_letreiro)
+		_disp_pass.visible = false
+	else:
+		_letreiro.esconder()
+		_disp_pass.visible = true
 
 
 var _aviso_prioridade := 0
@@ -1390,11 +1423,8 @@ func _atualizar_card(i: int) -> void:
 func _atualizar_lista_top() -> void:
 	var lista: Array = Ajustes.ranking_dia
 	for k in _lista_top.get_child_count():
-		var l: Label = _lista_top.get_child(k)
-		if k < lista.size():
-			l.text = "%dº   %d" % [k + 1, int(lista[k].get("pontos", 0))]
-		else:
-			l.text = "%dº   -" % (k + 1)
+		var l: Label = _lista_top.get_child(k).get_node("P")
+		l.text = str(int(lista[k].get("pontos", 0))) if k < lista.size() else "-"
 
 
 # ===================================================================== quadro

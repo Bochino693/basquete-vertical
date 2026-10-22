@@ -2,7 +2,7 @@ SLAM ARENA - BASQUETE ARCADE VERTICAL (1 JOGADOR, 3 FASES, SEM BOTAO)
 ======================================================================
 EDICAO OPENGL ES 2.0 - Godot 3.6.3 - para TV Box com Mali-400 / Mali-450
 (TX9 "comum": Amlogic S905X/S905W, Rockchip RK3229; MXQ, X96...).
-VERSAO 1.7-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
+VERSAO 1.8-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
 em Aplicativos > Slam Arena). VERSAO NOVA: aumente version/code e
 version/name no export_presets.cfg e o VERSAO do autoload/Ajustes.gd.
 
@@ -15,7 +15,7 @@ GERAR O APK (WINDOWS), PASSO A PASSO
   3. Dois cliques no GERAR_APK.bat. A 1a vez baixa o que faltar (5 a 20
      min); depois, 2 a 4 min.
   4. O APK sai em APK-Pronto\SlamArena-<versao>.apk (a pasta abre sozinha
-     no fim; ex.: SlamArena-1.7-gles2.apk): copie para o pendrive e
+     no fim; ex.: SlamArena-1.8-gles2.apk): copie para o pendrive e
      instale na TV Box (ele instala por cima da versao anterior).
   Se der erro, envie o arquivo build\android\GERACAO-COMPLETA.log.
   Onde ligar cada fio na maquina: docs\diagrama_montagem.png.
@@ -73,6 +73,15 @@ O JOGO
     No topo: RECORDE e MELHORES DE HOJE (os 3 melhores do dia); no
     circulo do relogio, "TEMPO" em cima dos numeros. Tudo em portugues e
     grande (o jogador fica a uns 2 metros da tela).
+  * TITULOS EM ETIQUETAS: RECORDE (dourado), MELHORES DE HOJE (rosa),
+    META (ciano) e PONTOS (amarelo) ficam em "pilulas" de vidro escuro com
+    a borda de neon da cor deles - nao se misturam com a moldura laranja e
+    cada informacao tem a sua cor. O ranking do dia tem medalhas de ouro,
+    prata e bronze.
+  * PASSOU DE FASE: a etiqueta vira "PASSOU!" (verde) e, no lugar da meta
+    ja batida, roda um LETREIRO DE LED "PASSOU DE FASE  -  RUMO A FASE 2"
+    com lampadas correndo em volta; a frase do meio fica verde. Na FINAL,
+    quem bate o recorde ve o letreiro dourado "VOCE E O RECORDE DA ARENA".
   * PLACAR DE LED: os numeros sao displays de 7 segmentos com o miolo
     quase branco (o LED quente), brilho em volta e os segmentos apagados
     escuros, numa placa de vidro escuro (redonda no cronometro): nenhum
@@ -353,7 +362,8 @@ PASTAS
               abertura, jogo (as 3 fases), resultado, config, mapear
               (assistente de botoes)
   scripts/fx/ efeitos feitos a mao: grade (piso/parede de LED), onda_luz,
-              anel_crono, display7, bolas_caindo, holofotes, traco_neon,
+              anel_crono, display7, letreiro, bolas_caindo, holofotes,
+              traco_neon,
               raio_eletrico, rede, bola, barras, malhas
   autoload/   Tela (giro e qualidade), Ajustes (ajustes, recorde, ranking,
               fichas), Arte (fontes, texturas, estilos), Sons, Controles
