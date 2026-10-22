@@ -112,7 +112,7 @@ checar(principal is not None, 'atividade com.godot.game.GodotApp')
 if principal is not None:
     cats = [c.get(NS + 'name') for f in principal.findall('intent-filter') for c in f.findall('category')]
     print('GodotApp: screenOrientation =', principal.get(NS + 'screenOrientation'),
-          '(11 = userLandscape: o sensor_landscape do projeto no Godot 3) | categorias:', cats)
+          '(13 = fullUser, o "sensor" do Godot 3: segue a tela da TV Box, em pé ou deitada; o jogo gira sozinho) | categorias:', cats)
     checar('android.intent.category.LAUNCHER' in cats, 'GodotApp no lançador (LAUNCHER)')
     if TV:
         checar('android.intent.category.LEANBACK_LAUNCHER' in cats, 'GodotApp no lançador da TV (LEANBACK_LAUNCHER)')

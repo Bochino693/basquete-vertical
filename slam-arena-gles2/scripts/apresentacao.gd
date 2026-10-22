@@ -1,8 +1,11 @@
 extends "res://scripts/tela_base.gd"
 
-## APRESENTAÇÃO DO SLAM ARENA (abertura animada, ~10 s), toda desenhada
+## APRESENTAÇÃO DO SLAM ARENA (abertura animada, ~11 s), toda desenhada
 ## em código para a OpenGL ES 2.0:
-##   1. "LAZER & SPORT GAMES apresenta" acende como letreiro de neon;
+##   1. começa no EMBLEMA (a bola com brilho e o anel: a mesma imagem de
+##      abertura do app e da capa - nenhuma tela preta): o anel explode, a
+##      bola some no clarão e o LOGO DA LAZER & SPORT salta no lugar, com
+##      um reflexo dourado; GAMES bate letra por letra e APRESENTA;
 ##   2. a quadra de neon se desenha sozinha no escuro (a grade cintila);
 ##   3. a bola cai e quica três vezes (cada quique: onda de luz, poeira,
 ##      a grade inteira treme em onda);
@@ -11,7 +14,7 @@ extends "res://scripts/tela_base.gd"
 ##   5. dois raios caem na cesta, a tela pisca e o pôster SLAM ARENA entra
 ##      com impacto, faíscas e o brilho atravessando o letreiro;
 ##   6. segue direto para a abertura (o mesmo pôster: sem corte).
-## START ou uma cesta pulam a apresentação.
+## START pula para a abertura; uma CESTA já começa a partida (sem botão).
 
 const Malhas = preload("res://scripts/fx/malhas.gd")
 const Grade = preload("res://scripts/fx/grade.gd")
@@ -21,8 +24,12 @@ const Bola = preload("res://scripts/fx/bola.gd")
 const Raio = preload("res://scripts/fx/raio_eletrico.gd")
 const Rede = preload("res://scripts/fx/rede.gd")
 
+const Emblema = preload("res://scripts/fx/emblema.gd")
+
 const CHAO := 1520.0
 const ARO := Vector2(540, 560)
+const LOGO := Vector2(540, 790)
+const LOGO_ESCALA := 0.594      # o logo (1280 x 849) com 760 de largura
 
 var _mundo: Node2D
 var _grade: Grade
@@ -39,9 +46,14 @@ var _poeira: CPUParticles2D
 var _faiscas: Array = []
 var _raios: Array = []
 var _flash: ColorRect
-var _lazer: Node2D
-var _games: Node2D
-var _apresenta: Node2D
+var _emblema: Emblema
+var _marca: Node2D             # logo + GAMES + APRESENTA
+var _logo: Sprite
+var _mat_logo: ShaderMaterial
+var _letras: Array = []
+var _linha: ColorRect
+var _apresenta: Label
+var _reflexo_t := -1.0
 var _poster_pivo: Node2D
 var _poster: MeshInstance2D
 var _mat_poster: ShaderMaterial
@@ -63,7 +75,8 @@ var _onda_i := 0
 func _ready() -> void:
 	_r.randomize()
 	var fundo := ColorRect.new()
-	fundo.color = Color(0.01, 0.006, 0.02)
+	# a mesma cor da capa e da imagem de abertura do app
+	fundo.color = ProjectSettings.get_setting("application/boot_splash/bg_color")
 	fundo.rect_size = Vector2(LARGURA, ALTURA)
 	add_child(fundo)
 	_mundo = Node2D.new()
@@ -156,19 +169,11 @@ func _ready() -> void:
 	_poster.material = _mat_poster
 	_poster.position = Vector2(-540, -960)
 	_poster_pivo.add_child(_poster)
-	# letreiro
-	_lazer = Arte.texto_solto("LAZER & SPORT", 104, Color(1, 1, 1), 10, Arte.LARANJA)
-	_lazer.position = Vector2(540, 840)
-	_lazer.modulate.a = 0.0
-	add_child(_lazer)
-	_games = Arte.texto_solto("GAMES", 70, Arte.CIANO, 8, Arte.AZUL_RAIO)
-	_games.position = Vector2(540, 960)
-	_games.modulate.a = 0.0
-	add_child(_games)
-	_apresenta = Arte.texto_solto("APRESENTA", 44, Color(0.9, 0.9, 1.0), 4, Color(0, 0, 0))
-	_apresenta.position = Vector2(540, 1060)
-	_apresenta.modulate.a = 0.0
-	add_child(_apresenta)
+	# o emblema (igual à capa) e a marca LAZER & SPORT GAMES
+	_emblema = Emblema.new()
+	_emblema.position = Vector2(540, 960)
+	add_child(_emblema)
+	_montar_marca()
 	_flash = ColorRect.new()
 	_flash.color = Color(1, 1, 1)
 	_flash.rect_size = Vector2(LARGURA, ALTURA)
@@ -177,13 +182,55 @@ func _ready() -> void:
 	add_child(_flash)
 
 
+func _montar_marca() -> void:
+	_marca = Node2D.new()
+	add_child(_marca)
+	_logo = Sprite.new()
+	_logo.texture = load("res://imagens/logo_lazer_sport.png")
+	_logo.position = LOGO
+	_logo.scale = Vector2.ONE * LOGO_ESCALA
+	_mat_logo = Arte.material("res://shaders/brilho_logo.shader")
+	_logo.material = _mat_logo
+	_marca.add_child(_logo)
+	# GAMES: uma letra por vez (cada uma entra batendo)
+	var f := Arte.fonte(130, 10)
+	var texto := "GAMES"
+	var larguras := []
+	var total := 0.0
+	for ch in texto:
+		var w: float = f.get_string_size(ch).x + 24.0
+		larguras.append(w)
+		total += w
+	var x := 540.0 - total * 0.5
+	var y := LOGO.y + 849.0 * LOGO_ESCALA * 0.5 - 6.0
+	for i in texto.length():
+		var l := Arte.texto(texto[i], 130, Arte.LARANJA, 10, Color(0.16, 0.04, 0.0))
+		pos(l, x, y, larguras[i], 190)
+		l.rect_pivot_offset = Vector2(larguras[i] * 0.5, 95)
+		_marca.add_child(l)
+		_letras.append(l)
+		x += larguras[i]
+	_linha = ColorRect.new()
+	_linha.color = Arte.LARANJA
+	pos(_linha, 540.0 - total * 0.5, y + 186, total, 6)
+	_linha.rect_pivot_offset = Vector2(total * 0.5, 3)
+	_marca.add_child(_linha)
+	_apresenta = Arte.texto("A P R E S E N T A", 40, Color(0.92, 0.92, 1.0), 4, Color(0, 0, 0))
+	pos(_apresenta, 0, y + 204, 1080, 64)
+	_apresenta.rect_pivot_offset = Vector2(540, 32)
+	_marca.add_child(_apresenta)
+
+
 func aquecer() -> void:
+	_marca.visible = true
+	_marca.modulate.a = 1.0
+	_logo.scale = Vector2.ONE * LOGO_ESCALA
+	for l in _letras:
+		l.modulate.a = 1.0
+	_apresenta.modulate.a = 1.0
 	_poster_pivo.visible = true
 	_bola.visible = true
 	_rede.visible = true
-	_lazer.modulate.a = 1.0
-	_games.modulate.a = 1.0
-	_apresenta.modulate.a = 1.0
 	for t in _quadra:
 		t.progresso = 1.0
 	for o in _ondas:
@@ -200,10 +247,25 @@ func _preparar_cena() -> void:
 	_bola.visible = false
 	_sombra.visible = false
 	_rede.visible = false
-	_lazer.modulate.a = 0.0
-	_games.modulate.a = 0.0
-	_apresenta.modulate.a = 0.0
 	_flash.modulate.a = 0.0
+	# começa no emblema, igual à capa (anel cheio)
+	_emblema.visible = true
+	_emblema.modulate.a = 1.0
+	_emblema.scale = Vector2.ONE
+	_emblema.progresso = 1.0
+	_emblema.bola.velocidade = 2.5
+	_emblema.bola.scale = Vector2.ONE * 300.0 / float(_emblema.bola.texture.get_width())
+	_marca.visible = false
+	_marca.modulate.a = 1.0
+	_marca.scale = Vector2.ONE
+	_marca.position = Vector2.ZERO
+	_logo.scale = Vector2.ONE * LOGO_ESCALA
+	for l in _letras:
+		l.modulate.a = 0.0
+	_linha.rect_scale = Vector2(0, 1)
+	_apresenta.modulate.a = 0.0
+	_reflexo_t = -1.0
+	_mat_logo.set_shader_param("forca", 0.0)
 	for t in _quadra:
 		t.progresso = 0.0
 		t.alfa = 1.0
@@ -211,7 +273,8 @@ func _preparar_cena() -> void:
 		t.progresso = 0.0
 		t.alfa = 1.0
 	_grade.limpar()
-	_grade.base = 0.7
+	# a grade só acende na explosão do emblema (o 1º quadro = a capa)
+	_grade.base = 0.0
 	_mundo.modulate.a = 1.0
 	_fase = ""
 
@@ -219,6 +282,9 @@ func _preparar_cena() -> void:
 func entrar(dados := {}) -> void:
 	.entrar(dados)
 	_preparar_cena()
+	if dados.has("giro_bola"):
+		# a mesma volta da bola da capa (a troca não pisca)
+		_emblema.bola.set("_giro", float(dados["giro_bola"]))
 	_t = 0.0
 	Sons.musica("abertura")
 	Arduino.led("ATTRACT")
@@ -228,25 +294,70 @@ func entrar(dados := {}) -> void:
 
 func _roteiro() -> void:
 	var s := sessao
-	# 1. letreiro de neon
+	# 1. o emblema explode e o logo LAZER & SPORT salta no lugar
+	_emblema.bola.velocidade = 7.0
 	yield(espera(0.3), "timeout")
 	if not vale(s):
 		return
-	Sons.tocar("neon")
-	neon_liga(_lazer)
-	neon_liga(_games, 0.35)
-	yield(espera(1.0), "timeout")
+	Sons.tocar("impacto")
+	Sons.tocar("neon", -4.0)
+	_tremor = 14.0
+	var o: OndaLuz = _ondas[_onda_i]
+	_onda_i = (_onda_i + 1) % _ondas.size()
+	o.disparar(Vector2(540, 960), 9, 1.3)
+	_grade.disparar(Vector2(540, 960), 9)
+	var te := create_tween().set_parallel(true)
+	te.tween_property(_emblema, "scale", Vector2(2.4, 2.4), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+	te.tween_property(_emblema, "modulate:a", 0.0, 0.45)
+	te.tween_property(_emblema.bola, "scale", Vector2.ZERO, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	te.tween_property(_grade, "base", 0.7, 0.5)
+	_faiscas[0].position = Vector2(540, 960)
+	_faiscas[0].restart()
+	_faiscas[0].emitting = true
+	_marca.visible = true
+	_logo.scale = Vector2.ONE * LOGO_ESCALA * 0.15
+	var tl := create_tween()
+	tl.tween_property(_logo, "scale", Vector2.ONE * LOGO_ESCALA, 0.5).set_delay(0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	yield(espera(0.6), "timeout")
 	if not vale(s):
 		return
-	var ta := create_tween()
-	ta.tween_property(_apresenta, "modulate:a", 1.0, 0.4)
+	_emblema.visible = false
+	_reflexo_t = 0.0
+	yield(espera(0.2), "timeout")
+	if not vale(s):
+		return
+	# GAMES, letra por letra
+	for i in _letras.size():
+		var l: Label = _letras[i]
+		l.rect_scale = Vector2(2.6, 2.6)
+		var tg := create_tween().set_parallel(true)
+		tg.tween_property(l, "rect_scale", Vector2.ONE, 0.24).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tg.tween_property(l, "modulate:a", 1.0, 0.1)
+		Sons.tocar("tique", -2.0, 0.9 + i * 0.12)
+		yield(espera(0.08), "timeout")
+		if not vale(s):
+			return
+	yield(espera(0.12), "timeout")
+	if not vale(s):
+		return
+	Sons.tocar("sobe", -6.0, 1.2)
+	_tremor = 8.0
+	var ta := create_tween().set_parallel(true)
+	ta.tween_property(_linha, "rect_scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+	ta.tween_property(_apresenta, "modulate:a", 1.0, 0.45).set_delay(0.2)
+	_apresenta.rect_scale = Vector2(1.25, 1.0)
+	ta.tween_property(_apresenta, "rect_scale", Vector2.ONE, 0.6).set_delay(0.2).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+	yield(espera(0.85), "timeout")
+	if not vale(s):
+		return
+	_reflexo_t = 0.0
 	yield(espera(1.0), "timeout")
 	if not vale(s):
 		return
 	var tf := create_tween().set_parallel(true)
-	for n in [_lazer, _games, _apresenta]:
-		tf.tween_property(n, "modulate:a", 0.0, 0.35)
-		tf.tween_property(n, "scale", Vector2(1.15, 1.15), 0.35)
+	tf.tween_property(_marca, "modulate:a", 0.0, 0.35)
+	tf.tween_property(_marca, "scale", Vector2(1.08, 1.08), 0.35)
+	tf.tween_property(_marca, "position", Vector2(-43.2, -76.8), 0.35)
 	# 2. a quadra se desenha
 	yield(espera(0.3), "timeout")
 	if not vale(s):
@@ -400,6 +511,15 @@ func _process(delta: float) -> void:
 	else:
 		_mundo.position = Vector2.ZERO
 		_poster_pivo.position = Vector2(540, 960)
+	# reflexo dourado atravessando o logo da Lazer & Sport
+	if _reflexo_t >= 0.0:
+		_reflexo_t += delta
+		var k: float = _reflexo_t / 0.8
+		_mat_logo.set_shader_param("pos", lerp(-0.3, 1.6, k))
+		_mat_logo.set_shader_param("forca", 1.0)
+		if k >= 1.0:
+			_reflexo_t = -1.0
+			_mat_logo.set_shader_param("forca", 0.0)
 	# brilho no letreiro do pôster
 	if _brilho_t >= 0.0:
 		_brilho_t += delta
@@ -413,5 +533,14 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not ativo:
 		return
-	if Controles.start(event) or Controles.cesta(event):
+	if Controles.credito(event):
+		Ajustes.adicionar_credito(1)
+		Sons.tocar("moeda")
+		ir("abertura", {})
+	elif Controles.cesta(event) and Ajustes.pode_jogar():
+		Ajustes.gastar_credito()
+		Arduino.led("STARTING")
+		Sons.tocar("selecao")
+		ir("jogo", {})
+	elif Controles.start(event) or Controles.cesta(event):
 		ir("abertura", {})

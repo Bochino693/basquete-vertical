@@ -1,5 +1,5 @@
-SLAM ARENA - BASQUETE ARCADE VERTICAL (1 A 4 JOGADORES POR TURNOS)
-====================================================================
+SLAM ARENA - BASQUETE ARCADE VERTICAL (1 JOGADOR, 3 FASES, SEM BOTAO)
+======================================================================
 EDICAO OPENGL ES 2.0 - Godot 3.6.3 - para TV Box com Mali-400 / Mali-450
 (TX9 "comum": Amlogic S905X/S905W, Rockchip RK3229; MXQ, X96...).
 
@@ -13,22 +13,46 @@ pelo proprio jogo, em codigo.
 
 O JOGO
 ------
-  * APRESENTACAO (abre o jogo e volta a cada 4 ciclos de espera): o
-    letreiro LAZER & SPORT GAMES acende como neon, a quadra de neon se
-    desenha no escuro, a bola cai e quica (cada quique: onda de luz e a
+  * ABRE SEM TELA PRETA: a imagem de abertura do app (a que o Android
+    mostra no instante do toque no icone) e o EMBLEMA - a bola com brilho
+    e um anel -, que vira a capa da preparacao (o anel enche) e o primeiro
+    quadro da apresentacao. Redondo de proposito: fica certo com a TV Box
+    em pe ou deitada.
+  * APRESENTACAO (abre o jogo e volta a cada 4 ciclos de espera): o anel
+    do emblema explode e o LOGO DA LAZER & SPORT salta no lugar, com um
+    reflexo dourado; GAMES bate letra por letra e APRESENTA; a quadra de
+    neon se desenha no escuro, a bola cai e quica (cada quique: onda de luz e a
     grade inteira treme), a cesta se desenha, a bola voa girando e passa
     pela rede (a rede balanca), dois raios caem na cesta e o poster SLAM
-    ARENA entra com impacto. START ou uma cesta pulam.
+    ARENA entra com impacto. Uma CESTA ja comeca a partida; START pula
+    para a abertura.
   * ABERTURA VIVA: o poster respira e aproxima devagar, um brilho atravessa
     o letreiro, os raios azuis da arte piscam como relampago, brasas sobem,
     estrelas cintilam, dois holofotes varrem a arena. Ciclo de atracao:
     POSTER -> COMO JOGAR (com icones animados) -> POSTER -> RECORDES
     (recorde da arena + 5 melhores de hoje).
-  * START abre a janela de jogadores (1 a 4): SELECT passa, START confirma,
-    segurar SELECT fecha (fecha sozinha em 30 s).
-  * PARTIDA: "CARREGANDO ARENA", a arena liga como neon (cada parte
-    acende piscando), ORDEM DE JOGO, START (ou uma cesta) e a contagem
-    3-2-1 com ondas vindo das bordas, VAI! com apito.
+  * NENHUM BOTAO: "ACERTE A CESTA!" - a primeira cesta ja comeca a
+    partida (START tambem, para o operador). Sem escolher jogadores: e 1
+    jogador por partida, como o Swish Arena.
+  * PARTIDA EM 3 FASES (padrao 40 s + 35 s + 30 s): "CARREGANDO ARENA", a
+    arena liga como neon e cada fase abre com o MAPA DAS FASES (o nome da
+    fase entra batendo, os 3 cartoes FASE 1 / FASE 2 / FINAL com a meta e
+    o tempo de cada uma) e a contagem 3-2-1 com ondas vindo das bordas,
+    VAI! com apito. Tudo sozinho (uma cesta pula o mapa).
+  * SCORE PASS (o toque do Slam): FASE 1 e FASE 2 tem META (padrao 20 e
+    30 pontos feitos NA fase). A caixa SCORE PASS mostra o TOTAL a
+    alcancar (os pontos com que a fase comecou + a meta) ao lado do
+    CURRENT SCORE. Alcancou: "PASSOU! RUMO A FASE 2", a caixa fica verde,
+    onda verde, LED "BOOST" - e a fase continua valendo ate o tempo acabar.
+    Nao alcancou: "NAO PASSOU!", a arena apaga e e o fim do jogo.
+  * FINAL: sem meta, vale tudo; o SCORE PASS vira o RECORDE a bater e o
+    MULTIPLICADOR e TURBINADO (ja comeca em x2, 3 seguidas = x3, 6 = x4 =
+    SLAM MODE).
+  * BONUS DE SEQUENCIA: ao passar de fase, o maior combo da fase vira
+    pontos, contados no display.
+  * Rodape: a TRILHA DAS FASES (FASE 1, FASE 2, FINAL) com os pontos de
+    cada uma e PASSOU / NAO PASSOU; a bola quica em cima da fase atual.
+    No topo: ALL-TIME HIGH e o TOP DE HOJE (4 melhores do dia).
   * Cada cesta: a grade de quadrados afunda e acende em onda a partir da
     cesta, aneis de neon e raios de luz, faiscas, as LINHAS DE NEON DA
     PROPRIA ARTE acendem quando a onda passa por elas, "+N" subindo, texto
@@ -38,23 +62,29 @@ O JOGO
     elas) multiplicam - 3 seguidas = x2, 6 = x3, 10 = x4 = SLAM MODE (a
     arena vira azul eletrico, raios caem na cesta, trovao). A barrinha do
     MULTIPLICADOR mostra quanto tempo falta para o combo acabar.
-    BOLA DE OURO: 1 ou 2 vezes por turno aparece por 6 s; a cesta nesse
-    tempo vale +5. (Modo CLASSICO: 1 ponto por cesta, como o jogo antigo.)
+    BOLA DE OURO: uma vez por fase aparece por 6 s; a cesta nesse tempo
+    vale +5. (Modo CLASSICO: 2 pontos por cesta, sem multiplicador.)
   * RECORDE DA ARENA (ALL-TIME HIGH): bateu, "RECORDE BATIDO!", moldura
     dourada, a grade vira ondas douradas sem fim e o LED faz "RECORD"
     (depois "BOOST" a cada cesta). Fica gravado na hora.
-  * JOGADORES 2 A 4: o SCORE PASS mostra quanto precisa para passar o
-    LIDER; passou, "PASSOU O LIDER!".
   * ULTIMOS 10 SEGUNDOS: cronometro vermelho piscando, a arena puxa para o
     vermelho, tique a cada segundo e coracao nos 5 finais.
-  * Sem cesta por 6 s: "ARREMESSE!".
-  * PODIO: colunas sobem do menor para o maior, pontos contando, coroa
-    caindo no campeao, linha com a diferenca de pontos, holofotes, confete
-    e a musica de vitoria. START joga de novo (no modo credito, se tiver
-    fichas); sem nada, volta para a abertura em 12 s.
+  * Sem cesta por 6 s: "ARREMESSE!"; com 7 s, a torcida faz "uuuh".
+  * TORCIDA: nao passou da FASE 1 (ou nenhum ponto) = VAIA, e no
+    resultado nada de aplauso, coroa nem confete (painel vermelho, "TENTE
+    DE NOVO!"); parou na FASE 2 = "uuuh" e resultado sem festa; CAMPEAO
+    (fez a final) ou NOVO RECORDE = APLAUSOS, coroa, confete e a musica de
+    vitoria.
+  * RESULTADO: FIM DE JOGO / CAMPEAO DA ARENA! / NOVO RECORDE!, o placar
+    total contando no display de LED, uma coluna por fase subindo com os
+    pontos de cada uma (PASSOU / NAO PASSOU / NAO JOGOU), cestas, maior
+    combo, a posicao no ranking de hoje (festa so para quem foi bem: veja
+    TORCIDA). ACERTE A CESTA PARA JOGAR DE NOVO (a cesta so vale depois de
+    2,5 s: a bola que ainda caia no fim do tempo nao reinicia sem querer;
+    START tambem). Sem nada, volta para a abertura em 14 s.
   * Cronometro, placar e recorde em DISPLAY DE 7 SEGMENTOS desenhado a mao
     (com brilho e os segmentos apagados aparecendo, como LED de verdade).
-  * MODO CREDITO (opcional): 1 ficha por jogador; as fichas ficam gravadas
+  * MODO CREDITO (opcional): 1 ficha por partida; as fichas ficam gravadas
     (nao somem se a luz cair). Botao/sinal de FICHA na Zero Delay (ou "5"
     no PC).
 
@@ -73,8 +103,9 @@ LISO NA TX9 (MALI-400/450) - O QUE FOI FEITO
     nao tem); o tempo das animacoes por pixel vem calculado do vertice.
   * DISPLAY DE 7 SEGMENTOS: cada numero de cada tamanho e uma malha pronta
     (guardada); trocar o numero so troca a malha.
-  * PREPARACAO POR TRAS DA CAPA: ao abrir, uma capa igual a imagem de
-    abertura da TV Box (com barrinha) cobre o jogo enquanto TODAS as telas
+  * PREPARACAO POR TRAS DA CAPA: ao abrir, a capa (o emblema, igual a
+    imagem de abertura do app, com o anel enchendo) cobre o jogo enquanto
+    TODAS as telas
     sao montadas e desenhadas uma vez (shaders prontos na placa) e cada
     fonte desenha todas as letras (as gigantes, so os numeros e "VAI!").
     Depois disso nenhuma tela carrega nada do disco: trocar de tela e so
@@ -90,8 +121,8 @@ LISO NA TX9 (MALI-400/450) - O QUE FOI FEITO
     720) e amplia: a placa pinta 30% / 55% menos pixels. Fica gravado; o
     operador pode fixar a qualidade no menu.
   * Medido no PC (Godot 3.6.3, sem placa de video, so o processador):
-    uma cesta com todos os efeitos 0,45 ms; aviso 0,14 ms; bola de ouro
-    0,07 ms; trocar de jogador 0,3 ms.
+    uma cesta com todos os efeitos 0,5 ms; PASSOU 0,3 ms; aviso 0,13 ms;
+    bola de ouro 0,07 ms; abrir o resultado 0,45 ms.
   NA TX9 NAO FOI TESTADO AQUI (nao ha TV Box neste computador): veja os
   quadros por segundo de verdade com "MOSTRAR DESEMPENHO" no menu (ou F3
   no PC).
@@ -99,17 +130,39 @@ LISO NA TX9 (MALI-400/450) - O QUE FOI FEITO
 
 BOTOES (PLACA ZERO DELAY)
 -------------------------
-  START ............ START da placa
-  SELECT ........... SELECT da placa
-  SENSOR DA CESTA .. botao 2 da placa (cada sinal = uma cesta; o sensor
-                     tem de SOLTAR antes da proxima e ha a TRAVA DO SENSOR)
-  CONFIGURACAO ..... R2 da placa, ou segurar SELECT 4 s na abertura
-  Sem nada gravado valem as duas numeracoes em que a Zero Delay pode
-  chegar: a do jogo antigo (START 6, SELECT 4) e a do Godot 3 no Android
-  (START 11, SELECT 10). Se a TV Box numerar diferente: CONFIGURACAO >
-  BOTOES DA PLACA (ou segure QUALQUER botao 10 s na abertura) - o
-  assistente pede START, SELECT, SENSOR, FICHA e CONFIGURACAO (os dois
-  ultimos pulam sozinhos se a maquina nao tiver) e grava na TV Box.
+  Para JOGAR nao precisa de botao nenhum: a cesta comeca, pula o mapa da
+  fase e joga de novo no resultado.
+
+  ONDE LIGAR (o desenho completo: docs/diagrama_montagem.png; cada borne
+  da Zero Delay tem 2 fios: o do sinal e o GND):
+    SENSOR DA CESTA ... QUADRADO  (botao 2)  cada sinal = uma cesta
+    START ............. START/STR (botao 6 ou 11: e o mesmo, a TV Box
+                        numera de um jeito ou de outro)
+    FICHA (moedeiro) .. TRIANGULO (botao 3)  so no modo CREDITO
+    SELECT ............ SELECT    (botao 4 ou 10)  segurar 4 s na abertura
+                        = configuracao; segurar 3 s na partida = encerra
+    CONFIGURACAO ...... R2        (botao 7)  opcional
+  (Quadrado e START sao os mesmos do jogo antigo e do Swish Arena.)
+
+  SENSOR: precisa ser CONTATO SECO (fecha o sinal no GND quando a bola
+  passa: micro-switch, reed, rele). Sensor de 12/24 V (indutivo,
+  fotoeletrico) NUNCA direto na placa: ligue por um rele ou optoacoplador
+  e use o contato dele.
+  MOEDEIRO (ex.: CH-926): saida COIN no TRIANGULO e o GND da fonte do
+  moedeiro junto com o GND da Zero Delay. Cada pulso = 1 ficha: deixe o
+  moedeiro em 1 pulso por moeda (ou o valor que quiser em pulsos) e na
+  velocidade de pulso LENTA/MEDIA (pulsos com menos de 60 ms entre eles
+  sao tratados como repique e nao contam). A ficha fica num borne que o
+  jogador nao alcanca: nunca no SELECT (cada aperto seria uma ficha de
+  graca).
+
+  Se a placa tiver os bornes numerados (1, 2, 3...) em vez dos simbolos,
+  ou se algum comando cair no lugar errado: CONFIGURACAO > BOTOES DA
+  PLACA (ou segure QUALQUER botao 10 s na abertura) - o assistente pede
+  START, SELECT, SENSOR (jogue uma bola), FICHA (coloque uma moeda) e
+  CONFIGURACAO, um de cada vez (os dois ultimos pulam sozinhos se a
+  maquina nao tiver), e grava na TV Box. O rodape da CONFIGURACAO mostra
+  o botao de cada comando e conta os sinais do sensor ao vivo.
   No PC: 1/Espaco/Enter = START, 2/Tab = SELECT, C/3 = cesta, 5 = ficha,
   9/F10 = configuracao, F3 = desempenho.
 
@@ -118,16 +171,23 @@ CONFIGURACAO DO OPERADOR
 ------------------------
   SELECT passa para o proximo item, START muda o valor (no PC: setas,
   Enter e Esc). So vale em SALVAR E SAIR.
-  - TEMPO de cada jogador (-60, -10, +10, +60 s; de 10 s a 10 min)
-  - MODO: LIVRE ou CREDITO (1 ficha por jogador)
-  - PONTUACAO: ARCADE (combo x2 x3 x4 + bola de ouro) ou CLASSICA
+  - TEMPO DA FASE 1 / FASE 2 / FINAL (padrao 40 / 35 / 30 s)
+  - META DA FASE 1 / FASE 2 (pontos a fazer na fase; padrao 20 / 30)
+  - MODO: LIVRE ou CREDITO (1 ficha por partida)
+  - PONTUACAO: ARCADE (combo x2 x3 x4 + bola de ouro) ou CLASSICA (2 por
+    cesta)
   - BOLA DE OURO: sim/nao
   - TRAVA DO SENSOR: tempo minimo entre duas cestas (padrao 0,7 s, o
     mesmo do Swish Arena)
   - JANELA DO COMBO: tempo maximo entre cestas para o combo continuar
   - VOLUME da musica e dos efeitos
-  - GIRO DA TELA: topo a esquerda / a direita / sem giro (monitor em pe no
-    HDMI deitado; sem giro, numa TV deitada, o jogo fica no meio)
+  - GIRO DA TELA: AUTOMATICO (padrao) / topo a esquerda / topo a direita /
+    sem giro. No AUTOMATICO, se a TV Box ja entrega a tela em pe (Android
+    girado nas configuracoes da TV Box, como o jogo antigo usava) o jogo
+    nao gira nada; se entrega deitada (monitor em pe no HDMI deitado), o
+    jogo gira 90 graus (topo a esquerda; se ficar de cabeca para baixo,
+    escolha TOPO A DIREITA). Em qualquer caso a imagem vai ate as bordas:
+    TELA CHEIA, sem faixas pretas (16:9, 16:10, 4:3, 5:4).
   - QUALIDADE DA IMAGEM: automatica, 1080, 900, 720
   - APRESENTACAO NA ESPERA, MOSTRAR DESEMPENHO
   - LEDS: ligados/desligados, porta COM (so no PC Windows), TESTAR LEDS
@@ -141,8 +201,11 @@ CONFIGURACAO DO OPERADOR
 LEDS (ARDUINO)
 --------------
   O MESMO Arduino e os MESMOS comandos do jogo antigo (uma linha por
-  comando, 9600 baud): ATTRACT, MENU_LOCK, SELECT1..4, STARTING, PLAY,
-  HIT, RECORD, BOOST, OFF. Na TV Box vai pelo cabo USB (plugin USB no APK:
+  comando, 9600 baud): ATTRACT (abertura), STARTING (a cesta comecou),
+  MENU_LOCK (mapa da fase), PLAY (fase valendo), HIT (cesta), BOOST
+  (passou do SCORE PASS / cesta depois do recorde), RECORD, OFF (fim da
+  fase / do jogo). SELECT1..4 nao e mais mandado (nao ha escolha de
+  jogadores). Na TV Box vai pelo cabo USB (plugin USB no APK:
   Arduino original, CH340, FTDI e CP210x). Na 1a vez o Android pergunta se
   o jogo pode usar o aparelho USB: marque "Usar por padrao" e OK (o jogo
   pede uma vez so, na abertura). No PC com Windows: a ponte PowerShell do
@@ -169,8 +232,9 @@ APK PARA A TV BOX
   1a vez: 5 a 20 min (downloads). Depois: 2 a 4 min.
   Sai em APK-Pronto\SlamArena_GLES2.apk.
   Opcoes (Prompt de Comando, nesta pasta):
-     GERAR_APK.bat -Giro -1          topo do jogo na DIREITA do HDMI
-     GERAR_APK.bat -Giro 0           TV deitada, sem giro
+     GERAR_APK.bat -Giro -1          tela deitada: topo do jogo na DIREITA
+                                     (o padrao, 1, e topo na esquerda; com a
+                                     tela ja em pe o jogo nao gira nada)
      GERAR_APK.bat -Instalar         ja instala na TV Box pelo adb
      GERAR_APK.bat -Versao 1.1-gles2 muda o nome da versao
   (O giro tambem muda no menu do operador, sem gerar outro APK.)
@@ -193,7 +257,8 @@ COMO TESTAR NO PC
      Numa janela em pe: godot --path . -- --janela=540x960
      Simular o giro da TV Box: -- --giro=1
      Comecar numa tela: -- --tela=abertura (jogo, config, botoes)
-  3. Teste automatico (joga uma partida inteira e tira fotos):
+  3. Teste automatico (joga sozinho: passa a fase 1, nao passa a 2,
+     joga de novo com uma cesta e vai ate a FINAL; tira fotos):
      godot --path . res://tools/testes/roteiro.tscn -- --fotos=/pasta
      Com o Godot "headless" mede o processador de cada tela; e
      res://tools/testes/medir_funcoes.tscn mede cada acao do jogo.
@@ -205,7 +270,8 @@ PASTAS
 ------
   cenas/      principal.tscn (a unica cena: monta todas as telas)
   scripts/    principal (preparacao e troca de telas), apresentacao,
-              abertura, jogo, podio, config, mapear (assistente de botoes)
+              abertura, jogo (as 3 fases), resultado, config, mapear
+              (assistente de botoes)
   scripts/fx/ efeitos feitos a mao: grade, onda_luz, anel_crono, display7,
               traco_neon, raio_eletrico, rede, bola, barras, malhas
   autoload/   Tela (giro e qualidade), Ajustes (ajustes, recorde, ranking,
@@ -219,7 +285,11 @@ PASTAS
   android/    plugins/ (StrikeSerial: o Arduino no USB, o mesmo do Strike
               Kids) e modelo_android/extras.zip
   arduino/    firmware opcional dos LEDs
+  docs/       diagrama_montagem.png (ONDE LIGAR CADA FIO: Zero Delay, TV
+              Box, monitor, moedeiro, Arduino e LEDs) e o .html dele
   tools/      preparar_arte.py (fundo, poster, icones, aberturas, sons a
               partir das pastas images/ e songs/ do jogo antigo),
               gerar_sons.py, gerar_texturas.py, android/ (APK no Linux),
-              testes/ (conferir_scripts, roteiro, medir_funcoes)
+              diagrama/ (o diagrama de montagem), testes/ (conferir_scripts,
+              roteiro, medir_funcoes, foto_rapida, gravar_splash - a
+              imagem de abertura)

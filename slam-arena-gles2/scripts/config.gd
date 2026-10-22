@@ -23,10 +23,11 @@ var c := {}
 
 const VOLUMES := [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
 const ITENS := [
-	["tempo_m60", "TEMPO  −60 s"],
-	["tempo_m10", "TEMPO  −10 s"],
-	["tempo_p10", "TEMPO  +10 s"],
-	["tempo_p60", "TEMPO  +60 s"],
+	["tempo_1", "TEMPO DA FASE 1"],
+	["tempo_2", "TEMPO DA FASE 2"],
+	["tempo_3", "TEMPO DA FINAL"],
+	["meta_1", "META DA FASE 1"],
+	["meta_2", "META DA FASE 2"],
 	["modo", "MODO"],
 	["arcade", "PONTUAÇÃO"],
 	["ouro", "BOLA DE OURO"],
@@ -80,7 +81,7 @@ func _ready() -> void:
 		pos(valor, 560, y, 420, 58)
 		_rolagem.add_child(valor)
 		_itens.append({"id": item[0], "nome": nome, "valor": valor, "y": y})
-		y += 62.0
+		y += 59.0
 	_rodape = Arte.texto("", 24, Color(0.8, 0.85, 0.95), 3, Color(0, 0, 0))
 	_rodape.autowrap = true
 	pos(_rodape, 70, 1660, 940, 200)
@@ -107,9 +108,9 @@ func entrar(dados := {}) -> void:
 	.entrar(dados)
 	_de = str(dados.get("de", "abertura"))
 	c = {
-		"tempo": Ajustes.tempo_turno, "modo": Ajustes.modo_credito, "arcade": Ajustes.modo_arcade,
+		"tempo": Ajustes.tempo_fase.duplicate(), "meta": Ajustes.meta_fase.duplicate(), "modo": Ajustes.modo_credito, "arcade": Ajustes.modo_arcade,
 		"ouro": Ajustes.bola_de_ouro, "trava": Ajustes.trava_sensor, "janela": Ajustes.janela_combo,
-		"musica": Ajustes.vol_musica, "efeitos": Ajustes.vol_efeitos, "giro": Tela.giro,
+		"musica": Ajustes.vol_musica, "efeitos": Ajustes.vol_efeitos, "giro": Tela.giro_pedido(),
 		"qualidade": Ajustes.qualidade, "apresentacao": Ajustes.apresentacao, "fps": Ajustes.mostrar_fps,
 		"leds": Ajustes.leds, "porta": Ajustes.porta_com,
 	}
@@ -134,16 +135,20 @@ func _txt(v: bool) -> String:
 
 
 func _atualizar() -> void:
-	get_node("Tempo").text = "TEMPO DE CADA JOGADOR:  %s" % Ajustes.tempo_texto(int(c["tempo"]))
+	var tp: Array = c["tempo"]
+	var mt: Array = c["meta"]
+	get_node("Tempo").text = "PARTIDA: %d + %d + %d s   •   METAS %d / %d" % [tp[0], tp[1], tp[2], mt[0], mt[1]]
 	for it in _itens:
 		var v = ""
 		match it["id"]:
-			"tempo_m60", "tempo_m10", "tempo_p10", "tempo_p60":
-				v = Ajustes.tempo_texto(int(c["tempo"]))
+			"tempo_1", "tempo_2", "tempo_3":
+				v = "%d s" % int(c["tempo"][int(it["id"].right(6)) - 1])
+			"meta_1", "meta_2":
+				v = "%d PONTOS" % int(c["meta"][int(it["id"].right(5)) - 1])
 			"modo":
-				v = "CRÉDITO (1 FICHA POR JOGADOR)" if c["modo"] else "LIVRE"
+				v = "CRÉDITO (1 FICHA POR PARTIDA)" if c["modo"] else "LIVRE"
 			"arcade":
-				v = "ARCADE (COMBO x2 x3 x4)" if c["arcade"] else "CLÁSSICA (1 POR CESTA)"
+				v = "ARCADE (COMBO x2 x3 x4)" if c["arcade"] else "CLÁSSICA (2 POR CESTA)"
 			"ouro":
 				v = _txt(c["ouro"]) if c["arcade"] else "(SÓ NO ARCADE)"
 			"trava":
@@ -155,7 +160,11 @@ func _atualizar() -> void:
 			"efeitos":
 				v = "%d%%" % int(round(float(c["efeitos"]) * 100))
 			"giro":
-				v = ["TOPO À DIREITA", "SEM GIRO", "TOPO À ESQUERDA"][int(c["giro"]) + 1]
+				var nomes := ["TOPO À DIREITA", "SEM GIRO", "TOPO À ESQUERDA"]
+				if int(c["giro"]) == Tela.AUTO:
+					v = "AUTOMÁTICO (%s)" % nomes[Tela.giro + 1]
+				else:
+					v = nomes[int(c["giro"]) + 1]
 			"qualidade":
 				v = Ajustes.QUALIDADES[int(c["qualidade"])]
 				if int(c["qualidade"]) == 0:
@@ -177,15 +186,15 @@ func _atualizar() -> void:
 			"recorde":
 				v = "%d PONTOS" % Ajustes.recorde
 		it["valor"].text = v
-	_rodape.text = "%s\nSENSOR DA CESTA: %d SINAIS (jogue uma bola para testar)\nSTART: %s   •   SELECT: %s   •   CESTA: %s\nPARTIDAS: %d   •   CESTAS: %d   •   Slam Arena %s" % [
+	_rodape.text = "%s\nSENSOR DA CESTA: %d SINAIS (jogue uma bola para testar)\nSTART: %s   •   SELECT: %s   •   CESTA: %s   •   FICHA: %s\nPARTIDAS: %d   •   CESTAS: %d   •   Slam Arena %s" % [
 		Arduino.status, _sinais, Controles.texto_de("input_start"), Controles.texto_de("input_select"),
-		Controles.texto_de("input_cesta"), Ajustes.partidas_total, Ajustes.cestas_total, Ajustes.VERSAO]
+		Controles.texto_de("input_cesta"), Controles.texto_de("input_credito"), Ajustes.partidas_total, Ajustes.cestas_total, Ajustes.VERSAO]
 
 
 func _mover_cursor(direto := false) -> void:
 	var it: Dictionary = _itens[_sel]
-	var alvo := Vector2(66, it["y"] - 2)
-	_cursor.rect_size = Vector2(948, 62)
+	var alvo := Vector2(66, it["y"] - 1)
+	_cursor.rect_size = Vector2(948, 60)
 	if direto:
 		_cursor.rect_position = alvo
 	else:
@@ -206,14 +215,12 @@ func _executar() -> void:
 	var id: String = _itens[_sel]["id"]
 	Sons.tocar("cursor", -6.0)
 	match id:
-		"tempo_m60":
-			c["tempo"] = int(clamp(int(c["tempo"]) - 60, Ajustes.TEMPO_MIN, Ajustes.TEMPO_MAX))
-		"tempo_m10":
-			c["tempo"] = int(clamp(int(c["tempo"]) - 10, Ajustes.TEMPO_MIN, Ajustes.TEMPO_MAX))
-		"tempo_p10":
-			c["tempo"] = int(clamp(int(c["tempo"]) + 10, Ajustes.TEMPO_MIN, Ajustes.TEMPO_MAX))
-		"tempo_p60":
-			c["tempo"] = int(clamp(int(c["tempo"]) + 60, Ajustes.TEMPO_MIN, Ajustes.TEMPO_MAX))
+		"tempo_1", "tempo_2", "tempo_3":
+			var i := int(id.right(6)) - 1
+			c["tempo"][i] = int(_proximo(Ajustes.TEMPOS_FASE[i], float(c["tempo"][i])))
+		"meta_1", "meta_2":
+			var i := int(id.right(5)) - 1
+			c["meta"][i] = int(_proximo(Ajustes.METAS_FASE[i], float(c["meta"][i])))
 		"modo":
 			c["modo"] = not c["modo"]
 		"arcade":
@@ -230,7 +237,9 @@ func _executar() -> void:
 			c["efeitos"] = _proximo(VOLUMES, float(c["efeitos"]))
 			Sons.tocar("combo_3", linear2db(max(0.01, c["efeitos"])) - linear2db(max(0.01, Ajustes.vol_efeitos)))
 		"giro":
-			c["giro"] = int(c["giro"]) + 1 if int(c["giro"]) < 1 else -1
+			# automático -> topo à esquerda -> topo à direita -> sem giro
+			var ordem := [Tela.AUTO, 1, -1, 0]
+			c["giro"] = ordem[(ordem.find(int(c["giro"])) + 1) % ordem.size()]
 		"qualidade":
 			c["qualidade"] = (int(c["qualidade"]) + 1) % Ajustes.QUALIDADES.size()
 		"apresentacao":
@@ -302,8 +311,9 @@ func _testar_leds() -> void:
 
 
 func _salvar() -> void:
-	var giro_mudou := int(c["giro"]) != Tela.giro
-	Ajustes.tempo_turno = int(c["tempo"])
+	var giro_mudou := int(c["giro"]) != Tela.giro_pedido()
+	Ajustes.tempo_fase = c["tempo"].duplicate()
+	Ajustes.meta_fase = c["meta"].duplicate()
 	Ajustes.modo_credito = bool(c["modo"])
 	Ajustes.modo_arcade = bool(c["arcade"])
 	Ajustes.bola_de_ouro = bool(c["ouro"])

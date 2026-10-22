@@ -32,7 +32,7 @@ Arduino="*res://autoload/Arduino.gd"
 window/size/width=1080
 window/size/height=1920
 window/size/fullscreen=true
-window/handheld/orientation="sensor_landscape"
+window/handheld/orientation="sensor"
 
 [gui]
 

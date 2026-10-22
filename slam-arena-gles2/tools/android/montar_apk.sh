@@ -68,16 +68,8 @@ b = re.sub(r'(?m)^(plugins/[A-Za-z0-9_]+)=.*$', r'\1=false', b)
 if os.environ['NOME_VERSAO']:
     b = re.sub(r'(?m)^version/name=.*$', 'version/name="%s"' % os.environ['NOME_VERSAO'], b)
 open(p, 'w', encoding='utf-8').write(s[:i] + b + s[j:])
-# imagem de abertura já girada como a tela do jogo (slam/tela/giro), como
-# no GERAR_APK.bat
-p = 'project.godot'
-s = open(p, encoding='utf-8').read()
-m = re.search(r'(?m)^tela/giro=(-?\d+)', s)
-giro = {'1': '1', '-1': 'm1', '0': '0'}.get(m.group(1) if m else '1', '1')
-if os.path.exists('imagens/splash_giro_%s.png' % giro):
-    s, n = re.subn(r'(?m)^boot_splash/image=.*$', 'boot_splash/image="res://imagens/splash_giro_%s.png"' % giro, s)
-    assert n == 1, 'boot_splash/image'
-    open(p, 'w', encoding='utf-8').write(s)
+# (a imagem de abertura é o emblema redondo, imagens/splash.png: serve
+# para a TV Box em pé ou deitada, sem girar nada)
 print('preparado (versão: %s)' % (os.environ['NOME_VERSAO'] or 'a do preset'))
 PY
 grep -n "^version/name\|^package/signed\|^custom_build/use_custom_build" "$TRAB/projeto/export_presets.cfg" | head -3

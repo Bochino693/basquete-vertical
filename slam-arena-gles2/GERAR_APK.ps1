@@ -832,10 +832,6 @@ function Preparar-Copia {
     $proj = Join-Path $script:Copia "project.godot"
     $c = [IO.File]::ReadAllText($proj)
     $c = [Regex]::Replace($c, '(?m)^tela/giro=[^\r\n]*', "tela/giro=$Giro")
-    if ($Giro -eq 1) { $s = "1" } elseif ($Giro -eq -1) { $s = "m1" } else { $s = "0" }
-    if (Test-Path -LiteralPath (Join-Path $script:Copia "imagens\splash_giro_$s.png")) {
-        $c = [Regex]::Replace($c, '(?m)^boot_splash/image=[^\r\n]*', ('boot_splash/image="res://imagens/splash_giro_' + $s + '.png"'))
-    }
     [IO.File]::WriteAllText($proj, $c, $utf8)
     Ok "versao $($script:NomeVersao), giro $Giro"
 }

@@ -1,0 +1,23 @@
+[remap]
+
+importer="wav"
+type="AudioStreamSample"
+path="res://.import/vaia.wav-69f5f744e63833536f738f6465d451a0.sample"
+
+[deps]
+
+source_file="res://sons/vaia.wav"
+dest_files=[ "res://.import/vaia.wav-69f5f744e63833536f738f6465d451a0.sample" ]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=0
