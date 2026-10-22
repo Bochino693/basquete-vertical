@@ -52,7 +52,6 @@ $UrlAssinador = "https://github.com/patrickfav/uber-apk-signer/releases/download
 $ShaAssinador = "e1299fd6fcf4da527dd53735b56127e8ea922a321128123b9c32d619bba1d835"
 $NomePreset = "Android TV Box"
 $Pacote = "com.lazersport.slamarena.gles2"
-$NomeApk = "SlamArena_GLES2.apk"
 # Mensagens que NAO sao problema: nao aparecem na tela (continuam nos logs).
 # - Godot, na 1a importacao: antes de criar cada som ele procura as
 #   dependencias do arquivo importado, que ainda nao existe ("Cannot open
@@ -1019,7 +1018,8 @@ function Principal {
     Titulo "Entregando o APK"
     $pastaApk = Pasta (Join-Path $Projeto "APK-Pronto")
     Get-ChildItem -LiteralPath $pastaApk -Force | Remove-Item -Recurse -Force
-    $final = Join-Path $pastaApk $NomeApk
+    # o nome diz a versao (ex.: SlamArena-1.3-gles2.apk)
+    $final = Join-Path $pastaApk ("SlamArena-{0}.apk" -f ($script:NomeVersao -replace '[^A-Za-z0-9._-]', '_'))
     Copy-Item -LiteralPath $assinado -Destination $final -Force
     $tamanho = (Get-Item -LiteralPath $final).Length
     $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $final).Hash

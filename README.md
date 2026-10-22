@@ -14,7 +14,7 @@ abertura abre; setas escolhem e mudam, OK confirma, VOLTAR salva e sai.
 ## Gerar o APK (Windows)
 1. **Code → Download ZIP** e extraia o ZIP inteiro.
 2. Dois cliques em **`GERAR_APK.bat`** (na pasta com o `project.godot`).
-3. O APK sai em `APK-Pronto\SlamArena_GLES2.apk` — instale na TV Box pelo pendrive.
+3. O APK sai em `APK-Pronto\SlamArena-<versão>.apk` (a pasta abre sozinha no fim) — instale na TV Box pelo pendrive.
 
 Se der erro, envie `build\android\GERACAO-COMPLETA.log`.
 

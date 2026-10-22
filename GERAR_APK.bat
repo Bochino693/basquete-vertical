@@ -28,8 +28,10 @@ echo ============================================================
 goto fim
 :sucesso
 echo ============================================================
-echo  PRONTO: APK-Pronto\SlamArena_GLES2.apk
+echo  PRONTO: o APK esta na pasta APK-Pronto (o nome tem a versao):
+dir /b "%~dp0APK-Pronto\*.apk"
 echo ============================================================
+start "" "%~dp0APK-Pronto"
 :fim
 echo.
 pause

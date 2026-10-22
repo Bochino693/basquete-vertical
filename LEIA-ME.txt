@@ -14,7 +14,8 @@ GERAR O APK (WINDOWS), PASSO A PASSO
      project.godot.
   3. Dois cliques no GERAR_APK.bat. A 1a vez baixa o que faltar (5 a 20
      min); depois, 2 a 4 min.
-  4. O APK sai em APK-Pronto\SlamArena_GLES2.apk: copie para o pendrive e
+  4. O APK sai em APK-Pronto\SlamArena-<versao>.apk (a pasta abre sozinha
+     no fim; ex.: SlamArena-1.3-gles2.apk): copie para o pendrive e
      instale na TV Box (ele instala por cima da versao anterior).
   Se der erro, envie o arquivo build\android\GERACAO-COMPLETA.log.
   Onde ligar cada fio na maquina: docs\diagrama_montagem.png.
@@ -262,7 +263,7 @@ APK PARA A TV BOX
   (oficial + android\modelo_android\extras.zip: o plugin do Arduino, o
   filtro USB e o banner da TV), exporta, assina e confere.
   1a vez: 5 a 20 min (downloads). Depois: 2 a 4 min.
-  Sai em APK-Pronto\SlamArena_GLES2.apk.
+  Sai em APK-Pronto\SlamArena-<versao>.apk.
   Opcoes (Prompt de Comando, nesta pasta):
      GERAR_APK.bat -Giro -1          tela deitada: topo do jogo na DIREITA
                                      (o padrao, 1, e topo na esquerda; com a
