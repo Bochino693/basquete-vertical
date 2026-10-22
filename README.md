@@ -11,6 +11,8 @@ cesta na placa Zero Delay e LEDs no Arduino.
 > que multiplica os pontos, bola de ouro, SLAM MODE, bônus de sequência, recorde da
 > arena, ranking do dia, tela de resultado, modo crédito e o mesmo Arduino de LEDs.
 > Para gerar o APK no Windows: dois cliques em `slam-arena-gles2/GERAR_APK.bat`.
+> Onde ligar cada fio (Zero Delay, TV Box, monitor, moedeiro, LEDs):
+> [`slam-arena-gles2/docs/diagrama_montagem.png`](slam-arena-gles2/docs/diagrama_montagem.png).
 > Tudo sobre o jogo, a TV Box e o APK: [`slam-arena-gles2/LEIA-ME.txt`](slam-arena-gles2/LEIA-ME.txt).
 
 A versão original (Godot 4.6, renderizador Compatibility / OpenGL ES 3) continua na

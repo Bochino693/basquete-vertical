@@ -22,6 +22,9 @@ extends "res://scripts/tela_base.gd"
 ##     douradas até o fim da partida, LED "RECORD").
 ##   * Últimos 10 segundos de cada fase: anel vermelho piscando, tique a
 ##     cada segundo, coração nos 5 finais.
+##   * TORCIDA: muito tempo sem cesta = "uuuh"; não passou da fase 1 =
+##     VAIA (e no resultado nada de aplauso nem confete); campeão ou
+##     recorde = APLAUSOS, confete e coroa.
 ##   * Fim: resultado (resultado.gd); a cesta joga de novo.
 ## Tudo o que aparece já existe (montado na preparação): na partida só se
 ## mexe em parâmetros, posições e transparência.
@@ -84,6 +87,7 @@ var _onda_proxima := 0
 var _faisca_proxima := 0
 var _flutua_proximo := 0
 var _alerta := false
+var _uuuh_feito := false        # o "uuuh" da torcida já tocou nesta seca
 
 # nós
 var _mundo: Node2D
@@ -730,6 +734,7 @@ func _comecar_tempo() -> void:
 	_tempo = _total
 	_decorrido = 0.0
 	_ultima_cesta = -100.0
+	_uuuh_feito = false
 	_combo = 0
 	_mult = _mult_base()
 	_segundo_mostrado = -1
@@ -766,6 +771,7 @@ func _cesta() -> void:
 		return
 	var intervalo := _decorrido - _ultima_cesta
 	_ultima_cesta = _decorrido
+	_uuuh_feito = false
 	_combo = _combo + 1 if intervalo <= Ajustes.janela_combo else 1
 	maior_combo = int(max(maior_combo, _combo))
 	combo_fase[fase] = int(max(combo_fase[fase], _combo))
@@ -1180,6 +1186,8 @@ func _fim_da_fase() -> void:
 	if not passou[fase]:
 		# NÃO PASSOU: a arena apaga e é o fim
 		Sons.tocar("fim_jogo")
+		# a torcida: vaia de verdade na fase 1, "uuuh" na fase 2
+		Sons.tocar("vaia" if fase == 0 else "vaia_curta", -1.0)
 		_avisar("NÃO PASSOU!  FALTARAM %d" % (_alvo - pontos), Arte.VERMELHO_ALERTA, 2.0, 9)
 		_atualizar_card(fase)
 		var ta := create_tween()
@@ -1228,12 +1236,24 @@ func _mostrar_resultado(campeao: bool) -> void:
 	_atualizar_card(fase)
 	var posicao := Ajustes.registrar_resultado(pontos, cestas, fase + 1)
 	var recorde := pontos > _recorde_antigo and pontos > 0 and pontos >= Ajustes.recorde
-	Sons.musica("podio")
-	Arduino.led("RECORD" if recorde else "OFF")
+	# o clima do fim: VAIA (não passou da fase 1 ou nenhum ponto: nada de
+	# aplauso nem confete), FESTA (campeão ou recorde de quem passou da 1)
+	# ou NEUTRO (passou da 1 e parou na 2: sem vaia e sem festa)
+	var clima := "neutro"
+	if fase == 0 or pontos == 0:
+		clima = "vaia"
+		recorde = false
+	elif campeao or recorde:
+		clima = "festa"
+	if clima == "festa":
+		Sons.musica("podio")
+	else:
+		Sons.parar_musica(0.8)
+	Arduino.led("RECORD" if clima == "festa" else "OFF")
 	_atualizar_lista_top()
 	_resultado.mostrar({"pontos": pontos, "cestas": cestas, "maior_combo": maior_combo, "fase": fase,
 		"campeao": campeao, "passou": passou, "pontos_fase": pontos_fase, "cestas_fase": cestas_fase,
-		"combo_fase": combo_fase, "recorde": recorde, "posicao": posicao})
+		"combo_fase": combo_fase, "recorde": recorde, "posicao": posicao, "clima": clima})
 
 
 func _resultado_acabou(acao: String) -> void:
@@ -1388,8 +1408,13 @@ func _jogando(delta: float) -> void:
 			_mult_barra.rect_scale.x = resta
 	else:
 		_mult_barra.rect_scale.x = 0.0
+	# muito tempo sem cesta: a torcida faz "uuuh" (uma vez por seca)
+	var seca := _decorrido - max(_ultima_cesta, 0.0)
+	if seca > 7.0 and not _uuuh_feito and _tempo > 3.0:
+		_uuuh_feito = true
+		Sons.tocar("vaia_curta", -5.0)
 	# dica quando ninguém acerta
-	if _decorrido - max(_ultima_cesta, 0.0) > 6.0 and int(_t * 2.0) % 2 == 0:
+	if seca > 6.0 and int(_t * 2.0) % 2 == 0:
 		if _sub_fase.text != "ARREMESSE!":
 			_sub_fase.text = "ARREMESSE!"
 	elif _sub_fase.text == "ARREMESSE!":

@@ -127,20 +127,11 @@ def icones():
 
 
 def aberturas():
-    """Imagem de abertura (antes do jogo carregar), ja girada como a tela."""
-    ui = os.path.join(P, "imagens")
-    alvo = Image.new("RGB", (1080, 1920), (6, 4, 12))
-    em = logo_quadrado(760)
-    alvo.paste(em, (160, 520))
-    d = ImageDraw.Draw(alvo)
-    d.rounded_rectangle((300, 1380, 780, 1392), 6, fill=(60, 30, 10))
-    alvo = alvo.resize((540, 960), Image.LANCZOS)
-    alvo.save(os.path.join(ui, "splash_giro_0.png"))
-    alvo.rotate(90, expand=True).save(os.path.join(ui, "splash_giro_1.png"))
-    alvo.rotate(-90, expand=True).save(os.path.join(ui, "splash_giro_m1.png"))
-    # a do projeto (PC: sem giro)
-    shutil.copy(os.path.join(ui, "splash_giro_0.png"), os.path.join(ui, "splash.png"))
-    print("ok: aberturas")
+    """A imagem de abertura (imagens/splash.png) agora e o EMBLEMA do proprio
+    jogo, gravado pelo Godot (a capa e a apresentacao comecam nele: nenhuma
+    tela preta ao abrir):
+        godot --path . res://tools/testes/gravar_splash.tscn"""
+    print("ok: aberturas (imagens/splash.png: rode tools/testes/gravar_splash.tscn)")
 
 
 SONS = {

@@ -18,7 +18,8 @@ const MUSICAS := {
 const EFEITOS := ["cesta", "selecao", "cursor", "apito", "fim_turno",
 	# feitos à mão (tools/gerar_sons.py)
 	"bip", "bip_vai", "tique", "batida", "moeda", "ouro", "recorde", "quebra",
-	"sobe", "vento", "trovao", "impacto", "neon", "swish", "passou", "fase", "fim_jogo"]
+	"sobe", "vento", "trovao", "impacto", "neon", "swish", "passou", "fase", "fim_jogo",
+	"vaia", "vaia_curta", "aplausos"]
 const TOCADORES := 10
 
 var _efeitos := {}

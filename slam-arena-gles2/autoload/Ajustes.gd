@@ -12,7 +12,7 @@ extends Node
 
 signal mudou
 
-const VERSAO := "1.1-gles2"
+const VERSAO := "1.2-gles2"
 
 const ARQ_AJUSTES := "user://slam_ajustes.cfg"
 const ARQ_RECORDES := "user://slam_recordes.cfg"
@@ -39,7 +39,7 @@ var trava_sensor := 0.7            # tempo mínimo entre duas cestas (s)
 var janela_combo := 4.0            # tempo máximo entre cestas para manter o combo (s)
 var vol_musica := 0.8
 var vol_efeitos := 1.0
-var giro := 99                     # 99 = o padrão do aparelho; -1 / 0 / 1
+var giro := 99                     # 99 = automático (Tela.AUTO); -1 / 0 / 1
 var qualidade := 0                 # índice de QUALIDADES
 var escala_auto := 1.0             # o que a qualidade automática escolheu
 var mostrar_fps := false

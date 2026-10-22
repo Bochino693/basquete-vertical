@@ -13,9 +13,15 @@ pelo proprio jogo, em codigo.
 
 O JOGO
 ------
-  * APRESENTACAO (abre o jogo e volta a cada 4 ciclos de espera): o
-    letreiro LAZER & SPORT GAMES acende como neon, a quadra de neon se
-    desenha no escuro, a bola cai e quica (cada quique: onda de luz e a
+  * ABRE SEM TELA PRETA: a imagem de abertura do app (a que o Android
+    mostra no instante do toque no icone) e o EMBLEMA - a bola com brilho
+    e um anel -, que vira a capa da preparacao (o anel enche) e o primeiro
+    quadro da apresentacao. Redondo de proposito: fica certo com a TV Box
+    em pe ou deitada.
+  * APRESENTACAO (abre o jogo e volta a cada 4 ciclos de espera): o anel
+    do emblema explode e o LOGO DA LAZER & SPORT salta no lugar, com um
+    reflexo dourado; GAMES bate letra por letra e APRESENTA; a quadra de
+    neon se desenha no escuro, a bola cai e quica (cada quique: onda de luz e a
     grade inteira treme), a cesta se desenha, a bola voa girando e passa
     pela rede (a rede balanca), dois raios caem na cesta e o poster SLAM
     ARENA entra com impacto. Uma CESTA ja comeca a partida; START pula
@@ -63,12 +69,17 @@ O JOGO
     (depois "BOOST" a cada cesta). Fica gravado na hora.
   * ULTIMOS 10 SEGUNDOS: cronometro vermelho piscando, a arena puxa para o
     vermelho, tique a cada segundo e coracao nos 5 finais.
-  * Sem cesta por 6 s: "ARREMESSE!".
+  * Sem cesta por 6 s: "ARREMESSE!"; com 7 s, a torcida faz "uuuh".
+  * TORCIDA: nao passou da FASE 1 (ou nenhum ponto) = VAIA, e no
+    resultado nada de aplauso, coroa nem confete (painel vermelho, "TENTE
+    DE NOVO!"); parou na FASE 2 = "uuuh" e resultado sem festa; CAMPEAO
+    (fez a final) ou NOVO RECORDE = APLAUSOS, coroa, confete e a musica de
+    vitoria.
   * RESULTADO: FIM DE JOGO / CAMPEAO DA ARENA! / NOVO RECORDE!, o placar
     total contando no display de LED, uma coluna por fase subindo com os
     pontos de cada uma (PASSOU / NAO PASSOU / NAO JOGOU), cestas, maior
-    combo, a posicao no ranking de hoje, coroa e confete no recorde ou no
-    campeao. ACERTE A CESTA PARA JOGAR DE NOVO (a cesta so vale depois de
+    combo, a posicao no ranking de hoje (festa so para quem foi bem: veja
+    TORCIDA). ACERTE A CESTA PARA JOGAR DE NOVO (a cesta so vale depois de
     2,5 s: a bola que ainda caia no fim do tempo nao reinicia sem querer;
     START tambem). Sem nada, volta para a abertura em 14 s.
   * Cronometro, placar e recorde em DISPLAY DE 7 SEGMENTOS desenhado a mao
@@ -92,8 +103,9 @@ LISO NA TX9 (MALI-400/450) - O QUE FOI FEITO
     nao tem); o tempo das animacoes por pixel vem calculado do vertice.
   * DISPLAY DE 7 SEGMENTOS: cada numero de cada tamanho e uma malha pronta
     (guardada); trocar o numero so troca a malha.
-  * PREPARACAO POR TRAS DA CAPA: ao abrir, uma capa igual a imagem de
-    abertura da TV Box (com barrinha) cobre o jogo enquanto TODAS as telas
+  * PREPARACAO POR TRAS DA CAPA: ao abrir, a capa (o emblema, igual a
+    imagem de abertura do app, com o anel enchendo) cobre o jogo enquanto
+    TODAS as telas
     sao montadas e desenhadas uma vez (shaders prontos na placa) e cada
     fonte desenha todas as letras (as gigantes, so os numeros e "VAI!").
     Depois disso nenhuma tela carrega nada do disco: trocar de tela e so
@@ -121,7 +133,8 @@ BOTOES (PLACA ZERO DELAY)
   Para JOGAR nao precisa de botao nenhum: a cesta comeca, pula o mapa da
   fase e joga de novo no resultado.
 
-  ONDE LIGAR (cada borne da Zero Delay tem 2 fios: o do sinal e o GND):
+  ONDE LIGAR (o desenho completo: docs/diagrama_montagem.png; cada borne
+  da Zero Delay tem 2 fios: o do sinal e o GND):
     SENSOR DA CESTA ... QUADRADO  (botao 2)  cada sinal = uma cesta
     START ............. START/STR (botao 6 ou 11: e o mesmo, a TV Box
                         numera de um jeito ou de outro)
@@ -168,8 +181,13 @@ CONFIGURACAO DO OPERADOR
     mesmo do Swish Arena)
   - JANELA DO COMBO: tempo maximo entre cestas para o combo continuar
   - VOLUME da musica e dos efeitos
-  - GIRO DA TELA: topo a esquerda / a direita / sem giro (monitor em pe no
-    HDMI deitado; sem giro, numa TV deitada, o jogo fica no meio)
+  - GIRO DA TELA: AUTOMATICO (padrao) / topo a esquerda / topo a direita /
+    sem giro. No AUTOMATICO, se a TV Box ja entrega a tela em pe (Android
+    girado nas configuracoes da TV Box, como o jogo antigo usava) o jogo
+    nao gira nada; se entrega deitada (monitor em pe no HDMI deitado), o
+    jogo gira 90 graus (topo a esquerda; se ficar de cabeca para baixo,
+    escolha TOPO A DIREITA). Em qualquer caso a imagem vai ate as bordas:
+    TELA CHEIA, sem faixas pretas (16:9, 16:10, 4:3, 5:4).
   - QUALIDADE DA IMAGEM: automatica, 1080, 900, 720
   - APRESENTACAO NA ESPERA, MOSTRAR DESEMPENHO
   - LEDS: ligados/desligados, porta COM (so no PC Windows), TESTAR LEDS
@@ -214,8 +232,9 @@ APK PARA A TV BOX
   1a vez: 5 a 20 min (downloads). Depois: 2 a 4 min.
   Sai em APK-Pronto\SlamArena_GLES2.apk.
   Opcoes (Prompt de Comando, nesta pasta):
-     GERAR_APK.bat -Giro -1          topo do jogo na DIREITA do HDMI
-     GERAR_APK.bat -Giro 0           TV deitada, sem giro
+     GERAR_APK.bat -Giro -1          tela deitada: topo do jogo na DIREITA
+                                     (o padrao, 1, e topo na esquerda; com a
+                                     tela ja em pe o jogo nao gira nada)
      GERAR_APK.bat -Instalar         ja instala na TV Box pelo adb
      GERAR_APK.bat -Versao 1.1-gles2 muda o nome da versao
   (O giro tambem muda no menu do operador, sem gerar outro APK.)
@@ -266,7 +285,11 @@ PASTAS
   android/    plugins/ (StrikeSerial: o Arduino no USB, o mesmo do Strike
               Kids) e modelo_android/extras.zip
   arduino/    firmware opcional dos LEDs
+  docs/       diagrama_montagem.png (ONDE LIGAR CADA FIO: Zero Delay, TV
+              Box, monitor, moedeiro, Arduino e LEDs) e o .html dele
   tools/      preparar_arte.py (fundo, poster, icones, aberturas, sons a
               partir das pastas images/ e songs/ do jogo antigo),
               gerar_sons.py, gerar_texturas.py, android/ (APK no Linux),
-              testes/ (conferir_scripts, roteiro, medir_funcoes)
+              diagrama/ (o diagrama de montagem), testes/ (conferir_scripts,
+              roteiro, medir_funcoes, foto_rapida, gravar_splash - a
+              imagem de abertura)

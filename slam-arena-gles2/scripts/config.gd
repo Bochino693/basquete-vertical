@@ -110,7 +110,7 @@ func entrar(dados := {}) -> void:
 	c = {
 		"tempo": Ajustes.tempo_fase.duplicate(), "meta": Ajustes.meta_fase.duplicate(), "modo": Ajustes.modo_credito, "arcade": Ajustes.modo_arcade,
 		"ouro": Ajustes.bola_de_ouro, "trava": Ajustes.trava_sensor, "janela": Ajustes.janela_combo,
-		"musica": Ajustes.vol_musica, "efeitos": Ajustes.vol_efeitos, "giro": Tela.giro,
+		"musica": Ajustes.vol_musica, "efeitos": Ajustes.vol_efeitos, "giro": Tela.giro_pedido(),
 		"qualidade": Ajustes.qualidade, "apresentacao": Ajustes.apresentacao, "fps": Ajustes.mostrar_fps,
 		"leds": Ajustes.leds, "porta": Ajustes.porta_com,
 	}
@@ -160,7 +160,11 @@ func _atualizar() -> void:
 			"efeitos":
 				v = "%d%%" % int(round(float(c["efeitos"]) * 100))
 			"giro":
-				v = ["TOPO À DIREITA", "SEM GIRO", "TOPO À ESQUERDA"][int(c["giro"]) + 1]
+				var nomes := ["TOPO À DIREITA", "SEM GIRO", "TOPO À ESQUERDA"]
+				if int(c["giro"]) == Tela.AUTO:
+					v = "AUTOMÁTICO (%s)" % nomes[Tela.giro + 1]
+				else:
+					v = nomes[int(c["giro"]) + 1]
 			"qualidade":
 				v = Ajustes.QUALIDADES[int(c["qualidade"])]
 				if int(c["qualidade"]) == 0:
@@ -233,7 +237,9 @@ func _executar() -> void:
 			c["efeitos"] = _proximo(VOLUMES, float(c["efeitos"]))
 			Sons.tocar("combo_3", linear2db(max(0.01, c["efeitos"])) - linear2db(max(0.01, Ajustes.vol_efeitos)))
 		"giro":
-			c["giro"] = int(c["giro"]) + 1 if int(c["giro"]) < 1 else -1
+			# automático -> topo à esquerda -> topo à direita -> sem giro
+			var ordem := [Tela.AUTO, 1, -1, 0]
+			c["giro"] = ordem[(ordem.find(int(c["giro"])) + 1) % ordem.size()]
 		"qualidade":
 			c["qualidade"] = (int(c["qualidade"]) + 1) % Ajustes.QUALIDADES.size()
 		"apresentacao":
@@ -305,7 +311,7 @@ func _testar_leds() -> void:
 
 
 func _salvar() -> void:
-	var giro_mudou := int(c["giro"]) != Tela.giro
+	var giro_mudou := int(c["giro"]) != Tela.giro_pedido()
 	Ajustes.tempo_fase = c["tempo"].duplicate()
 	Ajustes.meta_fase = c["meta"].duplicate()
 	Ajustes.modo_credito = bool(c["modo"])

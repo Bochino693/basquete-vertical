@@ -2,8 +2,10 @@ extends Control
 
 ## RESULTADO DA PARTIDA (1 jogador, 3 fases): o placar total contando no
 ## display de LED, uma coluna por fase subindo com os pontos de cada uma
-## (PASSOU / NÃO PASSOU), cestas, maior combo, a posição no ranking do dia,
-## a coroa caindo e confete no recorde ou no campeão. Uma CESTA (depois de
+## (PASSOU / NÃO PASSOU), cestas, maior combo, a posição no ranking do dia.
+## O CLIMA muda tudo: FESTA (campeão ou recorde) = aplausos, coroa e
+## confete; VAIA (não passou da fase 1, nenhum ponto) = nada de aplauso nem
+## confete, painel vermelho e "TENTE DE NOVO!"; NEUTRO = sem festa. Uma CESTA (depois de
 ## 2,5 s: a bola que ainda caía no fim do tempo não conta) ou START joga de
 ## novo; sem nada, volta para a abertura sozinho.
 
@@ -178,12 +180,15 @@ func mostrar(d: Dictionary) -> void:
 	var recorde: bool = d.get("recorde", false)
 	var campeao: bool = d.get("campeao", false)
 	var fase: int = int(d.get("fase", 0))
-	var cor: Color = Arte.OURO if recorde or campeao else Arte.LARANJA
+	var clima: String = d.get("clima", "festa" if recorde or campeao else "neutro")
+	var cor: Color = Arte.OURO if clima == "festa" else (Arte.VERMELHO_ALERTA if clima == "vaia" else Arte.LARANJA)
 	_painel.add_stylebox_override("panel", Arte.estilo_neon(cor, 0.90, 44, 3, 30))
 	_titulo.text = "NOVO RECORDE!" if recorde else ("CAMPEÃO DA ARENA!" if campeao else "FIM DE JOGO")
 	Arte.pintar(_titulo, Color(1, 1, 1), cor)
 	if campeao:
 		_sub.text = "VOCÊ VENCEU AS 3 FASES!"
+	elif int(d.get("pontos", 0)) == 0:
+		_sub.text = "NENHUMA CESTA..."
 	elif fase == 0:
 		_sub.text = "NÃO PASSOU DA FASE 1"
 	else:
@@ -295,7 +300,10 @@ func mostrar(d: Dictionary) -> void:
 	if tk != _token:
 		return
 	var posicao := int(d.get("posicao", 0))
-	if recorde:
+	if clima == "vaia":
+		_rank.text = "TENTE DE NOVO!"
+		_rank.add_color_override("font_color", Color(1.0, 0.55, 0.45))
+	elif recorde:
 		_rank.text = "VOCÊ É O NOVO RECORDE DA ARENA!"
 		_rank.add_color_override("font_color", Arte.OURO)
 	elif posicao > 0:
@@ -308,14 +316,15 @@ func mostrar(d: Dictionary) -> void:
 	_rank.rect_scale = Vector2(0.5, 0.5)
 	var tr := create_tween()
 	tr.tween_property(_rank, "rect_scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	if recorde or campeao:
+	if clima == "festa":
+		Sons.tocar("aplausos", -1.0)
 		_coroa.visible = true
 		_coroa.position = Vector2(540, -100)
 		_coroa.scale = Vector2(1.1, 1.1)
 		var tcr := create_tween()
 		tcr.tween_property(_coroa, "position:y", 112.0, 0.6).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 		Sons.tocar("recorde", -2.0)
-	if recorde or campeao or posicao > 0:
+	if clima == "festa":
 		_confete.restart()
 		_confete.emitting = true
 	var seg := VOLTA_SEGUNDOS

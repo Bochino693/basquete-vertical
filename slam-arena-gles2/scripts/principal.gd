@@ -3,11 +3,14 @@ extends Node
 ## O SLAM ARENA: monta todas as telas UMA vez, por trás de uma capa, e
 ## troca entre elas (nada é carregado do disco depois da preparação).
 ##
-## PREPARAÇÃO (a "capa", igual à imagem de abertura da TV Box, com uma
-## barrinha): cada tela é montada e desenhada pelo menos uma vez escondida
+## PREPARAÇÃO (a "capa": o EMBLEMA - a bola com brilho - igual à imagem de
+## abertura do app, com o anel enchendo): cada tela é montada e desenhada
+## pelo menos uma vez escondida
 ## (os shaders são preparados na placa, as letras de cada fonte entram no
-## cache); só então a apresentação começa. Na Mali-450 preparar um shader
-## ou uma letra grande no meio do jogo é um tranco visível - aqui não tem.
+## cache); só então a apresentação começa - e o primeiro quadro dela é a
+## própria capa: do toque no ícone até o jogo, nenhuma tela preta. Na
+## Mali-450 preparar um shader ou uma letra grande no meio do jogo é um
+## tranco visível - aqui não tem.
 
 const TELAS := {
 	"apresentacao": "res://scripts/apresentacao.gd",
@@ -24,7 +27,7 @@ var _trocando := false
 var _camada_topo: CanvasLayer
 var _escuro: ColorRect
 var _capa: Control
-var _capa_barra: ColorRect
+var _emblema: Node2D
 var _fps: Label
 var _aviso: Label
 var _fps_t := 0.0
@@ -74,21 +77,14 @@ func _montar_topo() -> void:
 	fundo.color = Color(0.024, 0.016, 0.047)
 	fundo.rect_size = Vector2(1080, 1920)
 	_capa.add_child(fundo)
-	var logo := TextureRect.new()
-	logo.texture = load("res://imagens/splash_giro_0.png")
-	logo.expand = true
-	logo.stretch_mode = TextureRect.STRETCH_SCALE
-	logo.rect_size = Vector2(1080, 1920)
-	_capa.add_child(logo)
-	_capa_barra = ColorRect.new()
-	_capa_barra.color = Arte.LARANJA
-	_capa_barra.rect_position = Vector2(300, 1380)
-	_capa_barra.rect_size = Vector2(0, 12)
-	_capa.add_child(_capa_barra)
+	_emblema = load("res://scripts/fx/emblema.gd").new()
+	_emblema.position = Vector2(540, 960)
+	_emblema.bola.velocidade = 2.5
+	_capa.add_child(_emblema)
 
 
 func _capa_progresso(f: float) -> void:
-	_capa_barra.rect_size.x = 480.0 * clamp(f, 0.0, 1.0)
+	_emblema.progresso = f
 
 
 # ---------------------------------------------------------------- preparação
@@ -143,10 +139,17 @@ func _preparar() -> void:
 		if a.begins_with("--tela="):
 			primeira = a.substr(7)
 	atual = telas[primeira]
-	atual.entrar({"primeira_vez": true})
-	var tw := create_tween()
-	tw.tween_property(_capa, "modulate:a", 0.0, 0.45)
-	yield(tw, "finished")
+	if primeira == "apresentacao":
+		# o primeiro quadro da apresentação é a própria capa (o emblema com o
+		# anel cheio e a bola na mesma volta): troca seca, sem nada piscar
+		atual.entrar({"primeira_vez": true, "giro_bola": _emblema.bola.get("_giro")})
+		yield(get_tree(), "idle_frame")
+		yield(get_tree(), "idle_frame")
+	else:
+		atual.entrar({"primeira_vez": true})
+		var tw := create_tween()
+		tw.tween_property(_capa, "modulate:a", 0.0, 0.45)
+		yield(tw, "finished")
 	_capa.queue_free()
 	_capa = null
 

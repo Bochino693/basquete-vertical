@@ -82,97 +82,95 @@ func _tela(nome: String) -> Node:
 
 
 func _rodar() -> void:
-	# preparação
+	# preparação: a capa (o emblema, igual à imagem de abertura do app)
+	for i in 3:
+		yield(get_tree(), "idle_frame")
+	yield(_foto("00_capa"), "completed")
 	while principal.atual == null:
 		yield(get_tree(), "idle_frame")
 	_medindo = true
 	var ap = _tela("apresentacao")
-	yield(_esperar(0.9), "completed")
-	yield(_foto("01_apresentacao_letreiro"), "completed")
-	yield(_esperar(2.2), "completed")
-	yield(_foto("02_apresentacao_quadra"), "completed")
-	yield(_esperar(1.3), "completed")
-	yield(_foto("03_apresentacao_bola"), "completed")
-	yield(_esperar(2.05), "completed")
-	yield(_foto("04_apresentacao_cesta"), "completed")
-	yield(_esperar(0.75), "completed")
-	yield(_foto("05_apresentacao_raio"), "completed")
-	yield(_esperar(0.5), "completed")
-	yield(_foto("06_apresentacao_poster"), "completed")
+	var t0 := OS.get_ticks_msec()
+	for p in [[0.12, "01_apresentacao_emblema"], [0.75, "02_apresentacao_logo"], [1.55, "03_apresentacao_games"],
+			[2.6, "04_apresentacao_lazer_sport"], [4.3, "05_apresentacao_quadra"], [5.5, "06_apresentacao_bola"],
+			[7.55, "07_apresentacao_cesta"], [8.3, "08_apresentacao_raio"], [8.85, "09_apresentacao_poster"]]:
+		while OS.get_ticks_msec() - t0 < int(p[0] * 1000.0):
+			yield(get_tree(), "idle_frame")
+		yield(_foto(p[1]), "completed")
 	while principal.atual != _tela("abertura"):
 		yield(get_tree(), "idle_frame")
 	var ab = _tela("abertura")
 	yield(_esperar(1.5), "completed")
-	yield(_foto("07_abertura"), "completed")
+	yield(_foto("10_abertura"), "completed")
 	ab._mostrar_painel(ab._como)
 	yield(_esperar(1.0), "completed")
-	yield(_foto("08_como_jogar"), "completed")
+	yield(_foto("11_como_jogar"), "completed")
 	ab._esconder_painel()
 	yield(_esperar(0.5), "completed")
 	Ajustes.ranking_dia = [{"pontos": 42, "cestas": 30, "fase": 3, "hora": "14:02"}, {"pontos": 35, "cestas": 25, "fase": 2, "hora": "13:40"}, {"pontos": 12, "cestas": 12, "fase": 1, "hora": "11:15"}]
 	ab._mostrar_painel(ab._recordes)
 	yield(_esperar(1.0), "completed")
-	yield(_foto("09_recordes"), "completed")
+	yield(_foto("12_recordes"), "completed")
 	ab._esconder_painel()
 	yield(_esperar(0.5), "completed")
 	# NENHUM BOTÃO: a cesta começa a partida
 	Controles.injetar("input_cesta")
 	yield(_esperar(0.2), "completed")
-	yield(_foto("10_vamos_jogar"), "completed")
+	yield(_foto("13_vamos_jogar"), "completed")
 	while principal.atual != _tela("jogo"):
 		yield(get_tree(), "idle_frame")
 	var jg = _tela("jogo")
 	yield(_esperar(0.3), "completed")
-	yield(_foto("11_carregando"), "completed")
+	yield(_foto("14_carregando"), "completed")
 	while not (jg.estado == jg.MAPA and jg._mapa_pronto):
 		yield(get_tree(), "idle_frame")
 	yield(_esperar(0.3), "completed")
-	yield(_foto("12_mapa_fase1"), "completed")
+	yield(_foto("15_mapa_fase1"), "completed")
 	# o mapa segue sozinho para a contagem
 	while jg.estado != jg.CONTAGEM:
 		yield(get_tree(), "idle_frame")
 	yield(_esperar(0.5), "completed")
-	yield(_foto("13_contagem"), "completed")
+	yield(_foto("16_contagem"), "completed")
 	while jg.estado != jg.JOGANDO:
 		yield(get_tree(), "idle_frame")
 	yield(_esperar(1.2), "completed")
-	yield(_foto("14_jogando"), "completed")
+	yield(_foto("17_jogando"), "completed")
 	Controles.injetar("input_cesta")
 	yield(_esperar(0.22), "completed")
-	yield(_foto("15_cesta"), "completed")
+	yield(_foto("18_cesta"), "completed")
 	for i in 3:
 		yield(_esperar(0.8), "completed")
 		Controles.injetar("input_cesta")
 	yield(_esperar(0.3), "completed")
-	yield(_foto("16_passou"), "completed")
+	yield(_foto("19_passou"), "completed")
 	for i in 2:
 		yield(_esperar(0.8), "completed")
 		Controles.injetar("input_cesta")
 	yield(_esperar(0.25), "completed")
-	yield(_foto("17_combo6"), "completed")
+	yield(_foto("20_combo6"), "completed")
 	jg._mostrar_ouro()
 	yield(_esperar(0.8), "completed")
-	yield(_foto("18_bola_de_ouro"), "completed")
+	yield(_foto("21_bola_de_ouro"), "completed")
 	for i in 4:
 		yield(_esperar(0.8), "completed")
 		Controles.injetar("input_cesta")
 	yield(_esperar(0.35), "completed")
-	yield(_foto("19_slam_mode"), "completed")
+	yield(_foto("22_slam_mode"), "completed")
 	jg._decorrido = jg._total - 8.5
 	yield(_esperar(1.0), "completed")
-	yield(_foto("20_ultimos_segundos"), "completed")
+	yield(_foto("23_ultimos_segundos"), "completed")
 	while jg.estado != jg.FIM_FASE:
 		yield(get_tree(), "idle_frame")
 	yield(_esperar(0.4), "completed")
-	yield(_foto("21_tempo"), "completed")
+	yield(_foto("24_tempo"), "completed")
 	yield(_esperar(1.4), "completed")
-	yield(_foto("22_fase_concluida"), "completed")
+	yield(_foto("25_fase_concluida"), "completed")
 	yield(_esperar(1.9), "completed")
-	yield(_foto("23_bonus"), "completed")
+	yield(_foto("26_bonus"), "completed")
 	while not (jg.estado == jg.MAPA and jg._mapa_pronto):
 		yield(get_tree(), "idle_frame")
 	yield(_esperar(0.3), "completed")
-	yield(_foto("24_mapa_fase2"), "completed")
+	yield(_foto("27_mapa_fase2"), "completed")
 	# a cesta pula o mapa
 	Controles.injetar("input_cesta")
 	while jg.estado != jg.JOGANDO:
@@ -181,22 +179,22 @@ func _rodar() -> void:
 		yield(_esperar(0.9), "completed")
 		Controles.injetar("input_cesta")
 	yield(_esperar(0.3), "completed")
-	yield(_foto("25_fase2"), "completed")
+	yield(_foto("28_fase2"), "completed")
 	jg._decorrido = jg._total - 0.5
 	while jg.estado != jg.FIM_FASE:
 		yield(get_tree(), "idle_frame")
 	yield(_esperar(2.0), "completed")
-	yield(_foto("26_nao_passou"), "completed")
+	yield(_foto("29_nao_passou"), "completed")
 	while jg.estado != jg.RESULTADO:
 		yield(get_tree(), "idle_frame")
 	yield(_esperar(3.6), "completed")
-	yield(_foto("27_resultado_fim"), "completed")
+	yield(_foto("30_resultado_fim"), "completed")
 	# jogar de novo: uma cesta no resultado
 	Controles.injetar("input_cesta")
 	while not (jg.estado == jg.MAPA and jg._mapa_pronto):
 		yield(get_tree(), "idle_frame")
 	yield(_esperar(0.2), "completed")
-	yield(_foto("28_de_novo"), "completed")
+	yield(_foto("31_de_novo"), "completed")
 	# agora passa as duas fases e joga a FINAL
 	for k in 2:
 		Controles.injetar("input_cesta")
@@ -209,7 +207,7 @@ func _rodar() -> void:
 		while not (jg.estado == jg.MAPA and jg._mapa_pronto):
 			yield(get_tree(), "idle_frame")
 	yield(_esperar(0.3), "completed")
-	yield(_foto("29_mapa_final"), "completed")
+	yield(_foto("32_mapa_final"), "completed")
 	Controles.injetar("input_cesta")
 	while jg.estado != jg.JOGANDO:
 		yield(get_tree(), "idle_frame")
@@ -217,24 +215,40 @@ func _rodar() -> void:
 		yield(_esperar(0.8), "completed")
 		Controles.injetar("input_cesta")
 	yield(_esperar(0.3), "completed")
-	yield(_foto("30_final_turbo"), "completed")
+	yield(_foto("33_final_turbo"), "completed")
 	for i in 3:
 		yield(_esperar(0.8), "completed")
 		Controles.injetar("input_cesta")
 	yield(_esperar(0.4), "completed")
-	yield(_foto("31_final_slam"), "completed")
+	yield(_foto("34_final_slam"), "completed")
 	jg._decorrido = jg._total - 0.5
 	while jg.estado != jg.RESULTADO:
 		yield(get_tree(), "idle_frame")
 	yield(_esperar(4.2), "completed")
-	yield(_foto("32_resultado_campeao"), "completed")
+	yield(_foto("35_resultado_campeao"), "completed")
+	# terceira partida: ninguém acerta -> "uuuh", vaia, resultado sem festa
+	Controles.injetar("input_cesta")
+	while not (jg.estado == jg.MAPA and jg._mapa_pronto):
+		yield(get_tree(), "idle_frame")
+	Controles.injetar("input_cesta")
+	while jg.estado != jg.JOGANDO:
+		yield(get_tree(), "idle_frame")
+	jg._decorrido = jg._total - 2.5
+	while jg.estado != jg.FIM_FASE:
+		yield(get_tree(), "idle_frame")
+	yield(_esperar(2.0), "completed")
+	yield(_foto("36_nao_passou_vaia"), "completed")
+	while jg.estado != jg.RESULTADO:
+		yield(get_tree(), "idle_frame")
+	yield(_esperar(3.6), "completed")
+	yield(_foto("37_resultado_vaia"), "completed")
 	_medindo = false
 	principal.ir("config", {})
 	yield(_esperar(1.0), "completed")
-	yield(_foto("33_config"), "completed")
+	yield(_foto("38_config"), "completed")
 	principal.ir("botoes", {})
 	yield(_esperar(1.0), "completed")
-	yield(_foto("34_botoes"), "completed")
+	yield(_foto("39_botoes"), "completed")
 	_relatorio()
 	get_tree().quit()
 
