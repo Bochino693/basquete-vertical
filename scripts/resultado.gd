@@ -235,7 +235,7 @@ func mostrar(d: Dictionary) -> void:
 		_por(col["txt"], 0, 154, w, 32)
 		col["txt"].visible = jogou
 		_por(col["extra"], 8, 188, w - 16, 58)
-		col["extra"].text = "%d CESTAS • SEQUÊNCIA %d" % [int(cf[i]), int(kf[i])]
+		col["extra"].text = "%d CESTAS\nSEQUÊNCIA %d" % [int(cf[i]), int(kf[i])]
 		col["extra"].visible = jogou
 		col["valor"] = int(pf[i])
 		var st: Label = _status[i]
