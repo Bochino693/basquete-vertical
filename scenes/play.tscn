@@ -1,8 +1,0 @@
-[gd_scene format=3 uid="uid://dm4vvhp4k7j81"]
-
-[ext_resource type="Script" uid="uid://oox61cpkmsuh" path="res://scripts/play.gd" id="1_8r3iy"]
-
-[node name="Play" type="Control" unique_id=2119330499]
-layout_mode = 3
-anchors_preset = 0
-script = ExtResource("1_8r3iy")

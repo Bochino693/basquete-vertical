@@ -1,13 +1,8 @@
-# Godot 4+ specific ignores
-.godot/
-/android/
-
-.godot/
-.export/
+# Godot 3: cache de importação e saídas de build
+.import/
 build/
-builds/
+APK-Pronto/
 *.apk
-*.aab
-*.keystore
-*.jks
-.env
+*.idsig
+tools/android/.cache/
+__pycache__/
