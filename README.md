@@ -7,6 +7,8 @@ multiplicador x2/x3/x4 e SLAM MODE, bola de ouro, apresentação animada, torcid
 (vaias e aplausos), recorde e ranking do dia, modo crédito, sensor e botões na
 placa Zero Delay e LEDs no Arduino.
 
+**Versão 1.3-gles2** (aparece no rodapé da tela de configuração).
+
 ## Gerar o APK (Windows)
 1. **Code → Download ZIP** e extraia o ZIP inteiro.
 2. Dois cliques em **`GERAR_APK.bat`** (na pasta com o `project.godot`).

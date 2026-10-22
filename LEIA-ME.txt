@@ -2,6 +2,9 @@ SLAM ARENA - BASQUETE ARCADE VERTICAL (1 JOGADOR, 3 FASES, SEM BOTAO)
 ======================================================================
 EDICAO OPENGL ES 2.0 - Godot 3.6.3 - para TV Box com Mali-400 / Mali-450
 (TX9 "comum": Amlogic S905X/S905W, Rockchip RK3229; MXQ, X96...).
+VERSAO 1.3-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
+em Aplicativos > Slam Arena). VERSAO NOVA: aumente version/code e
+version/name no export_presets.cfg e o VERSAO do autoload/Ajustes.gd.
 
 GERAR O APK (WINDOWS), PASSO A PASSO
 ------------------------------------

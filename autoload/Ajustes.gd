@@ -12,7 +12,7 @@ extends Node
 
 signal mudou
 
-const VERSAO := "1.2-gles2"
+const VERSAO := "1.3-gles2"
 
 const ARQ_AJUSTES := "user://slam_ajustes.cfg"
 const ARQ_RECORDES := "user://slam_recordes.cfg"
