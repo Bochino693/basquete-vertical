@@ -17,10 +17,14 @@ extends Node
 ## (menu do operador; no PC a variável de ambiente SLAM_GIRO ou
 ## -- --giro=1 / --giro=auto)
 ##
+## NITIDEZ: na resolução da tela (até 1080 x 1920) o jogo desenha direto,
+## pixel por pixel. Tela MAIOR que isso (TV Box em 4K): desenha em 1080 x
+## 1920 e amplia LISO (filtro) - nítido e sem pesar 4 vezes mais na placa.
 ## QUALIDADE: na TV Box fraca a imagem pode ser desenhada em 900 ou 720
-## linhas e ampliada (a placa pinta 30% ou 55% menos pixels). Na qualidade
+## linhas e ampliada, sempre LISA (sem os "blocos" de pixel). Na qualidade
 ## AUTOMÁTICA o jogo mede os quadros por segundo durante a partida e desce
-## sozinho um degrau se a TV Box não segurar ~60 (fica gravado).
+## sozinho para 900 linhas se a TV Box não segurar ~60 (fica gravado);
+## 720 só se o operador escolher LEVE.
 
 signal mudou
 
@@ -130,13 +134,16 @@ func _aplicar() -> void:
 	elif giro < 0:
 		# (x, y) do jogo -> (1920 - y, x) na tela
 		t = Transform2D(Vector2(0, 1), Vector2(-1, 0), Vector2(ALTURA, 0))
-	if escala >= 0.999:
+	# tela maior que 1080 x 1920 (4K): desenhar nela pesaria 4 vezes mais
+	var tela_grande := j.x * j.y > base.x * base.y * 1.15
+	if escala >= 0.999 and not tela_grande:
 		# 2D: desenha na resolução da própria tela (nítido)
 		get_tree().set_screen_stretch(SceneTree.STRETCH_MODE_2D, aspecto, base)
 	else:
-		# desenha numa imagem menor (base x escala) e amplia no fim
+		# desenha numa imagem de 1080 linhas (ou menor) e amplia no fim
 		get_tree().set_screen_stretch(SceneTree.STRETCH_MODE_VIEWPORT, aspecto, (base * escala).round())
 		t = Transform2D(t.x * escala, t.y * escala, t.origin * escala)
+		call_deferred("_ampliar_liso")
 	# (Godot 3: "get_tree().root.x = " tentaria regravar o root - por variável)
 	var janela := get_tree().root
 	janela.global_canvas_transform = t
@@ -144,10 +151,17 @@ func _aplicar() -> void:
 	emit_signal("mudou")
 
 
+## A imagem desenhada menor que a tela é ampliada com filtro (liso). Sem
+## isto o Godot 3 amplia pixel a pixel: os números e o raio ficam em
+## "escadinha", pixelados.
+func _ampliar_liso() -> void:
+	get_tree().root.get_texture().flags = Texture.FLAG_FILTER
+
+
 # ------------------------------------------------- qualidade automática
 ## A partida liga o medidor; a abertura desliga (lá tudo é mais leve).
 func medir(ligado: bool) -> void:
-	_medindo = ligado and Ajustes.qualidade == 0 and escala > 0.67
+	_medindo = ligado and Ajustes.qualidade == 0 and escala > 0.9
 	_amostras = 0
 	_ruins = 0
 	_acumulado = 0.0
@@ -171,9 +185,9 @@ func _process(delta: float) -> void:
 		_ruins = 0
 	if _ruins >= 6:
 		_ruins = 0
-		var nova := 0.8333 if escala > 0.9 else 0.6667
+		var nova := 0.8333
 		Ajustes.escala_auto = nova
 		Ajustes.salvar()
 		definir_escala(nova)
-		_medindo = escala > 0.67
+		_medindo = false
 		print("Tela: TV Box não segurou 60 quadros; qualidade automática -> %d linhas" % int(round(LARGURA * nova)))

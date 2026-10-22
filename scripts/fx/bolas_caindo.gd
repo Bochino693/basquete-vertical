@@ -18,8 +18,8 @@ const Bola = preload("res://scripts/fx/bola.gd")
 const FUGA := Vector2(540, 88)
 const TOPO_PISO := 994.0
 const G := 1500.0             # gravidade (px do fundo da quadra / s²)
-const RAIO := 31.0            # raio da bola no fundo da quadra (px)
-const SAIDA_Y := 905.0        # onde a bola aparece (logo abaixo da faixa da fase)
+const RAIO := 44.0            # raio da bola no fundo da quadra (px)
+const SAIDA_Y := 915.0        # onde a bola aparece (logo abaixo da faixa da fase)
 const N := 12
 
 enum { NORMAL, FOGO, OURO }

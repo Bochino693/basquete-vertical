@@ -88,7 +88,7 @@ static func cor_do_combo(nivel: int) -> Color:
 		return Color(0.12, 0.55, 1.0)
 	if nivel >= 3:
 		return Color(1.0, 0.58, 0.04)
-	return Color(0.85, 0.90, 1.0)
+	return Color(1.0, 0.76, 0.28)
 
 
 func modo_recorde(ligado: bool, centro := Vector2(540, 700)) -> void:

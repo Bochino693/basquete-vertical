@@ -150,7 +150,7 @@ func _montar_rodape() -> void:
 	_start = Arte.texto_solto("ACERTE A CESTA!", 84, Color(1, 1, 1), 9, Arte.LARANJA)
 	_start.position = Vector2(540, 1716)
 	add_child(_start)
-	_start_sub = Arte.texto("PARA COMEÇAR A JOGAR  •  OU APERTE START", 32, Arte.LARANJA_CLARO, 4, Color(0.1, 0.03, 0.0))
+	_start_sub = Arte.texto("PARA COMEÇAR A JOGAR", 32, Arte.LARANJA_CLARO, 4, Color(0.1, 0.03, 0.0))
 	pos(_start_sub, 0, 1772, 1080, 50)
 	add_child(_start_sub)
 	_info = Arte.texto("", 28, Color(1.0, 0.85, 0.6), 4, Color(0.1, 0.03, 0.0))
@@ -185,8 +185,8 @@ func _montar_como_jogar() -> void:
 	_como.add_child(titulo)
 	var linhas := [
 		["bola", "ACERTE A CESTA PARA COMEÇAR\nNÃO PRECISA APERTAR NADA"],
-		["fases", "3 FASES: BATA O SCORE PASS\nPARA CHEGAR NA FINAL"],
-		["combo", "CESTAS SEGUIDAS VALEM MAIS\nx2  x3  x4 = SLAM MODE!"],
+		["fases", "3 FASES: BATA A META\nPARA CHEGAR NA FINAL"],
+		["combo", "CESTAS SEGUIDAS VALEM MAIS\nx2  x3  x4 = MODO ENTERRADA!"],
 		["ouro", "PEGUE A BOLA DE OURO\nELA VALE +5 PONTOS"],
 		["coroa", "BATA O RECORDE DA ARENA!"],
 	]
@@ -423,7 +423,7 @@ func _atualizar_info() -> void:
 		_start_sub.text = "1 FICHA POR PARTIDA  •  DEPOIS É SÓ ACERTAR A CESTA"
 	else:
 		l.text = "ACERTE A CESTA!"
-		_start_sub.text = "PARA COMEÇAR A JOGAR  •  OU APERTE START"
+		_start_sub.text = "PARA COMEÇAR A JOGAR"
 
 
 func _process(delta: float) -> void:

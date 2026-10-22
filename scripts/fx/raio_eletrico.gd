@@ -1,8 +1,10 @@
 extends Node2D
 
-## RAIO ELÉTRICO (SLAM MODE e apresentação): um caminho em zigue-zague com
-## galhos, que treme por alguns décimos de segundo. Desenhado com linhas
-## grossas (brilho) + fina (miolo branco), refeito só quando treme.
+## RAIO ELÉTRICO (MODO ENTERRADA e apresentação): um caminho em zigue-zague
+## com galhos, que treme por alguns décimos de segundo. Cada caminho é uma
+## faixa contínua com textura de borda macia (fx_linha): brilho largo,
+## faixa média e o miolo branco - liso, sem a "escadinha" das linhas
+## comuns. Refeito só quando treme (uma chamada de desenho por faixa).
 
 var cor := Color(0.35, 0.80, 1.0)
 var _caminhos: Array = []
@@ -76,6 +78,35 @@ func _draw() -> void:
 	for i in _caminhos.size():
 		var c: PoolVector2Array = _caminhos[i]
 		var g = 1.0 if i == 0 else 0.6
-		draw_polyline(c, Color(cor.r, cor.g, cor.b, 0.16), 22.0 * g)
-		draw_polyline(c, Color(cor.r, cor.g, cor.b, 0.55), 8.0 * g)
-		draw_polyline(c, Color(0.9, 0.97, 1.0, 0.95), 2.6 * g)
+		_faixa(c, Color(cor.r, cor.g, cor.b, 0.22), 40.0 * g)
+		_faixa(c, Color(cor.r, cor.g, cor.b, 0.75), 14.0 * g)
+		_faixa(c, Color(0.92, 0.98, 1.0, 1.0), 5.5 * g)
+
+
+## Uma faixa de largura "larg" ao longo do caminho (as juntas com a média
+## das direções), com a textura macia atravessada (u = de um lado ao outro).
+func _faixa(c: PoolVector2Array, cor_faixa: Color, larg: float) -> void:
+	var n := c.size()
+	if n < 2:
+		return
+	var pts := PoolVector2Array()
+	var uvs := PoolVector2Array()
+	var cores := PoolColorArray()
+	var idx := PoolIntArray()
+	for k in n:
+		var d := Vector2()
+		if k > 0:
+			d += (c[k] - c[k - 1]).normalized()
+		if k < n - 1:
+			d += (c[k + 1] - c[k]).normalized()
+		var normal := Vector2(-d.y, d.x).normalized() * larg * 0.5
+		pts.append(c[k] + normal)
+		pts.append(c[k] - normal)
+		uvs.append(Vector2(0, 0.5))
+		uvs.append(Vector2(1, 0.5))
+		cores.append(cor_faixa)
+		cores.append(cor_faixa)
+		if k > 0:
+			var a: int = (k - 1) * 2
+			idx.append_array(PoolIntArray([a, a + 1, a + 3, a, a + 3, a + 2]))
+	VisualServer.canvas_item_add_triangle_array(get_canvas_item(), idx, pts, cores, uvs, PoolIntArray(), PoolRealArray(), Arte.tex_linha.get_rid())

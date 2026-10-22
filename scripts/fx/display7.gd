@@ -29,6 +29,10 @@ var zeros := true                   # zeros à esquerda
 var texto := "" setget _set_texto   # mostra um texto livre ("--", "  ")
 var valor := 0 setget _set_valor
 var placa := PLACA
+## placa redonda: diâmetro (0 = automático) e onde fica em relação aos
+## dígitos (o cronômetro: os dígitos um pouco abaixo do centro, "TEMPO" em cima)
+var diametro_placa := 0.0
+var desvio_placa := Vector2()
 var _casas: Array = []
 var _mat: ShaderMaterial
 var _placa: Placa
@@ -76,9 +80,12 @@ func configurar(n_digitos: int, altura_px: float, c: Color, glow := -1.0, tipo_p
 	_placa.redonda = placa == PLACA_REDONDA
 	var total := largura_total()
 	if _placa.redonda:
-		_placa.tamanho = Vector2.ONE * max(total + altura * 0.5, altura * 1.6)
+		var d := diametro_placa if diametro_placa > 0.0 else max(total + altura * 0.5, altura * 1.6)
+		_placa.tamanho = Vector2.ONE * d
 	else:
 		_placa.tamanho = Vector2(total + altura * 0.62, altura * 1.18)
+	_placa.position = desvio_placa
+	_placa.update()
 	var w := altura * 0.56
 	var gap := altura * 0.20
 	for i in digitos:
@@ -156,7 +163,7 @@ func _mostrar() -> void:
 ## A malha de um caractere. As cores dos pontos não são a cor do display:
 ## g = aceso, r = miolo quente, a = transparência (display7.shader pinta).
 static func malha(ch: String, h: float, glow: float, inclinacao: float, apagado: float) -> ArrayMesh:
-	var chave := "d7q_%s_%d_%d_%d_%d" % [ch, int(h * 10), int(glow * 10), int(inclinacao * 1000), int(apagado * 1000)]
+	var chave := "d7m_%s_%d_%d_%d_%d" % [ch, int(h * 10), int(glow * 10), int(inclinacao * 1000), int(apagado * 1000)]
 	var cache: Dictionary = Arte.cache_malhas
 	if cache.has(chave):
 		return cache[chave]
@@ -230,8 +237,13 @@ static func _segmento(seg: String, w: float, h: float, t: float, inclinacao: flo
 	return out
 
 
-## Miolo (leque) + dois anéis de brilho que somem para fora.
-## (Godot 3: PoolArrays são cópias; o acúmulo é em Array comum.)
+## Miolo (leque) + uma borda macia de 1,6 px (a beirada fica lisa, sem
+## "escadinha", mesmo sem antisserrilhado na placa) + dois anéis de brilho
+## que somem para fora. (Godot 3: PoolArrays são cópias; o acúmulo é em
+## Array comum.)
+const MACIO := 1.6
+
+
 static func _poligono(poli: PoolVector2Array, c: Color, glow: float, pts: Array, cols: Array, idx: Array) -> void:
 	var n := poli.size()
 	var base := pts.size()
@@ -242,8 +254,6 @@ static func _poligono(poli: PoolVector2Array, c: Color, glow: float, pts: Array,
 		idx.append(base)
 		idx.append(base + k)
 		idx.append(base + k + 1)
-	if glow <= 0.0:
-		return
 	var centro := Vector2()
 	for p in poli:
 		centro += p
@@ -257,14 +267,17 @@ static func _poligono(poli: PoolVector2Array, c: Color, glow: float, pts: Array,
 		if normal.dot(p - centro) < 0.0:
 			normal = -normal
 		normais.append(normal.normalized())
-	var aneis := [[0.0, 0.50], [0.6, 0.16], [1.8, 0.0]]
+	# anéis: [distância da borda (px), força]
+	var aneis := [[0.0, 1.0], [MACIO, 0.0]]
+	if glow > 0.0:
+		aneis = [[0.0, 1.0], [MACIO, 0.50], [MACIO + glow * 0.6, 0.16], [MACIO + glow * 1.8, 0.0]]
 	var inicio := []
 	for anel in aneis:
 		inicio.append(pts.size())
 		for k in n:
-			pts.append(poli[k] + normais[k] * glow * anel[0])
+			pts.append(poli[k] + normais[k] * anel[0])
 			cols.append(Color(c.r, c.g, c.b, c.a * anel[1]))
-	for r in 2:
+	for r in aneis.size() - 1:
 		var a0: int = inicio[r]
 		var b0: int = inicio[r + 1]
 		for k in n:
