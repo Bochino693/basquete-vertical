@@ -39,6 +39,7 @@ var tex_fumaca: Texture
 var tex_confete: Texture
 var tex_linha: Texture
 var tex_faixa: Texture
+var _tex_d7 := {}
 var tex_branco: ImageTexture
 
 var mat_aditivo: CanvasItemMaterial
@@ -219,6 +220,11 @@ func arco(item: CanvasItem, centro: Vector2, raio: float, ang0: float, ang1: flo
 	VisualServer.canvas_item_add_triangle_array(item.get_canvas_item(), idx, pts, cores, uvs, PoolIntArray(), PoolRealArray(), tex_faixa.get_rid())
 
 
+## A textura de um caractere do display de 7 segmentos (0-9, "-", " ").
+func textura_d7(ch: String) -> Texture:
+	return _tex_d7.get(ch, _tex_d7[" "])
+
+
 ## Malhas que vários efeitos dividem (feitas uma vez).
 func malha_onda() -> ArrayMesh:
 	if not _malhas.has("onda"):
@@ -281,6 +287,11 @@ func _gerar_texturas() -> void:
 	tex_confete = load("res://imagens/fx_confete.png")
 	tex_linha = load("res://imagens/fx_linha.png")
 	tex_faixa = load("res://imagens/fx_faixa.png")
+	# caracteres do display de 7 segmentos (campo de distância)
+	for ch in "0123456789":
+		_tex_d7[ch] = load("res://imagens/d7_%s.png" % ch)
+	_tex_d7["-"] = load("res://imagens/d7_menos.png")
+	_tex_d7[" "] = load("res://imagens/d7_vazio.png")
 	# branco liso 4x4 (base dos desenhos com shader: bola, feixes)
 	var im := Image.new()
 	im.create(4, 4, false, Image.FORMAT_RGBA8)

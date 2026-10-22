@@ -2,7 +2,7 @@ SLAM ARENA - BASQUETE ARCADE VERTICAL (1 JOGADOR, 3 FASES, SEM BOTAO)
 ======================================================================
 EDICAO OPENGL ES 2.0 - Godot 3.6.3 - para TV Box com Mali-400 / Mali-450
 (TX9 "comum": Amlogic S905X/S905W, Rockchip RK3229; MXQ, X96...).
-VERSAO 1.6-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
+VERSAO 1.7-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
 em Aplicativos > Slam Arena). VERSAO NOVA: aumente version/code e
 version/name no export_presets.cfg e o VERSAO do autoload/Ajustes.gd.
 
@@ -15,7 +15,7 @@ GERAR O APK (WINDOWS), PASSO A PASSO
   3. Dois cliques no GERAR_APK.bat. A 1a vez baixa o que faltar (5 a 20
      min); depois, 2 a 4 min.
   4. O APK sai em APK-Pronto\SlamArena-<versao>.apk (a pasta abre sozinha
-     no fim; ex.: SlamArena-1.6-gles2.apk): copie para o pendrive e
+     no fim; ex.: SlamArena-1.7-gles2.apk): copie para o pendrive e
      instale na TV Box (ele instala por cima da versao anterior).
   Se der erro, envie o arquivo build\android\GERACAO-COMPLETA.log.
   Onde ligar cada fio na maquina: docs\diagrama_montagem.png.
@@ -141,8 +141,16 @@ LISO NA TX9 (MALI-400/450) - O QUE FOI FEITO
     tela inteira com conta pesada; os brilhos sao geometria com degrade
     (so pintam onde aparecem); nada de "highp" no pixel (a Mali-400/450
     nao tem); o tempo das animacoes por pixel vem calculado do vertice.
-  * DISPLAY DE 7 SEGMENTOS: cada numero de cada tamanho e uma malha pronta
-    (guardada); trocar o numero so troca a malha.
+  * DISPLAY DE 7 SEGMENTOS EM ALTA DEFINICAO: cada caractere e um
+    quadrado com a textura de CAMPO DE DISTANCIA dele (imagens/d7_*.png,
+    feitas por tools/gerar_texturas.py). O display7.shader calcula por
+    pixel a borda do segmento (1 pixel da tela de transicao: liso em 720p,
+    1080p ou 4K), o miolo quente e o brilho que some suave. Uma leitura de
+    textura por pixel; trocar o numero so troca a textura.
+  * TRACINHOS DO CRONOMETRO: cada um e um "LED" de cantos redondos
+    calculado por pixel (tracinhos.shader), com borda de 1 pixel da tela,
+    miolo quente e brilho; o tracinho da vez apaga aos poucos junto com o
+    tempo. A placa redonda do relogio tambem e calculada por pixel.
   * PREPARACAO POR TRAS DA CAPA: ao abrir, a capa (o emblema, igual a
     imagem de abertura do app, com o anel enchendo) cobre o jogo enquanto
     TODAS as telas
@@ -350,8 +358,8 @@ PASTAS
   autoload/   Tela (giro e qualidade), Ajustes (ajustes, recorde, ranking,
               fichas), Arte (fontes, texturas, estilos), Sons, Controles
               (Zero Delay), Arduino (LEDs)
-  shaders/    fundo_vivo, poster, piso, display7, onda, anel, traco,
-              barras, bola
+  shaders/    fundo_vivo, poster, piso, display7, placa_redonda,
+              tracinhos, onda, anel, traco, barras, bola
   imagens/    poster, fundo_jogo (o fundo sem o cronometro desenhado na
               arte), icones, aberturas, fx_* (texturas de efeito feitas a
               mao)

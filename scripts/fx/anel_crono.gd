@@ -1,18 +1,22 @@
 extends Node2D
 
 ## O CRONÔMETRO REDONDO (no círculo da arte): 60 tracinhos acesos conforme
-## o tempo que resta, o arco fino com a "cabeça" brilhante que anda a cada
-## quadro, e um rastro de luz que gira sem parar no círculo da arte.
-## Últimos 10 s: vermelho e piscando.
+## o tempo que resta (o da vez apaga aos poucos), o arco fino com a
+## "cabeça" brilhante que anda a cada quadro, e um rastro de luz que gira
+## sem parar no círculo da arte. Últimos 10 s: vermelho e piscando.
+## Os tracinhos são calculados por pixel (tracinhos.shader): borda lisa de
+## 1 pixel da tela, miolo quente e brilho suave, em qualquer resolução.
 
 const Malhas = preload("res://scripts/fx/malhas.gd")
 
-var r_dentro := 188.0
-var r_fora := 208.0
+var r_tracinho := 198.0           # raio do meio dos tracinhos
+var meio_tracinho := Vector2(6.4, 11.0)
 var r_arco := 176.0
 var r_corredor := 225.0
 
-var _mat: ShaderMaterial
+var _mat: ShaderMaterial          # tracinhos
+var _mat_arco: ShaderMaterial
+var _tracos: MeshInstance2D
 var _anel: MeshInstance2D
 var _cabeca: Sprite
 var _corredor: MeshInstance2D
@@ -25,11 +29,19 @@ var cor := Arte.LARANJA setget _set_cor
 
 
 func _ready() -> void:
+	_tracos = MeshInstance2D.new()
+	_tracos.mesh = Malhas.tracinhos(r_tracinho, meio_tracinho, 10.0)
+	_mat = Arte.material("res://shaders/tracinhos.shader")
+	_mat.set_shader_param("meio", meio_tracinho)
+	_tracos.material = _mat
+	add_child(_tracos)
 	_anel = MeshInstance2D.new()
-	_anel.mesh = Malhas.anel(r_dentro, r_fora, r_arco)
-	_mat = Arte.material("res://shaders/anel.shader")
-	_anel.material = _mat
+	_anel.mesh = Malhas.arco_fino(r_arco)
+	_mat_arco = Arte.material("res://shaders/anel.shader")
+	_anel.material = _mat_arco
 	add_child(_anel)
+	Tela.connect("mudou", self, "_ajustar_nitidez")
+	_ajustar_nitidez()
 	_corredor = MeshInstance2D.new()
 	_corredor.mesh = Malhas.arco_rastro(r_corredor, 3.5, 70.0, Color(1.0, 0.85, 0.5))
 	_corredor.material = Arte.mat_aditivo
@@ -46,16 +58,23 @@ func _ready() -> void:
 	definir(1.0)
 
 
+## A borda dos tracinhos tem 1 pixel DA TELA (720p, 1080p...).
+func _ajustar_nitidez() -> void:
+	_mat.set_shader_param("px", Tela.pixels_por_unidade())
+
+
 func _set_cor(c: Color) -> void:
 	cor = c
 	if _mat != null:
 		_mat.set_shader_param("cor", c)
 		_mat.set_shader_param("cor_apagado", Color(c.r * 0.30, c.g * 0.22, c.b * 0.2))
+		_mat_arco.set_shader_param("cor", c)
 
 
 func definir(frac: float) -> void:
 	_frac = clamp(frac, 0.0, 1.0)
 	_mat.set_shader_param("frac", _frac)
+	_mat_arco.set_shader_param("frac", _frac)
 
 
 func alerta(ligado: bool) -> void:
@@ -75,6 +94,7 @@ func varrer(tempo := 0.9) -> void:
 func _set_varre(v: float) -> void:
 	_varre = v
 	_mat.set_shader_param("varre", v)
+	_mat_arco.set_shader_param("varre", v)
 
 
 func _process(delta: float) -> void:
@@ -90,4 +110,5 @@ func _process(delta: float) -> void:
 	if _alerta:
 		pulso = 0.5 + 0.5 * sin(_t * 12.0)
 	_mat.set_shader_param("pulso", pulso)
+	_mat_arco.set_shader_param("pulso", pulso)
 	_cabeca.modulate = Color(cor.r, cor.g * 0.9 + 0.1, cor.b + 0.3, 0.75 + 0.25 * sin(_t * 9.0))

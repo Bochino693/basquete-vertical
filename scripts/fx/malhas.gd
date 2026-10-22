@@ -145,43 +145,48 @@ static func onda() -> ArrayMesh:
 	return _malha(p, uv, idx)
 
 
-## Anel do cronômetro (anel.shader): 60 tracinhos com brilho + arco fino.
-static func anel(r_dentro: float, r_fora: float, r_arco: float, n := 60) -> ArrayMesh:
+## Os tracinhos do cronômetro (tracinhos.shader): um quadrado por tracinho,
+## com folga para o brilho. UV = posição em unidades do jogo a partir do
+## centro do tracinho (x ao longo do círculo, y para fora); a cor guarda a
+## fração do círculo onde ele começa (do topo, no sentido do relógio).
+static func tracinhos(raio: float, meio: Vector2, folga: float, n := 60) -> ArrayMesh:
+	var p := PoolVector2Array()
+	var uv := PoolVector2Array()
+	var cores := PoolColorArray()
+	var idx := PoolIntArray()
+	var ex := meio.x + folga
+	var ey := meio.y + folga
+	for k in n:
+		var ang = -PI * 0.5 + TAU_ * (float(k) + 0.5) / n
+		var d = Vector2(cos(ang), sin(ang))
+		var t = Vector2(-d.y, d.x)
+		var c = d * raio
+		var base = p.size()
+		for canto in [Vector2(-ex, -ey), Vector2(ex, -ey), Vector2(ex, ey), Vector2(-ex, ey)]:
+			p.append(c + t * canto.x + d * canto.y)
+			uv.append(canto)
+			cores.append(Color(float(k) / n, 0, 0, 1))
+		idx.append_array(PoolIntArray([base, base + 1, base + 2, base, base + 2, base + 3]))
+	var arr := []
+	arr.resize(Mesh.ARRAY_MAX)
+	arr[Mesh.ARRAY_VERTEX] = p
+	arr[Mesh.ARRAY_TEX_UV] = uv
+	arr[Mesh.ARRAY_COLOR] = cores
+	arr[Mesh.ARRAY_INDEX] = idx
+	var m := ArrayMesh.new()
+	# sem compressão: a cor guarda um número (a fração), não só uma cor
+	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr, [], 0)
+	return m
+
+
+## O arco fino que corre por dentro do cronômetro (anel.shader): 180 gomos,
+## borda suave dos dois lados. UV.x = fração do círculo (do topo, no
+## sentido do relógio), UV.y = 10 no meio, 11 na borda.
+static func arco_fino(r_arco: float) -> ArrayMesh:
 	var p := PoolVector2Array()
 	var uv := PoolVector2Array()
 	var idx := PoolIntArray()
-	var meia_ang := TAU_ / n * 0.30
-	var brilho := 7.0
-	for k in n:
-		var frac = (float(k) + 0.5) / n
-		var ang = -PI * 0.5 + TAU_ * float(k) / n + TAU_ / n * 0.5
-		var d = Vector2(cos(ang), sin(ang))
-		var t = Vector2(-d.y, d.x)
-		var largura = (r_dentro + r_fora) * 0.5 * sin(meia_ang)
-		var c0 = d * r_dentro - t * largura
-		var c1 = d * r_dentro + t * largura
-		var c2 = d * r_fora + t * largura
-		var c3 = d * r_fora - t * largura
-		var base = p.size()
-		for c in [c0, c1, c2, c3]:
-			p.append(c)
-			uv.append(Vector2(frac, 0))
-		var meio = d * (r_dentro + r_fora) * 0.5
-		# (o brilho começa 1,3 px para fora: a beirada do tracinho fica lisa)
-		for c in [c0, c1, c2, c3]:
-			p.append(c + (c - meio).normalized() * 1.3)
-			uv.append(Vector2(frac, 1))
-		for c in [c0, c1, c2, c3]:
-			p.append(c + (c - meio).normalized() * brilho)
-			uv.append(Vector2(frac, 2))
-		idx.append_array(PoolIntArray([base, base + 1, base + 2, base, base + 2, base + 3]))
-		for q in 4:
-			var a = base + 4 + q
-			var b = base + 4 + (q + 1) % 4
-			idx.append_array(PoolIntArray([a, b, b + 4, a, b + 4, a + 4]))
-	# arco fino por dentro (180 gomos), com borda suave dos dois lados
 	var gomos := 180
-	var base_arco := p.size()
 	for s in gomos + 1:
 		var frac = float(s) / gomos
 		var ang = -PI * 0.5 + TAU_ * frac
@@ -196,8 +201,8 @@ static func anel(r_dentro: float, r_fora: float, r_arco: float, n := 60) -> Arra
 		uv.append(Vector2(frac, 11))
 	for s in gomos:
 		for linha in 3:
-			var a = base_arco + s * 4 + linha
-			var b = base_arco + (s + 1) * 4 + linha
+			var a = s * 4 + linha
+			var b = (s + 1) * 4 + linha
 			idx.append_array(PoolIntArray([a, b, b + 1, a, b + 1, a + 1]))
 	return _malha(p, uv, idx)
 

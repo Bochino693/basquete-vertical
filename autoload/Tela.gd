@@ -38,6 +38,7 @@ const AUTO := 99
 var giro := 0                 # o giro em uso agora
 var escala := 1.0
 var _desenho := TAMANHO       # o tamanho em que a imagem é desenhada (pixels)
+var _px := 1.0                # pixels da imagem por unidade do jogo
 var _pedido := AUTO           # o que foi pedido (AUTO = automático)
 
 # medidor da qualidade automática
@@ -142,12 +143,14 @@ func _aplicar() -> void:
 		# 2D: desenha na resolução da própria tela (nítido)
 		get_tree().set_screen_stretch(SceneTree.STRETCH_MODE_2D, aspecto, base)
 		_desenho = j
+		_px = min(j.x / base.x, j.y / base.y) if j.x > 0.0 and j.y > 0.0 else 1.0
 	else:
 		# desenha numa imagem de 1080 linhas (ou menor) e amplia no fim
 		get_tree().set_screen_stretch(SceneTree.STRETCH_MODE_VIEWPORT, aspecto, (base * escala).round())
 		t = Transform2D(t.x * escala, t.y * escala, t.origin * escala)
 		call_deferred("_ampliar_liso")
 		_desenho = (base * escala).round()
+		_px = escala
 	# (Godot 3: "get_tree().root.x = " tentaria regravar o root - por variável)
 	var janela := get_tree().root
 	janela.global_canvas_transform = t
@@ -160,6 +163,13 @@ func _aplicar() -> void:
 ## "escadinha", pixelados.
 func _ampliar_liso() -> void:
 	get_tree().root.get_texture().flags = Texture.FLAG_FILTER
+
+
+## Quantos pixels da imagem desenhada cabem em 1 unidade do jogo (1,0 em
+## 1080p; 0,67 numa TV Box em 720p): os shaders de borda lisa usam isto
+## para a borda ter sempre 1 pixel de verdade.
+func pixels_por_unidade() -> float:
+	return clamp(_px, 0.25, 4.0)
 
 
 ## "1080x1920": o tamanho em que a imagem é desenhada (em pé).
