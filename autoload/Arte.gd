@@ -38,6 +38,7 @@ var tex_anel: Texture
 var tex_fumaca: Texture
 var tex_confete: Texture
 var tex_linha: Texture
+var tex_faixa: Texture
 var tex_branco: ImageTexture
 
 var mat_aditivo: CanvasItemMaterial
@@ -191,6 +192,33 @@ func coroa(cor: Color, escala := 1.0) -> Node2D:
 	return n
 
 
+## ARCO NÍTIDO E LISO (anel de progresso, de carregar...): uma faixa com a
+## textura fx_faixa atravessada (cheia no meio, borda lisa de ~1,5 px) -
+## o draw_arc do Godot 3 fica em "escadinha" na Mali (ela não alisa linhas).
+## Chamar dentro do _draw() de "item".
+func arco(item: CanvasItem, centro: Vector2, raio: float, ang0: float, ang1: float, cor: Color, largura: float) -> void:
+	var n := int(clamp(abs(ang1 - ang0) * raio / 6.0, 8.0, 360.0))
+	var pts := PoolVector2Array()
+	var uvs := PoolVector2Array()
+	var cores := PoolColorArray()
+	var idx := PoolIntArray()
+	# (a textura tem 1,5 px de borda em 64: a faixa sai 2 px mais larga)
+	var meia := largura * 0.5 + 2.0
+	for k in n + 1:
+		var a: float = lerp(ang0, ang1, float(k) / n)
+		var d := Vector2(cos(a), sin(a))
+		pts.append(centro + d * (raio - meia))
+		pts.append(centro + d * (raio + meia))
+		uvs.append(Vector2(0, 0.5))
+		uvs.append(Vector2(1, 0.5))
+		cores.append(cor)
+		cores.append(cor)
+		if k > 0:
+			var b: int = (k - 1) * 2
+			idx.append_array(PoolIntArray([b, b + 1, b + 3, b, b + 3, b + 2]))
+	VisualServer.canvas_item_add_triangle_array(item.get_canvas_item(), idx, pts, cores, uvs, PoolIntArray(), PoolRealArray(), tex_faixa.get_rid())
+
+
 ## Malhas que vários efeitos dividem (feitas uma vez).
 func malha_onda() -> ArrayMesh:
 	if not _malhas.has("onda"):
@@ -252,6 +280,7 @@ func _gerar_texturas() -> void:
 	tex_fumaca = load("res://imagens/fx_fumaca.png")
 	tex_confete = load("res://imagens/fx_confete.png")
 	tex_linha = load("res://imagens/fx_linha.png")
+	tex_faixa = load("res://imagens/fx_faixa.png")
 	# branco liso 4x4 (base dos desenhos com shader: bola, feixes)
 	var im := Image.new()
 	im.create(4, 4, false, Image.FORMAT_RGBA8)

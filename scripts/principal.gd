@@ -190,9 +190,9 @@ func _process(delta: float) -> void:
 	_fps_t += delta
 	if _fps_t >= 0.5:
 		_fps_t = 0.0
-		_fps.text = "%d FPS  |  %d desenhos  |  %d linhas  |  %.0f MB" % [Engine.get_frames_per_second(),
+		_fps.text = "%d FPS  |  %d desenhos  |  imagem %s  |  %.0f MB" % [Engine.get_frames_per_second(),
 			Performance.get_monitor(Performance.RENDER_2D_DRAW_CALLS_IN_FRAME),
-			int(round(1080.0 * Tela.escala)), OS.get_static_memory_usage() / 1048576.0]
+			Tela.texto_desenho(), OS.get_static_memory_usage() / 1048576.0]
 
 
 func _unhandled_input(event: InputEvent) -> void:

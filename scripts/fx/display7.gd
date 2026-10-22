@@ -22,7 +22,7 @@ enum { SEM_PLACA, PLACA, PLACA_REDONDA }
 var digitos := 2
 var altura := 120.0
 var cor := Color(1.0, 0.46, 0.04) setget _set_cor
-var apagado := 0.45                 # força dos segmentos apagados
+var apagado := 0.40                 # força dos segmentos apagados
 var brilho := -1.0                  # largura do brilho (px); -1 = automático
 var inclinacao := 0.10
 var zeros := true                   # zeros à esquerda
@@ -49,7 +49,8 @@ class Placa extends Node2D:
 			var r := tamanho.x * 0.5
 			draw_circle(Vector2.ZERO, r, Color(0.012, 0.006, 0.004, 0.93))
 			draw_circle(Vector2(0, -r * 0.08), r * 0.92, Color(0.03, 0.016, 0.01, 0.6))
-			draw_arc(Vector2.ZERO, r - 1.5, 0.0, TAU, 72, Color(cor.r, cor.g, cor.b, 0.35), 3.0, true)
+			# a borda: faixa com textura de bordas macias (draw_arc da Mali sai em "escadinha")
+			Arte.arco(self, Vector2.ZERO, r - 2.0, 0.0, TAU, Color(cor.r, cor.g, cor.b, 0.45), 3.5)
 			return
 		var sb := StyleBoxFlat.new()
 		sb.bg_color = Color(0.012, 0.006, 0.004, 0.93)
@@ -106,7 +107,7 @@ func preparar_malhas() -> void:
 
 
 func _brilho_px() -> float:
-	return brilho if brilho >= 0.0 else altura * 0.11
+	return brilho if brilho >= 0.0 else altura * 0.075
 
 
 func largura_total() -> float:
@@ -163,12 +164,12 @@ func _mostrar() -> void:
 ## A malha de um caractere. As cores dos pontos não são a cor do display:
 ## g = aceso, r = miolo quente, a = transparência (display7.shader pinta).
 static func malha(ch: String, h: float, glow: float, inclinacao: float, apagado: float) -> ArrayMesh:
-	var chave := "d7m_%s_%d_%d_%d_%d" % [ch, int(h * 10), int(glow * 10), int(inclinacao * 1000), int(apagado * 1000)]
+	var chave := "d7n_%s_%d_%d_%d_%d" % [ch, int(h * 10), int(glow * 10), int(inclinacao * 1000), int(apagado * 1000)]
 	var cache: Dictionary = Arte.cache_malhas
 	if cache.has(chave):
 		return cache[chave]
 	var w := h * 0.56
-	var t := h * 0.12
+	var t := h * 0.135
 	var pts := []
 	var cols := []
 	var idx := []
@@ -181,7 +182,7 @@ static func malha(ch: String, h: float, glow: float, inclinacao: float, apagado:
 	for seg in acesos:
 		_poligono(_segmento(seg, w, h, t, inclinacao), Color(0, 1, 0, 1), glow, pts, cols, idx)
 	for seg in acesos:
-		_poligono(_segmento(seg, w, h, t, inclinacao, 0.36), Color(1, 1, 0, 1), 0.0, pts, cols, idx)
+		_poligono(_segmento(seg, w, h, t, inclinacao, 0.32), Color(1, 1, 0, 1), 0.0, pts, cols, idx)
 	var arr := []
 	arr.resize(Mesh.ARRAY_MAX)
 	arr[Mesh.ARRAY_VERTEX] = PoolVector2Array(pts)
@@ -241,7 +242,7 @@ static func _segmento(seg: String, w: float, h: float, t: float, inclinacao: flo
 ## "escadinha", mesmo sem antisserrilhado na placa) + dois anéis de brilho
 ## que somem para fora. (Godot 3: PoolArrays são cópias; o acúmulo é em
 ## Array comum.)
-const MACIO := 1.6
+const MACIO := 1.25
 
 
 static func _poligono(poli: PoolVector2Array, c: Color, glow: float, pts: Array, cols: Array, idx: Array) -> void:
@@ -270,7 +271,7 @@ static func _poligono(poli: PoolVector2Array, c: Color, glow: float, pts: Array,
 	# anéis: [distância da borda (px), força]
 	var aneis := [[0.0, 1.0], [MACIO, 0.0]]
 	if glow > 0.0:
-		aneis = [[0.0, 1.0], [MACIO, 0.50], [MACIO + glow * 0.6, 0.16], [MACIO + glow * 1.8, 0.0]]
+		aneis = [[0.0, 1.0], [MACIO, 0.40], [MACIO + glow * 0.6, 0.11], [MACIO + glow * 1.8, 0.0]]
 	var inicio := []
 	for anel in aneis:
 		inicio.append(pts.size())

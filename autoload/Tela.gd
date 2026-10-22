@@ -20,13 +20,14 @@ extends Node
 ## NITIDEZ: na resolução da tela (até 1080 x 1920) o jogo desenha direto,
 ## pixel por pixel. Tela MAIOR que isso (TV Box em 4K): desenha em 1080 x
 ## 1920 e amplia LISO (filtro) - nítido e sem pesar 4 vezes mais na placa.
-## QUALIDADE: na TV Box fraca a imagem pode ser desenhada em 900 ou 720
-## linhas e ampliada, sempre LISA (sem os "blocos" de pixel). Na qualidade
-## AUTOMÁTICA o jogo mede os quadros por segundo durante a partida e desce
-## sozinho para 900 linhas se a TV Box não segurar ~60 (fica gravado);
-## 720 só se o operador escolher LEVE.
+## QUALIDADE: a AUTOMÁTICA desenha SEMPRE em 1080 (nítido); ela mede os
+## quadros por segundo durante a partida e, se a TV Box não segurar ~60,
+## desliga os efeitos que mais pesam (EFEITOS LEVES, fica gravado) em vez
+## de baixar a resolução. 900 ou 720 linhas (ampliadas LISAS, sem os
+## "blocos" de pixel) só se o operador escolher MÉDIA ou LEVE.
 
 signal mudou
+signal efeitos_mudaram
 
 const LARGURA := 1080.0
 const ALTURA := 1920.0
@@ -36,6 +37,7 @@ const AUTO := 99
 
 var giro := 0                 # o giro em uso agora
 var escala := 1.0
+var _desenho := TAMANHO       # o tamanho em que a imagem é desenhada (pixels)
 var _pedido := AUTO           # o que foi pedido (AUTO = automático)
 
 # medidor da qualidade automática
@@ -139,11 +141,13 @@ func _aplicar() -> void:
 	if escala >= 0.999 and not tela_grande:
 		# 2D: desenha na resolução da própria tela (nítido)
 		get_tree().set_screen_stretch(SceneTree.STRETCH_MODE_2D, aspecto, base)
+		_desenho = j
 	else:
 		# desenha numa imagem de 1080 linhas (ou menor) e amplia no fim
 		get_tree().set_screen_stretch(SceneTree.STRETCH_MODE_VIEWPORT, aspecto, (base * escala).round())
 		t = Transform2D(t.x * escala, t.y * escala, t.origin * escala)
 		call_deferred("_ampliar_liso")
+		_desenho = (base * escala).round()
 	# (Godot 3: "get_tree().root.x = " tentaria regravar o root - por variável)
 	var janela := get_tree().root
 	janela.global_canvas_transform = t
@@ -158,10 +162,23 @@ func _ampliar_liso() -> void:
 	get_tree().root.get_texture().flags = Texture.FLAG_FILTER
 
 
+## "1080x1920": o tamanho em que a imagem é desenhada (em pé).
+func texto_desenho() -> String:
+	var d := _desenho if giro == 0 else Vector2(_desenho.y, _desenho.x)
+	return "%dx%d" % [int(d.x), int(d.y)]
+
+
+## A TV Box entrega menos de 1080 linhas (Android em 720p): nada fica nítido
+## de verdade enquanto a resolução não for trocada no Android.
+func tela_pequena() -> bool:
+	var j := OS.window_size
+	return min(j.x, j.y) < 1000.0
+
+
 # ------------------------------------------------- qualidade automática
 ## A partida liga o medidor; a abertura desliga (lá tudo é mais leve).
 func medir(ligado: bool) -> void:
-	_medindo = ligado and Ajustes.qualidade == 0 and escala > 0.9
+	_medindo = ligado and Ajustes.qualidade == 0 and not Ajustes.efeitos_leves
 	_amostras = 0
 	_ruins = 0
 	_acumulado = 0.0
@@ -170,7 +187,7 @@ func medir(ligado: bool) -> void:
 func _process(delta: float) -> void:
 	if not _medindo:
 		return
-	# janelas de 1 s; 6 janelas ruins seguidas (< 45 quadros) = desce
+	# janelas de 1 s; 6 janelas ruins seguidas (< 45 quadros) = efeitos leves
 	# (TV em 50 Hz não conta como ruim)
 	_acumulado += delta
 	_amostras += 1
@@ -185,9 +202,8 @@ func _process(delta: float) -> void:
 		_ruins = 0
 	if _ruins >= 6:
 		_ruins = 0
-		var nova := 0.8333
-		Ajustes.escala_auto = nova
+		Ajustes.efeitos_leves = true
 		Ajustes.salvar()
-		definir_escala(nova)
 		_medindo = false
-		print("Tela: TV Box não segurou 60 quadros; qualidade automática -> %d linhas" % int(round(LARGURA * nova)))
+		emit_signal("efeitos_mudaram")
+		print("Tela: TV Box não segurou 60 quadros; qualidade automática -> efeitos leves (continua em 1080)")

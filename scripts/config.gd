@@ -89,9 +89,9 @@ func _ready() -> void:
 		_rolagem.add_child(valor)
 		_itens.append({"id": item[0], "nome": nome, "valor": valor, "y": y})
 		y += 57.0
-	_rodape = Arte.texto("", 24, Color(0.8, 0.85, 0.95), 3, Color(0, 0, 0))
+	_rodape = Arte.texto("", 21, Color(0.8, 0.85, 0.95), 3, Color(0, 0, 0))
 	_rodape.autowrap = true
-	pos(_rodape, 70, 1648, 940, 222)
+	pos(_rodape, 60, 1646, 960, 228)
 	add_child(_rodape)
 	_confirma = Control.new()
 	_confirma.rect_size = Vector2(LARGURA, ALTURA)
@@ -175,7 +175,7 @@ func _atualizar() -> void:
 			"qualidade":
 				v = Ajustes.QUALIDADES[int(c["qualidade"])]
 				if int(c["qualidade"]) == 0:
-					v += " (%d)" % int(round(1080.0 * Ajustes.escala_auto))
+					v += " (1080, ECONOMIA)" if Ajustes.efeitos_leves else " (1080)"
 			"apresentacao":
 				v = _txt(c["apresentacao"])
 			"fps":
@@ -193,9 +193,18 @@ func _atualizar() -> void:
 			"recorde":
 				v = "%d PONTOS" % Ajustes.recorde
 		it["valor"].text = v
-	_rodape.text = "CONTROLE DA TV BOX: CIMA/BAIXO ESCOLHE  •  ESQUERDA/DIREITA MUDA  •  OK CONFIRMA  •  VOLTAR SALVA E SAI\n%s\nSENSOR DA CESTA: %d SINAIS (jogue uma bola para testar)\nSTART: %s   •   SELECT: %s   •   CESTA: %s   •   FICHA: %s\nPARTIDAS: %d   •   CESTAS: %d   •   Slam Arena %s" % [
+	_rodape.text = "CONTROLE DA TV BOX: CIMA/BAIXO ESCOLHE  •  ESQUERDA/DIREITA MUDA  •  OK CONFIRMA  •  VOLTAR SALVA E SAI\n%s\nSENSOR DA CESTA: %d SINAIS (jogue uma bola para testar)\nSTART: %s   •   SELECT: %s   •   CESTA: %s   •   FICHA: %s\n%s   •   Slam Arena %s" % [
 		Arduino.status, _sinais, Controles.texto_de("input_start"), Controles.texto_de("input_select"),
-		Controles.texto_de("input_cesta"), Controles.texto_de("input_credito"), Ajustes.partidas_total, Ajustes.cestas_total, Ajustes.VERSAO]
+		Controles.texto_de("input_cesta"), Controles.texto_de("input_credito"), _linha_tela(), Ajustes.VERSAO]
+
+
+## A imagem desenhada e, se a TV Box estiver em 720p no Android, o aviso
+## (nada fica nítido de verdade abaixo de 1080 linhas).
+func _linha_tela() -> String:
+	if Tela.tela_pequena():
+		var j := OS.window_size
+		return "TV BOX EM %dp: MUDE A TELA DO ANDROID PARA 1080p (NÍTIDO)" % int(min(j.x, j.y))
+	return "PARTIDAS: %d   •   CESTAS: %d   •   IMAGEM %s" % [Ajustes.partidas_total, Ajustes.cestas_total, Tela.texto_desenho()]
 
 
 func _mover_cursor(direto := false) -> void:
@@ -368,6 +377,9 @@ func _gravar() -> void:
 	Ajustes.vol_musica = float(c["musica"])
 	Ajustes.vol_efeitos = float(c["efeitos"])
 	Ajustes.giro = int(c["giro"])
+	if int(c["qualidade"]) != Ajustes.qualidade:
+		# trocou a qualidade: a automática mede de novo, com todos os efeitos
+		Ajustes.efeitos_leves = false
 	Ajustes.qualidade = int(c["qualidade"])
 	Ajustes.apresentacao = bool(c["apresentacao"])
 	Ajustes.mostrar_fps = bool(c["fps"])

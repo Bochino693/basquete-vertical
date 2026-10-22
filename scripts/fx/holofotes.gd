@@ -2,7 +2,7 @@ extends Node2D
 
 ## A ARENA VIVA: dois HOLOFOTES nos cantos da quadra que varrem o piso
 ## devagar o tempo todo (nem parada a arena fica morta) e acendem mais
-## forte com o combo; no SLAM MODE ficam azuis e rápidos, no recorde
+## forte com o combo; no MODO ENTERRADA ficam azuis e rápidos, no recorde
 ## dourados. E os FLASHES DA TORCIDA: com muitas cestas seguidas, câmeras
 ## piscam nas laterais da quadra.
 ## Leve: 2 fachos + 8 estrelinhas, prontos na preparação (só aditivos).

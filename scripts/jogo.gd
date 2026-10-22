@@ -158,6 +158,7 @@ func _ready() -> void:
 	_montar_efeitos()
 	_montar_mapa()
 	_montar_entrada()
+	Tela.connect("efeitos_mudaram", self, "_aplicar_efeitos")
 	_resultado = Resultado.new()
 	add_child(_resultado)
 	_resultado.connect("acabou", self, "_resultado_acabou")
@@ -508,6 +509,7 @@ func entrar(dados := {}) -> void:
 	_preparar_fase_hud(0)
 	_atualizar_lista_top()
 	Sons.musica("jogo", 0.9)
+	_aplicar_efeitos()
 	Tela.medir(true)
 	Ajustes.iniciar_partida()
 	Arduino.led("STARTING")
@@ -567,15 +569,18 @@ func _entrada_e_mapa(de_novo: bool) -> void:
 	if not de_novo:
 		_entrada.visible = true
 		_entrada.modulate.a = 1.0
+		_entrada.rect_position.y = 0.0
 		_entrada_barra.rect_size.x = 0.0
 		Sons.tocar("vento", -4.0)
 		var tw := create_tween()
 		tw.tween_property(_entrada_barra, "rect_size:x", 712.0, 0.55).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-		tw.tween_property(_entrada, "modulate:a", 0.0, 0.3).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		# a tela de carregar sobe e revela a arena (sem ficar transparente)
+		tw.tween_property(_entrada, "rect_position:y", -ALTURA, 0.32).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 		yield(tw, "finished")
 		if not vale(s):
 			return
 		_entrada.visible = false
+		_entrada.rect_position.y = 0.0
 	# a arena "liga" como neon: cada parte acende piscando
 	Sons.tocar("neon", -2.0)
 	var partes := [_fundo, _grade, _anel, _crono]
@@ -627,28 +632,29 @@ func _iniciar_fase(i: int) -> void:
 			st.text = "OK  %d PTS" % int(pontos_fase[k])
 			st.add_color_override("font_color", VERDE)
 			card.add_stylebox_override("panel", Arte.estilo_neon(VERDE, 0.9, 26, 2, 8))
-			card.modulate.a = 0.75
+			tom(card, 0.75)
 		elif k == i:
 			st.text = "AGORA!"
 			st.add_color_override("font_color", Color(1, 1, 1))
 			card.add_stylebox_override("panel", Arte.estilo_neon(ck, 0.9, 26, 5, 26, 0.2))
-			card.modulate.a = 1.0
+			tom(card, 1.0)
 		else:
 			st.text = "DEPOIS"
 			st.add_color_override("font_color", Color(0.7, 0.7, 0.75))
 			card.add_stylebox_override("panel", Arte.estilo_neon(ck, 0.9, 26, 2, 8))
-			card.modulate.a = 0.6
+			tom(card, 0.6)
 		card.rect_scale = Vector2.ONE
+	# o mapa entra subindo de baixo (sem ficar transparente)
 	_mapa.visible = true
-	_mapa.modulate.a = 0.0
+	_mapa.modulate.a = 1.0
+	_mapa.rect_position.y = ALTURA
 	var tw := create_tween()
-	tw.tween_property(_mapa, "modulate:a", 1.0, 0.25)
+	tw.tween_property(_mapa, "rect_position:y", 0.0, 0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	# o nome da fase entra batendo
 	_mapa_titulo.rect_pivot_offset = _mapa_titulo.rect_size * 0.5
 	_mapa_titulo.rect_scale = Vector2(2.6, 2.6)
-	_mapa_titulo.modulate.a = 0.0
+	_mapa_titulo.modulate.a = 1.0
 	var tt := create_tween().set_parallel(true)
-	tt.tween_property(_mapa_titulo, "modulate:a", 1.0, 0.12).set_delay(0.08)
 	tt.tween_property(_mapa_titulo, "rect_scale", Vector2.ONE, 0.32).set_delay(0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	var atual: Panel = _mapa_cards[i]
 	var tc := create_tween()
@@ -683,11 +689,12 @@ func _pular_mapa() -> void:
 	var s := sessao
 	Sons.tocar("selecao")
 	var tw := create_tween()
-	tw.tween_property(_mapa, "modulate:a", 0.0, 0.22)
+	tw.tween_property(_mapa, "rect_position:y", -ALTURA, 0.24).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 	yield(tw, "finished")
 	if not vale(s):
 		return
 	_mapa.visible = false
+	_mapa.rect_position.y = 0.0
 	# contagem 3-2-1: ondas vindo das bordas para o centro
 	_contagem.visible = true
 	var lbl := Arte.rotulo_de(_contagem)
@@ -702,16 +709,15 @@ func _pular_mapa() -> void:
 		_onda().disparar(Vector2(540, 960), 1, lerp(0.75, 1.45, prog), true, cor)
 		_grade.disparar(Vector2(540, 960), 1, true, cor)
 		Sons.tocar("bip")
-		_contagem.scale = Vector2(1.5, 1.5)
-		_contagem.modulate.a = 0.0
-		var tc = create_tween().set_parallel(true)
-		tc.tween_property(_contagem, "modulate:a", 1.0, 0.16)
-		tc.tween_property(_contagem, "scale", Vector2.ONE, 0.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		_contagem.scale = Vector2(0.3, 0.3)
+		_contagem.modulate.a = 1.0
+		var tc = create_tween()
+		tc.tween_property(_contagem, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		yield(get_tree().create_timer(0.66), "timeout")
 		if not vale(s):
 			return
 		var tf = create_tween()
-		tf.tween_property(_contagem, "modulate:a", 0.0, 0.14)
+		tf.tween_property(_contagem, "scale", Vector2.ZERO, 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 		yield(tf, "finished")
 		if not vale(s):
 			return
@@ -723,7 +729,7 @@ func _pular_mapa() -> void:
 	var tv := create_tween()
 	tv.tween_property(_contagem, "scale", Vector2(1.12, 1.12), 0.26).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tv.tween_interval(0.22)
-	tv.tween_property(_contagem, "modulate:a", 0.0, 0.28)
+	tv.tween_property(_contagem, "scale", Vector2.ZERO, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 	var te := create_tween()
 	te.tween_property(_escuro, "modulate:a", 0.0, 0.3)
 	Sons.tocar("apito")
@@ -843,7 +849,7 @@ func _cesta() -> void:
 	_faisca().restart()
 	Sons.tocar("combo_%d" % int(clamp(nivel, 1, 12)))
 	_mostrar_combo(nivel)
-	_flutuar("+%d" % ganho, Arte.OURO if ouro else (Grade.cor_do_combo(nivel) if nivel >= 3 else Color(1, 1, 1)))
+	_flutuar("+%d" % ganho, Arte.OURO if ouro else (Grade.cor_do_combo(nivel) if nivel >= 3 else Arte.LARANJA))
 	_tremer(4.0 + min(nivel, 12) * 0.9)
 	for b in _barras:
 		b.energia = clamp(0.2 + _combo * 0.08, 0.2, 1.0)
@@ -855,6 +861,14 @@ func _cesta() -> void:
 
 
 ## Quantas bolas saem da cesta: mais com o combo (no MODO ENTERRADA, uma a mais).
+## EFEITOS LEVES (qualidade automática numa TV Box que não segurou 60
+## quadros): sem os holofotes e sem os brilhos/rastros das bolas que caem.
+func _aplicar_efeitos() -> void:
+	var leves := Ajustes.leves()
+	_holofotes.visible = not leves
+	_bolas_fx.leves = leves
+
+
 func _bolas_da_cesta(nivel: int) -> int:
 	var n := 1
 	if nivel >= 10:
@@ -928,10 +942,12 @@ func _flutuar(texto: String, cor: Color, de := Vector2(-1, -1)) -> void:
 	f.position = de if de.x >= 0.0 else Vector2(CESTA.x + _r.randf_range(-150, 150), 1075.0)
 	f.modulate.a = 1.0
 	f.scale = Vector2(0.5, 0.5)
+	# entra crescendo, sobe e sai ENCOLHENDO (nunca meio transparente)
 	var tw := create_tween().set_parallel(true)
 	tw.tween_property(f, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_property(f, "position:y", f.position.y - 135.0, 1.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	tw.tween_property(f, "modulate:a", 0.0, 0.45).set_delay(0.55)
+	tw.tween_property(f, "position:y", f.position.y - 135.0, 0.95).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tw.tween_property(f, "scale", Vector2.ZERO, 0.2).set_delay(0.75).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	tw.chain().tween_callback(f, "set_visible", [false])
 
 
 func _mostrar_combo(nivel: int) -> void:
@@ -971,17 +987,15 @@ func _mostrar_combo(nivel: int) -> void:
 	if _combo_tw != null and _combo_tw.is_valid():
 		_combo_tw.kill()
 	_combo_banner.visible = true
-	_combo_banner.modulate.a = 0.0
-	_combo_banner.scale = Vector2(0.7, 0.7)
+	_combo_banner.modulate.a = 1.0
+	_combo_banner.scale = Vector2(0.35, 0.35)
 	_combo_banner.rotation = _r.randf_range(-0.06, 0.06)
+	# entra crescendo e sai encolhendo: o texto fica sempre inteiro
 	_combo_tw = create_tween()
-	_combo_tw.set_parallel(true)
-	_combo_tw.tween_property(_combo_banner, "modulate:a", 1.0, 0.08)
-	_combo_tw.tween_property(_combo_banner, "scale", Vector2(1.05, 1.05), 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	# (chain() só separa o PRÓXIMO passo: a saída espera com set_delay; um
-	# set_parallel depois do chain() juntaria a saída à entrada)
-	_combo_tw.chain().tween_property(_combo_banner, "scale", Vector2(0.9, 0.9), 0.18).set_delay(0.42)
-	_combo_tw.tween_property(_combo_banner, "modulate:a", 0.0, 0.18).set_delay(0.42)
+	_combo_tw.tween_property(_combo_banner, "scale", Vector2(1.05, 1.05), 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_combo_tw.tween_interval(0.42)
+	_combo_tw.tween_property(_combo_banner, "scale", Vector2.ZERO, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	_combo_tw.tween_callback(_combo_banner, "set_visible", [false])
 
 
 func _subiu_mult() -> void:
@@ -1106,14 +1120,14 @@ func _avisar(texto: String, cor: Color, duracao := 1.1, prioridade := 1) -> void
 	if _banner_tw != null and _banner_tw.is_valid():
 		_banner_tw.kill()
 	_banner.visible = true
-	_banner.modulate.a = 0.0
-	_banner.scale = Vector2(0.6, 0.6)
+	_banner.modulate.a = 1.0
+	_banner.scale = Vector2(0.6, 0.05)
+	# abre e fecha na vertical (como uma faixa de LED), sem transparência
 	_banner_tw = create_tween()
-	_banner_tw.set_parallel(true)
-	_banner_tw.tween_property(_banner, "modulate:a", 1.0, 0.12)
 	_banner_tw.tween_property(_banner, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_banner_tw.chain().tween_property(_banner, "modulate:a", 0.0, 0.25).set_delay(duracao)
-	_banner_tw.tween_property(_banner, "scale", Vector2(1.08, 1.08), 0.25).set_delay(duracao)
+	_banner_tw.tween_interval(duracao)
+	_banner_tw.tween_property(_banner, "scale", Vector2(1.04, 0.0), 0.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	_banner_tw.tween_callback(_banner, "set_visible", [false])
 
 
 func _tremer(forca: float) -> void:
@@ -1177,6 +1191,7 @@ func _mostrar_ouro() -> void:
 	_ouro_ativo = true
 	_ouro_resta = 6.0
 	_ouro.visible = true
+	_ouro_txt.visible = true
 	_ouro.scale = Vector2(0.1, 0.1)
 	_ouro.modulate.a = 1.0
 	var tw := create_tween()
@@ -1192,6 +1207,7 @@ func _pegar_ouro() -> void:
 	_faiscas_ouro.restart()
 	_faiscas_ouro.emitting = true
 	_onda().disparar(BOLA_OURO, 1, 1.3, false, Arte.OURO, true)
+	_ouro_txt.visible = false
 	var tw := create_tween().set_parallel(true)
 	tw.tween_property(_ouro, "scale", Vector2(1.8, 1.8), 0.35)
 	tw.tween_property(_ouro, "modulate:a", 0.0, 0.35)
@@ -1201,7 +1217,7 @@ func _pegar_ouro() -> void:
 func _perder_ouro() -> void:
 	_ouro_ativo = false
 	var tw := create_tween()
-	tw.tween_property(_ouro, "modulate:a", 0.0, 0.4)
+	tw.tween_property(_ouro, "scale", Vector2.ZERO, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 	tw.tween_callback(_ouro, "set_visible", [false])
 
 
@@ -1350,7 +1366,7 @@ func _atualizar_card(i: int) -> void:
 		info.text = "META %d" % meta if i < FINAL else "VALE TUDO"
 		info.add_color_override("font_color", Color(0.7, 0.7, 0.75))
 		card.add_stylebox_override("panel", Arte.estilo_neon(cor, 0.55, 22, 2, 6, 0.06))
-		card.modulate.a = 0.7
+		tom(card, 0.62)
 		return
 	pts.text = str(pontos_fase[i])
 	if i < FINAL and passou[i]:
@@ -1365,10 +1381,10 @@ func _atualizar_card(i: int) -> void:
 	if jogada:
 		var c: Color = VERDE if (i == FINAL or passou[i]) else Arte.VERMELHO_ALERTA
 		card.add_stylebox_override("panel", Arte.estilo_neon(c, 0.7, 22, 2, 8, 0.1))
-		card.modulate.a = 0.9
+		tom(card, 0.9)
 	else:
 		card.add_stylebox_override("panel", Arte.estilo_neon(cor, 0.85, 22, 4, 24, 0.16))
-		card.modulate.a = 1.0
+		tom(card, 1.0)
 
 
 func _atualizar_lista_top() -> void:
@@ -1422,7 +1438,7 @@ func _process(delta: float) -> void:
 	match estado:
 		MAPA:
 			_mapa_t += delta
-			_mapa_prepare.modulate.a = 0.35 + 0.65 * (0.5 + 0.5 * sin(_t * 6.0))
+			tom(_mapa_prepare, 0.8 + 0.2 * (0.5 + 0.5 * sin(_t * 6.0)))
 			if _mapa_t >= MAPA_SEGUNDOS:
 				_pular_mapa()
 		JOGANDO:

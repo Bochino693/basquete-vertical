@@ -16,6 +16,7 @@ func _set_progresso(v: float) -> void:
 
 
 func _draw() -> void:
-	draw_arc(Vector2.ZERO, raio, 0.0, TAU, 48, Color(1, 1, 1, 0.18), 8.0, true)
+	# (faixas lisas: o draw_arc fica em "escadinha" na TV Box)
+	Arte.arco(self, Vector2.ZERO, raio, 0.0, TAU, Color(1, 1, 1, 0.18), 8.0)
 	if progresso > 0.0:
-		draw_arc(Vector2.ZERO, raio, -PI * 0.5, -PI * 0.5 + TAU * progresso, 48, cor, 9.0, true)
+		Arte.arco(self, Vector2.ZERO, raio, -PI * 0.5, -PI * 0.5 + TAU * progresso, cor, 9.0)

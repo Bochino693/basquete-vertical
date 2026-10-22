@@ -175,7 +175,11 @@ func mostrar(d: Dictionary) -> void:
 	_ativo = true
 	_visto = 0.0
 	visible = true
-	modulate.a = 0.0
+	# entra "ligando" de cima para baixo como uma tela de TV (sem fade: texto
+	# com contorno meio transparente mostra o contorno através da letra)
+	modulate.a = 1.0
+	rect_pivot_offset = rect_size * 0.5
+	rect_scale = Vector2(1, 0.02)
 	_coroa.visible = false
 	var recorde: bool = d.get("recorde", false)
 	var campeao: bool = d.get("campeao", false)
@@ -218,7 +222,7 @@ func mostrar(d: Dictionary) -> void:
 		card.rect_size = Vector2(w, h)
 		card.rect_pivot_offset = Vector2(w * 0.5, h)
 		card.rect_scale = Vector2(1, 0.05)
-		card.modulate.a = 0.0
+		card.visible = false
 		var c: Color = CORES_FASE[i]
 		var sb := StyleBoxFlat.new()
 		sb.set_corner_radius_all(30)
@@ -252,16 +256,17 @@ func mostrar(d: Dictionary) -> void:
 		else:
 			st.text = "NÃO PASSOU"
 			st.add_color_override("font_color", Arte.VERMELHO_ALERTA)
-		st.modulate.a = 0.0
+		st.rect_pivot_offset = st.rect_size * 0.5
+		st.visible = false
 	var valores := [str(int(d.get("cestas", 0))), "x%d" % int(d.get("maior_combo", 0)),
 		"%dº" % int(d.get("posicao", 0)) if int(d.get("posicao", 0)) > 0 else "-"]
 	for i in 3:
 		var cx: Panel = _caixas[i]
 		cx.get_node("V").text = valores[i]
-		cx.modulate.a = 0.0
+		cx.visible = false
 	# ------------------------------------------------------ a sequência
 	var tw := create_tween()
-	tw.tween_property(self, "modulate:a", 1.0, 0.4)
+	tw.tween_property(self, "rect_scale", Vector2.ONE, 0.32).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	_titulo.rect_pivot_offset = _titulo.rect_size * 0.5
 	_titulo.rect_scale = Vector2(1.8, 1.8)
 	var tt := create_tween()
@@ -281,20 +286,23 @@ func mostrar(d: Dictionary) -> void:
 		var col: Dictionary = _colunas[i]
 		var card: Panel = col["card"]
 		Sons.tocar("sobe", -6.0, 0.8 + i * 0.15)
+		card.visible = true
+		var st: Label = _status[i]
+		st.rect_scale = Vector2(0.3, 0.3)
 		var tcol := create_tween().set_parallel(true)
-		tcol.tween_property(card, "modulate:a", 1.0, 0.2)
 		tcol.tween_property(card, "rect_scale", Vector2.ONE, 0.42).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		if i <= fase:
 			tcol.tween_method(self, "_contar", 0.0, float(col["valor"]), 0.6, [col["pts"]]).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-		tcol.tween_property(_status[i], "modulate:a", 1.0, 0.25).set_delay(0.35)
+		tcol.tween_callback(st, "show").set_delay(0.35)
+		tcol.tween_property(st, "rect_scale", Vector2.ONE, 0.25).set_delay(0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		yield(get_tree().create_timer(0.42), "timeout")
 	if tk != _token:
 		return
 	for i in 3:
 		var cx: Panel = _caixas[i]
-		cx.rect_scale = Vector2(0.6, 0.6)
+		cx.rect_scale = Vector2(0.3, 0.3)
 		var tb := create_tween().set_parallel(true)
-		tb.tween_property(cx, "modulate:a", 1.0, 0.18).set_delay(i * 0.1)
+		tb.tween_callback(cx, "show").set_delay(i * 0.1)
 		tb.tween_property(cx, "rect_scale", Vector2.ONE, 0.32).set_delay(i * 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	yield(get_tree().create_timer(0.45), "timeout")
 	if tk != _token:
@@ -374,7 +382,8 @@ func _process(delta: float) -> void:
 	_visto += delta
 	for i in _feixes.size():
 		_feixes[i].rotation = sin(_t * (0.5 + i * 0.17) + i * 1.7) * 0.5 + (0.2 if i == 0 else -0.2)
-	_dica.modulate.a = 0.45 + 0.55 * (0.5 + 0.5 * sin(_t * 4.0))
+	var v := 0.82 + 0.18 * (0.5 + 0.5 * sin(_t * 4.0))
+	_dica.modulate = Color(v, v, v, 1.0)
 	if _coroa.visible:
 		_coroa.rotation = sin(_t * 2.2) * 0.07
 

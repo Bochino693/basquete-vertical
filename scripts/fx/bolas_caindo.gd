@@ -5,7 +5,7 @@ extends Node2D
 ## rede), cai na quadra lá no fundo e quica vindo para a frente - cresce,
 ## porque a quadra está em perspectiva - até sair pela borda de baixo, como
 ## se caísse para fora da máquina. Com muitas cestas seguidas saem várias,
-## abrindo para os lados; no SLAM MODE vêm com rastro de fogo azul e no
+## abrindo para os lados; no MODO ENTERRADA vêm com rastro de fogo azul e no
 ## recorde (ou na bola de ouro) são de ouro. Cada quique acende um anel no
 ## piso e faz o "toc" da bola na quadra.
 ##
@@ -23,6 +23,8 @@ const SAIDA_Y := 915.0        # onde a bola aparece (logo abaixo da faixa da fas
 const N := 12
 
 enum { NORMAL, FOGO, OURO }
+
+var leves := false            # efeitos leves: sem brilho e sem rastro
 
 var _bolas := []
 var _aneis := []
@@ -88,7 +90,7 @@ func soltar(n: int, cor: Color, tipo := NORMAL) -> void:
 		var c: Color = Color(0.35, 0.8, 1.0) if tipo == FOGO else (Arte.OURO if tipo == OURO else cor)
 		b["brilho"].modulate = Color(c.r, c.g, c.b, 0.0)
 		b["rastro"].modulate = Color(c.r, c.g, c.b, 0.0)
-		b["rastro"].visible = tipo != NORMAL
+		b["rastro"].visible = tipo != NORMAL and not leves
 		_posicionar(b)
 	_vivas = _contar()
 	set_process(true)
@@ -187,13 +189,13 @@ func _posicionar(b: Dictionary) -> void:
 	# brilho em volta (combo, fogo, ouro)
 	var tipo: int = b["tipo"]
 	var brilho: Sprite = b["brilho"]
-	brilho.visible = not esperando
+	brilho.visible = not esperando and not leves
 	brilho.position = p
 	brilho.scale = Vector2.ONE * raio * (4.2 if tipo != NORMAL else 3.2) / float(Arte.tex_brilho.get_width())
 	brilho.modulate.a = (0.55 if tipo != NORMAL else 0.28) * aparece
 	# rastro (fogo / ouro): o cone aponta para trás do movimento
 	var rastro: Sprite = b["rastro"]
-	if tipo != NORMAL and not esperando:
+	if tipo != NORMAL and not esperando and not leves:
 		var v := Vector2(b["vx"] * s, -b["vh"] * s + b["vs"] * s * s * (TOPO_PISO - FUGA.y - b["h"]))
 		var veloc := v.length()
 		if veloc > 1.0:

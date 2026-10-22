@@ -12,7 +12,7 @@ extends Node
 
 signal mudou
 
-const VERSAO := "1.5-gles2"
+const VERSAO := "1.6-gles2"
 
 const ARQ_AJUSTES := "user://slam_ajustes.cfg"
 const ARQ_RECORDES := "user://slam_recordes.cfg"
@@ -41,7 +41,7 @@ var vol_musica := 0.8
 var vol_efeitos := 1.0
 var giro := 99                     # 99 = automático (Tela.AUTO); -1 / 0 / 1
 var qualidade := 0                 # índice de QUALIDADES
-var escala_auto := 1.0             # o que a qualidade automática escolheu
+var efeitos_leves := false         # a qualidade automática desligou os efeitos extras
 var mostrar_fps := false
 var porta_com := "COM5"            # só no Windows (LEDs pela ponte PowerShell)
 var leds := true
@@ -122,12 +122,11 @@ func carregar() -> void:
 		vol_efeitos = clamp(float(c.get_value("som", "efeitos", vol_efeitos)), 0.0, 1.0)
 		giro = int(c.get_value("tela", "giro", giro))
 		qualidade = int(clamp(int(c.get_value("tela", "qualidade", qualidade)), 0, QUALIDADES.size() - 1))
-		escala_auto = clamp(float(c.get_value("tela", "escala_auto", escala_auto)), 0.8333, 1.0)
-		# 1.5: a ampliação agora é lisa e o jogo ficou mais leve; a qualidade
-		# automática que a versão anterior gravou (900/720 linhas, ampliadas
-		# em blocos) é medida de novo, começando em 1080
-		if int(c.get_value("tela", "versao_escala", 1)) < 2:
-			escala_auto = 1.0
+		efeitos_leves = bool(c.get_value("tela", "efeitos_leves", efeitos_leves))
+		# 1.6: a qualidade automática não baixa mais a resolução (fica sempre
+		# em 1080, nítida); o que as versões anteriores gravaram é medido de novo
+		if int(c.get_value("tela", "versao_escala", 1)) < 3:
+			efeitos_leves = false
 		mostrar_fps = bool(c.get_value("tela", "mostrar_fps", mostrar_fps))
 		apresentacao = bool(c.get_value("tela", "apresentacao", apresentacao))
 		porta_com = str(c.get_value("leds", "porta_com", porta_com))
@@ -166,8 +165,8 @@ func salvar() -> void:
 	c.set_value("som", "efeitos", vol_efeitos)
 	c.set_value("tela", "giro", giro)
 	c.set_value("tela", "qualidade", qualidade)
-	c.set_value("tela", "escala_auto", escala_auto)
-	c.set_value("tela", "versao_escala", 2)
+	c.set_value("tela", "efeitos_leves", efeitos_leves)
+	c.set_value("tela", "versao_escala", 3)
 	c.set_value("tela", "mostrar_fps", mostrar_fps)
 	c.set_value("tela", "apresentacao", apresentacao)
 	c.set_value("leds", "porta_com", porta_com)
@@ -292,9 +291,14 @@ func zerar_recorde() -> void:
 
 
 func escala_tela() -> float:
-	if qualidade == 0:
-		return escala_auto
 	return float(ESCALAS[qualidade])
+
+
+## Qualidade AUTOMÁTICA numa TV Box que não segurou 60 quadros: a imagem
+## continua em 1080; saem os efeitos que mais pesam (holofotes, brilhos e
+## rastros das bolas que caem).
+func leves() -> bool:
+	return qualidade == 0 and efeitos_leves
 
 
 static func tempo_texto(segundos: int) -> String:

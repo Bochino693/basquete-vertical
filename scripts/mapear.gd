@@ -86,7 +86,7 @@ func _atualizar_lista() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
-	_pede.modulate.a = 0.6 + 0.4 * sin(_t * 5.0)
+	tom(_pede, 0.85 + 0.15 * sin(_t * 5.0))
 	if _fim:
 		return
 	var item: Array = Controles.SEQUENCIA[_passo]

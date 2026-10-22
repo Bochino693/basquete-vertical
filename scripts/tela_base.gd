@@ -62,17 +62,31 @@ func vale(s: int) -> bool:
 	return s == sessao and ativo
 
 
-## Lâmpada de neon ligando: pisca, falha e firma (só transparência: de
-## graça para a placa).
+## Lâmpada de neon ligando: pisca (acende/apaga), falha e firma. Só
+## ACESO ou APAGADO, nunca meio transparente: um texto com contorno meio
+## transparente mostra o contorno por dentro das letras (fica "sujo").
 func neon_liga(no: CanvasItem, atraso := 0.0, alvo := 1.0) -> SceneTreeTween:
 	no.modulate.a = 0.0
 	var tw := create_tween()
 	if atraso > 0.0:
 		tw.tween_interval(atraso)
-	var passos := [[0.75, 0.04], [0.08, 0.05], [0.9, 0.03], [0.25, 0.07], [1.0, 0.04], [0.55, 0.05], [1.0, 0.08]]
+	var passos := [[1.0, 0.04], [0.0, 0.05], [1.0, 0.03], [0.0, 0.07], [1.0, 0.04], [0.0, 0.04], [1.0, 0.0]]
 	for p in passos:
-		tw.tween_property(no, "modulate:a", float(p[0]) * alvo, float(p[1]))
+		tw.tween_callback(self, "_neon_alfa", [no, float(p[0]) * alvo])
+		if float(p[1]) > 0.0:
+			tw.tween_interval(float(p[1]))
 	return tw
+
+
+func _neon_alfa(no: CanvasItem, a: float) -> void:
+	if is_instance_valid(no):
+		no.modulate.a = a
+
+
+## Escurece (ou clareia) um nó SEM transparência: multiplica as cores
+## (texto com contorno continua inteiro, só mais apagado).
+static func tom(no: CanvasItem, v: float) -> void:
+	no.modulate = Color(v, v, v, 1.0)
 
 
 ## Pulo de escala (Node2D ou Control) - "pop".

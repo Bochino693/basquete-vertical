@@ -20,7 +20,7 @@ func _ready() -> void:
 	Input.use_accumulated_input = false
 	Ajustes.apresentacao = true
 	Ajustes.qualidade = 1
-	Ajustes.escala_auto = 1.0
+	Ajustes.efeitos_leves = false
 	Tela.definir_escala(1.0)
 	principal = load("res://cenas/principal.tscn").instance()
 	add_child(principal)

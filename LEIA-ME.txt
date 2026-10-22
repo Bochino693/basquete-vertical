@@ -2,7 +2,7 @@ SLAM ARENA - BASQUETE ARCADE VERTICAL (1 JOGADOR, 3 FASES, SEM BOTAO)
 ======================================================================
 EDICAO OPENGL ES 2.0 - Godot 3.6.3 - para TV Box com Mali-400 / Mali-450
 (TX9 "comum": Amlogic S905X/S905W, Rockchip RK3229; MXQ, X96...).
-VERSAO 1.5-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
+VERSAO 1.6-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
 em Aplicativos > Slam Arena). VERSAO NOVA: aumente version/code e
 version/name no export_presets.cfg e o VERSAO do autoload/Ajustes.gd.
 
@@ -15,7 +15,7 @@ GERAR O APK (WINDOWS), PASSO A PASSO
   3. Dois cliques no GERAR_APK.bat. A 1a vez baixa o que faltar (5 a 20
      min); depois, 2 a 4 min.
   4. O APK sai em APK-Pronto\SlamArena-<versao>.apk (a pasta abre sozinha
-     no fim; ex.: SlamArena-1.5-gles2.apk): copie para o pendrive e
+     no fim; ex.: SlamArena-1.6-gles2.apk): copie para o pendrive e
      instale na TV Box (ele instala por cima da versao anterior).
   Se der erro, envie o arquivo build\android\GERACAO-COMPLETA.log.
   Onde ligar cada fio na maquina: docs\diagrama_montagem.png.
@@ -156,10 +156,18 @@ LISO NA TX9 (MALI-400/450) - O QUE FOI FEITO
   * Sons curtos em WAV (tocam na hora, sem decodificar), musicas em MP3 em
     fluxo; efeitos feitos a mao (bip, tique, trovao, moeda, swish...)
     sintetizados por tools/gerar_sons.py e gravados em WAV.
-  * QUALIDADE AUTOMATICA: se na partida a TV Box ficar 6 s abaixo de 45
-    quadros por segundo, o jogo passa a desenhar em 900 linhas (e depois
-    720) e amplia: a placa pinta 30% / 55% menos pixels. Fica gravado; o
-    operador pode fixar a qualidade no menu.
+  * QUALIDADE AUTOMATICA: a imagem fica SEMPRE em 1080 linhas (nitida).
+    Se na partida a TV Box ficar 6 s abaixo de 45 quadros por segundo, o
+    jogo desliga os efeitos que mais pesam (holofotes, brilho e rastro das
+    bolas que caem) - "1080, ECONOMIA" no menu - em vez de baixar a
+    resolucao. Fica gravado; trocar a qualidade no menu mede de novo.
+  * TEXTO NUNCA MEIO TRANSPARENTE: letra com contorno meio transparente
+    mostra o contorno por dentro (fica "sujo", parece apagado). Por isso
+    textos e numeros entram e saem crescendo/encolhendo ou deslizando, e os
+    pulsos mudam o brilho (nunca a transparencia).
+  * BORDAS LISAS: aneis e arcos (o anel que gira em volta da bola, a borda
+    do relogio) sao faixas com textura de borda macia - o draw_arc da Mali
+    sai em "escadinha".
   * Medido no PC (Godot 3.6.3, sem placa de video, so o processador):
     uma cesta com todos os efeitos 0,5 ms; PASSOU 0,3 ms; aviso 0,13 ms;
     bola de ouro 0,07 ms; abrir o resultado 0,45 ms.
@@ -242,10 +250,13 @@ CONFIGURACAO DO OPERADOR
     TELA CHEIA, sem faixas pretas (16:9, 16:10, 4:3, 5:4).
   - QUALIDADE DA IMAGEM: automatica, 1080, 900, 720. O padrao desenha na
     resolucao da tela (1080 linhas, nitido); TV Box em 4K desenha em 1080
-    e amplia LISO. A automatica so desce para 900 se a TV Box nao segurar
-    60 quadros, e mesmo assim a imagem e ampliada lisa (sem "blocos").
+    e amplia LISO. A automatica fica sempre em 1080: se a TV Box nao
+    segurar 60 quadros, so tira os efeitos mais pesados ("1080, ECONOMIA").
+    900 e 720 (ampliadas lisas, sem "blocos") so se o operador escolher.
     Para o jogo mais nitido possivel: na TV Box, Configuracoes > Tela >
-    Resolucao em 1080p 60Hz, e aqui QUALIDADE MAXIMA (1080).
+    Resolucao em 1080p 60Hz. O rodape do menu mostra "IMAGEM 1080x1920";
+    se a TV Box estiver em 720p no Android, ele avisa "TV BOX EM 720p":
+    nesse caso nada fica nitido de verdade ate trocar a resolucao.
   - APRESENTACAO NA ESPERA, MOSTRAR DESEMPENHO
   - LEDS: ligados/desligados, porta COM (so no PC Windows), TESTAR LEDS
     (passa por todos os efeitos e pede de novo a permissao do USB)
@@ -253,7 +264,8 @@ CONFIGURACAO DO OPERADOR
   - FECHAR O JOGO (ANDROID): salva e volta para o Android
   Embaixo: estado do Arduino, contador de sinais do SENSOR DA CESTA
   (jogue uma bola para testar), os botoes de cada comando, partidas e
-  cestas da maquina.
+  cestas da maquina e o tamanho da imagem desenhada (ou o aviso de TV Box
+  em 720p).
 
 
 LEDS (ARDUINO)

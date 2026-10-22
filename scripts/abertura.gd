@@ -324,12 +324,12 @@ func _preencher_recordes() -> void:
 			chip.visible = true
 			pts.text = "%d PTS" % int(item.get("pontos", 0))
 			hora.text = str(item.get("hora", ""))
-			linha.modulate.a = 1.0
+			tom(linha, 1.0)
 		else:
 			chip.visible = false
 			pts.text = "-"
 			hora.text = ""
-			linha.modulate.a = 0.35
+			tom(linha, 0.4)
 	if lista.empty():
 		_rec_rodape.text = "NINGUÉM JOGOU HOJE AINDA: SEJA O PRIMEIRO!"
 	else:
@@ -472,7 +472,7 @@ func _animar_rodape() -> void:
 	_start.scale = Vector2(s, s)
 	if _start.modulate.a > 0.0 and not _comecando:
 		var l := Arte.rotulo_de(_start)
-		l.modulate.a = 0.45 + 0.55 * (0.5 + 0.5 * sin(_t * 4.2))
+		tom(l, 0.82 + 0.18 * (0.5 + 0.5 * sin(_t * 4.2)))
 	for i in _bolas.size():
 		var b: Node2D = _bolas[i]
 		b.position.y = 1734.0 - abs(sin(_t * 3.6 + i * 1.57)) * 46.0
@@ -524,9 +524,12 @@ func _mostrar_painel(p: Control) -> void:
 	_estado_t = 0.0
 	if p == _recordes:
 		_preencher_recordes()
+	# o painel entra subindo (sem ficar transparente)
 	p.visible = true
+	p.modulate.a = 1.0
+	p.rect_position.y = ALTURA
 	var tw := create_tween().set_parallel(true)
-	tw.tween_property(p, "modulate:a", 1.0, 0.35)
+	tw.tween_property(p, "rect_position:y", 0.0, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	tw.tween_method(self, "_escurecer", 0.0, 1.0, 0.35)
 	Sons.tocar("vento", -8.0)
 	if p == _recordes:
@@ -542,7 +545,7 @@ func _esconder_painel() -> void:
 	for p in [_como, _recordes]:
 		if p.visible:
 			var tw = create_tween().set_parallel(true)
-			tw.tween_property(p, "modulate:a", 0.0, 0.35)
+			tw.tween_property(p, "rect_position:y", -ALTURA, 0.35).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 			tw.tween_method(self, "_escurecer", 1.0, 0.0, 0.35)
 			tw.chain().tween_callback(p, "set_visible", [false])
 
@@ -587,10 +590,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		Ajustes.adicionar_credito(1)
 		Sons.tocar("moeda")
 		_fichas_pop.modulate.a = 1.0
+		_fichas_pop.scale = Vector2.ONE
 		_fichas_pop.position = Vector2(540, 1640)
 		var tw := create_tween().set_parallel(true)
 		tw.tween_property(_fichas_pop, "position:y", 1540.0, 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		tw.tween_property(_fichas_pop, "modulate:a", 0.0, 0.9).set_delay(0.3)
+		tw.tween_property(_fichas_pop, "scale", Vector2.ZERO, 0.2).set_delay(0.7).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 		_atualizar_info()
 		return
 	# R2 da Zero Delay, ou MENU / VOLTAR / seta do controle remoto da TV Box

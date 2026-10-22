@@ -11,6 +11,6 @@ uniform float tom_apagado = 0.16;
 
 void fragment() {
 	vec3 c = cor.rgb * mix(tom_apagado, 1.0, COLOR.g);
-	c = mix(c, vec3(1.0, 0.97, 0.90), COLOR.r * 0.62);
+	c = mix(c, vec3(1.0, 0.98, 0.92), COLOR.r * 0.72);
 	COLOR = vec4(c, COLOR.a);
 }

@@ -226,8 +226,8 @@ func aquecer() -> void:
 	_marca.modulate.a = 1.0
 	_logo.scale = Vector2.ONE * LOGO_ESCALA
 	for l in _letras:
-		l.modulate.a = 1.0
-	_apresenta.modulate.a = 1.0
+		l.visible = true
+	_apresenta.visible = true
 	_poster_pivo.visible = true
 	_bola.visible = true
 	_rede.visible = true
@@ -260,10 +260,12 @@ func _preparar_cena() -> void:
 	_marca.scale = Vector2.ONE
 	_marca.position = Vector2.ZERO
 	_logo.scale = Vector2.ONE * LOGO_ESCALA
+	# (texto com contorno nunca aparece/some por transparência: o contorno
+	# apareceria através da letra; entra e sai por escala)
 	for l in _letras:
-		l.modulate.a = 0.0
+		l.visible = false
 	_linha.rect_scale = Vector2(0, 1)
-	_apresenta.modulate.a = 0.0
+	_apresenta.visible = false
 	_reflexo_t = -1.0
 	_mat_logo.set_shader_param("forca", 0.0)
 	for t in _quadra:
@@ -330,9 +332,9 @@ func _roteiro() -> void:
 	for i in _letras.size():
 		var l: Label = _letras[i]
 		l.rect_scale = Vector2(2.6, 2.6)
-		var tg := create_tween().set_parallel(true)
+		l.visible = true
+		var tg := create_tween()
 		tg.tween_property(l, "rect_scale", Vector2.ONE, 0.24).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		tg.tween_property(l, "modulate:a", 1.0, 0.1)
 		Sons.tocar("tique", -2.0, 0.9 + i * 0.12)
 		yield(espera(0.08), "timeout")
 		if not vale(s):
@@ -344,9 +346,9 @@ func _roteiro() -> void:
 	_tremor = 8.0
 	var ta := create_tween().set_parallel(true)
 	ta.tween_property(_linha, "rect_scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	ta.tween_property(_apresenta, "modulate:a", 1.0, 0.45).set_delay(0.2)
-	_apresenta.rect_scale = Vector2(1.25, 1.0)
-	ta.tween_property(_apresenta, "rect_scale", Vector2.ONE, 0.6).set_delay(0.2).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+	_apresenta.rect_scale = Vector2(1.4, 0.05)
+	ta.tween_callback(_apresenta, "show").set_delay(0.2)
+	ta.tween_property(_apresenta, "rect_scale", Vector2.ONE, 0.4).set_delay(0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	yield(espera(0.85), "timeout")
 	if not vale(s):
 		return
@@ -355,9 +357,9 @@ func _roteiro() -> void:
 	if not vale(s):
 		return
 	var tf := create_tween().set_parallel(true)
-	tf.tween_property(_marca, "modulate:a", 0.0, 0.35)
-	tf.tween_property(_marca, "scale", Vector2(1.08, 1.08), 0.35)
-	tf.tween_property(_marca, "position", Vector2(-43.2, -76.8), 0.35)
+	# a marca "implode" para o centro da tela (escala e posição juntas)
+	tf.tween_property(_marca, "scale", Vector2.ZERO, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	tf.tween_property(_marca, "position", Vector2(540, 960), 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 	# 2. a quadra se desenha
 	yield(espera(0.3), "timeout")
 	if not vale(s):

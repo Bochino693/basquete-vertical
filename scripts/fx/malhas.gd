@@ -166,10 +166,11 @@ static func anel(r_dentro: float, r_fora: float, r_arco: float, n := 60) -> Arra
 		for c in [c0, c1, c2, c3]:
 			p.append(c)
 			uv.append(Vector2(frac, 0))
-		for c in [c0, c1, c2, c3]:
-			p.append(c)
-			uv.append(Vector2(frac, 1))
 		var meio = d * (r_dentro + r_fora) * 0.5
+		# (o brilho começa 1,3 px para fora: a beirada do tracinho fica lisa)
+		for c in [c0, c1, c2, c3]:
+			p.append(c + (c - meio).normalized() * 1.3)
+			uv.append(Vector2(frac, 1))
 		for c in [c0, c1, c2, c3]:
 			p.append(c + (c - meio).normalized() * brilho)
 			uv.append(Vector2(frac, 2))
