@@ -1,14 +1,13 @@
-// GRADE DE QUADRADOS QUE AFUNDA E ACENDE EM ONDA (a marca do Slam Arena).
-// Uma malha só com todos os quadrados (moldura + miolo de cada um); cada
-// ponto sabe o centro do seu quadrado (VERTEX), o canto (UV = ±1, ±1) e se
-// é moldura de fora, de dentro ou miolo (COLOR.r / COLOR.g); COLOR.b é um
-// sorteio por quadrado (cintilar). TUDO é calculado aqui no vértice: o
-// script só move 4 ondas + o recorde por quadro (nenhum quadrado em
-// GDScript). Miolo apagado vira um ponto (a placa não pinta nada).
+// O PISO DE LED DA QUADRA (a marca do Slam Arena): os ladrilhos acendem e
+// sobem quando a onda passa (até 4 ondas + o modo RECORDE) e, parados,
+// cintilam de leve com uma faixa de luz que corre do fundo para a frente
+// de tempos em tempos (a quadra nunca fica morta). Tudo calculado no
+// vértice (por ladrilho); o pixel só lê a textura do ladrilho (fx_ladrilho)
+// - leve para a Mali-450. Malha: Malhas.piso (COLOR = u, v, sorteio,
+// profundidade; UV = o canto em px).
 shader_type canvas_item;
 render_mode blend_add;
 
-uniform float passo = 90.0;
 uniform vec4 o0 = vec4(0.0, 0.0, -9999.0, 0.0);   // xy centro, z raio, w força
 uniform vec4 o1 = vec4(0.0, 0.0, -9999.0, 0.0);
 uniform vec4 o2 = vec4(0.0, 0.0, -9999.0, 0.0);
@@ -21,6 +20,9 @@ uniform vec4 c3 : hint_color = vec4(1.0, 1.0, 1.0, 1.0);
 uniform vec4 rec = vec4(0.0, 0.0, 0.0, 0.0);      // recorde: xy centro, z ciclo, w força
 uniform vec4 cor_base : hint_color = vec4(1.0, 0.40, 0.04, 1.0);
 uniform float base = 1.0;
+
+varying vec2 tc;
+varying vec4 tom;
 
 float frente(vec2 p, vec4 o, float l) {
 	float k = clamp(1.0 - abs(distance(p, o.xy) - o.z) / l, 0.0, 1.0) * o.w;
@@ -66,18 +68,20 @@ void vertex() {
 	k = mix(k, branco, m);
 	cor = mix(cor, vec3(1.0, 1.0, 1.0), m);
 
-	float tam = passo * (0.38 + 0.35 * k) * 0.5;
-	vec2 desl = vec2(k * passo * 0.16);
-	float esp = 1.6 + k * 3.4;
-	float interno = COLOR.r;
-	float miolo = COLOR.g;
-	float meia = mix(tam, tam - esp, max(interno, miolo));
-	meia *= mix(1.0, step(0.04, k), miolo);
-	VERTEX = centro + desl + UV * meia;
+	float prof = COLOR.a;
+	// parado, o ladrilho é um LED menor (e a placa pinta menos pixels);
+	// aceso, ele cresce até encostar no vizinho e sobe um pouco (mais na
+	// frente: perspectiva)
+	VERTEX = centro + vec2(0.0, -k * (5.0 + 9.0 * prof)) + UV * (0.64 + 0.48 * min(k * 1.6, 1.0));
+	tc = COLOR.rg;
 
-	float cintila = 0.5 + 0.5 * sin(TIME * 1.4 + COLOR.b * 40.0);
-	float a_base = (0.035 + 0.030 * cintila) * base;
+	float cintila = 0.5 + 0.5 * sin(TIME * 1.3 + COLOR.b * 40.0);
+	float varre = faixa(prof, fract(TIME * 0.11) * 1.6 - 0.3, 0.12);
+	float a_base = ((0.08 + 0.06 * cintila) * (0.45 + 0.55 * prof) + varre * 0.22) * base;
 	vec3 c = mix(cor_base.rgb, cor, clamp(k * 2.5, 0.0, 1.0));
-	float a = mix(a_base + k * 0.80, k * 0.22, miolo);
-	COLOR = vec4(c, a);
+	tom = vec4(c, min(1.0, a_base + k * 0.95));
+}
+
+void fragment() {
+	COLOR = vec4(tom.rgb, tom.a * texture(TEXTURE, tc).a);
 }

@@ -37,6 +37,8 @@ const AnelCrono = preload("res://scripts/fx/anel_crono.gd")
 const Barras = preload("res://scripts/fx/barras.gd")
 const Raio = preload("res://scripts/fx/raio_eletrico.gd")
 const Bola = preload("res://scripts/fx/bola.gd")
+const BolasCaindo = preload("res://scripts/fx/bolas_caindo.gd")
+const Holofotes = preload("res://scripts/fx/holofotes.gd")
 const Resultado = preload("res://scripts/resultado.gd")
 
 enum { ENTRADA, MAPA, CONTAGEM, JOGANDO, FIM_FASE, RESULTADO }
@@ -94,6 +96,9 @@ var _mundo: Node2D
 var _fundo: MeshInstance2D
 var _mat_fundo: ShaderMaterial
 var _grade: Grade
+var _holofotes: Holofotes
+var _bolas_fx: BolasCaindo
+var _proxima_bola_slam := 0.0
 var _barras: Array = []
 var _ondas: Array = []
 var _anel: AnelCrono
@@ -173,6 +178,8 @@ func _montar_fundo() -> void:
 		_barras.append(b)
 	_grade = Grade.new()
 	_mundo.add_child(_grade)
+	_holofotes = Holofotes.new()
+	_mundo.add_child(_holofotes)
 	for i in 4:
 		var o = OndaLuz.new()
 		_mundo.add_child(o)
@@ -181,7 +188,7 @@ func _montar_fundo() -> void:
 	_anel.position = ANEL
 	_mundo.add_child(_anel)
 	_crono = Display7.new()
-	_crono.configurar(2, 150, Arte.LARANJA)
+	_crono.configurar(2, 150, Arte.LARANJA, -1.0, Display7.PLACA_REDONDA)
 	_crono.position = ANEL
 	_mundo.add_child(_crono)
 
@@ -277,6 +284,10 @@ func _montar_hud() -> void:
 
 
 func _montar_efeitos() -> void:
+	# as bolas que saem da cesta e caem para fora da tela (por cima do
+	# placar; por baixo dos "+N" e dos avisos)
+	_bolas_fx = BolasCaindo.new()
+	_mundo.add_child(_bolas_fx)
 	# bola de ouro
 	_ouro = Node2D.new()
 	_ouro.position = BOLA_OURO
@@ -469,6 +480,8 @@ func entrar(dados := {}) -> void:
 	_combo = 0
 	_mult = 1
 	_grade.limpar()
+	_bolas_fx.limpar()
+	_holofotes.modo(Holofotes.NORMAL)
 	_resultado.esconder()
 	_mapa.visible = false
 	_contagem.visible = false
@@ -496,6 +509,7 @@ func sair() -> void:
 	Tela.medir(false)
 	_resultado.esconder()
 	_grade.limpar()
+	_bolas_fx.limpar()
 
 
 func aquecer() -> void:
@@ -518,6 +532,8 @@ func aquecer() -> void:
 	_faiscas_ouro.restart()
 	_faiscas_ouro.emitting = true
 	_raios[0].disparar(Vector2(100, 100), CESTA)
+	_bolas_fx.soltar(3, Arte.LARANJA, BolasCaindo.FOGO)
+	_holofotes.flashes(4)
 	for f in _flutuantes:
 		f.visible = true
 	_resultado.aquecer()
@@ -532,6 +548,7 @@ func aquecer() -> void:
 	for f in _flutuantes:
 		f.visible = false
 	_grade.limpar()
+	_bolas_fx.limpar()
 	_resultado.esconder()
 
 
@@ -803,6 +820,16 @@ func _cesta() -> void:
 		if nivel >= 9:
 			_grade.disparar(CESTA, nivel, false, null, 0.14)
 	_onda_no_fundo(CESTA, Color(1.0, 0.75, 0.35))
+	# a bola sai da cesta e cai para fora da tela (com combo, várias)
+	var tipo_bola := BolasCaindo.NORMAL
+	if ouro or _festa_feita:
+		tipo_bola = BolasCaindo.OURO
+	elif _slam:
+		tipo_bola = BolasCaindo.FOGO
+	_bolas_fx.soltar(_bolas_da_cesta(nivel), Grade.cor_do_combo(nivel), tipo_bola)
+	_holofotes.energia = 0.25 + min(nivel, 10) * 0.075
+	if nivel >= 6:
+		_holofotes.flashes(2 + int(min(nivel, 14) / 4))
 	_faisca().restart()
 	Sons.tocar("combo_%d" % int(clamp(nivel, 1, 12)))
 	_mostrar_combo(nivel)
@@ -815,6 +842,18 @@ func _cesta() -> void:
 	_atualizar_mult(true)
 	_conferir_pass()
 	_atualizar_alvo()
+
+
+## Quantas bolas saem da cesta: mais com o combo (no SLAM MODE, uma a mais).
+func _bolas_da_cesta(nivel: int) -> int:
+	var n := 1
+	if nivel >= 10:
+		n = 4
+	elif nivel >= 6:
+		n = 3
+	elif nivel >= 3:
+		n = 2
+	return n + (1 if _slam else 0)
 
 
 ## Soma pontos (na partida e na fase) e mostra.
@@ -1008,6 +1047,9 @@ func _festa_recorde() -> void:
 	_faiscas_ouro.position = CESTA
 	_faiscas_ouro.restart()
 	_faiscas_ouro.emitting = true
+	_holofotes.modo(Holofotes.RECORDE)
+	_holofotes.flashes(8)
+	_bolas_fx.soltar(4, Arte.OURO, BolasCaindo.OURO)
 	_tremer(16.0)
 
 
@@ -1077,9 +1119,13 @@ func _entrar_slam() -> void:
 	Sons.tocar("trovao")
 	_avisar("SLAM MODE!  PONTOS x4", Arte.CIANO, 1.4, 3)
 	_tremer(18.0)
+	_holofotes.modo(Holofotes.SLAM)
+	_holofotes.flashes(6)
+	_proxima_bola_slam = _t + 0.3
 	var tw := create_tween().set_parallel(true)
 	tw.tween_method(self, "_azul", 0.0, 1.0, 0.35)
-	_grade.base = 2.4
+	_grade.base = 1.9
+	_grade.definir_cor_base(Color(0.15, 0.5, 1.0))
 	for b in _barras:
 		b.cores(Color(0.1, 0.45, 1.0), Color(0.6, 0.95, 1.0))
 
@@ -1095,6 +1141,9 @@ func _sair_slam(imediato := false) -> void:
 		tw.tween_method(self, "_azul", 1.0, 0.0, 0.5)
 	if _grade != null:
 		_grade.base = 1.0
+		_grade.definir_cor_base(Arte.LARANJA)
+	if _holofotes != null:
+		_holofotes.modo(Holofotes.RECORDE if _festa_feita else Holofotes.NORMAL)
 	for b in _barras:
 		b.cores(Color(1.0, 0.32, 0.02), Color(1.0, 0.85, 0.4))
 
@@ -1275,7 +1324,7 @@ func _resultado_acabou(acao: String) -> void:
 func _ajustar_crono() -> void:
 	var dig := 3 if _total >= 100 else 2
 	if _crono.digitos != dig:
-		_crono.configurar(dig, 150 if dig == 2 else 112, _crono.cor)
+		_crono.configurar(dig, 150 if dig == 2 else 112, _crono.cor, -1.0, Display7.PLACA_REDONDA)
 
 
 ## O cartão da fase no rodapé: a jogar, jogando, passou / não passou.
@@ -1391,6 +1440,10 @@ func _jogando(delta: float) -> void:
 				Sons.tocar("batida", -3.0)
 	if _alerta:
 		_mat_fundo.set_shader_param("alerta", 0.35 + 0.3 * sin(_t * 9.0))
+	# SLAM MODE: a máquina transborda - bolas de fogo saindo da cesta
+	if _slam and _t >= _proxima_bola_slam:
+		_proxima_bola_slam = _t + _r.randf_range(0.45, 0.85)
+		_bolas_fx.soltar(1, Arte.CIANO, BolasCaindo.FOGO)
 	# combo: a barrinha esvazia; acabou a janela, o combo acaba
 	if _combo > 0:
 		var resta := 1.0 - (_decorrido - _ultima_cesta) / Ajustes.janela_combo

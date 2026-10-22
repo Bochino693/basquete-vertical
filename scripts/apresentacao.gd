@@ -81,7 +81,7 @@ func _ready() -> void:
 	add_child(fundo)
 	_mundo = Node2D.new()
 	add_child(_mundo)
-	_grade = Grade.new()
+	_grade = Grade.new(CHAO)
 	_mundo.add_child(_grade)
 	# quadra de neon (vista de frente, em perspectiva)
 	var linhas := [

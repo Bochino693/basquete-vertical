@@ -246,6 +246,14 @@ def main():
     x[i1:i1 + len(a1)] += a1 * 0.18
     x[i2:i2 + len(a2)] += a2 * 0.15
     gravar("aplausos", x, 0.75)
+    # quique da bola na quadra: o "toc" grave da bola, o som de borracha e
+    # o estalo do piso (geradores proprios: os sons de cima nao mudam)
+    t = t_de(0.32)
+    f = 140 * np.exp(-t * 18) + 62
+    toc = np.sin(np.cumsum(2 * np.pi * f / TAXA)) * np.exp(-t * 26)
+    borracha = np.sin(2 * np.pi * 330 * t) * np.exp(-t * 55) * 0.35
+    estalo = passa_baixa(np.random.default_rng(11).uniform(-1, 1, len(t)), 0.25) * np.exp(-t * 160) * 0.6
+    gravar("quique", toc + borracha + estalo, 0.9)
     print("ok: sons feitos a mao em", os.path.relpath(SAIDA, os.path.dirname(AQUI)))
 
 

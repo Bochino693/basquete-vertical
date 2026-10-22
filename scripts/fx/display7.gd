@@ -1,44 +1,89 @@
 extends Node2D
 
-## DISPLAY DE 7 SEGMENTOS DESENHADO À MÃO, com brilho de neon em volta de
-## cada segmento aceso e os segmentos apagados levemente visíveis (como um
-## placar de LED de verdade).
+## DISPLAY DE 7 SEGMENTOS DESENHADO À MÃO, como o placar de LED de verdade:
+## cada segmento aceso tem o miolo quase branco (quente), a cor em volta e
+## um brilho de neon; os apagados aparecem escuros, da mesma cor (o vidro
+## do LED); e atrás dos dígitos há uma PLACA de vidro escuro (retangular
+## ou redonda), para nenhum efeito do fundo passar por cima dos números.
 ##
 ## Leve de verdade: cada caractere (0-9, "-", " ") de cada tamanho vira
 ## UMA malha, feita uma vez e guardada (Arte); cada dígito do display é um
 ## MeshInstance2D que só troca de malha quando o número muda (nenhuma conta
-## de geometria em GDScript durante o jogo). A cor é o modulate.
+## de geometria em GDScript durante o jogo). A cor é um parâmetro do
+## display7.shader (o modulate fica livre para aparecer/sumir).
 
 const SEGMENTOS := {
 	"0": "abcdef", "1": "bc", "2": "abged", "3": "abgcd", "4": "fgbc",
 	"5": "afgcd", "6": "afgedc", "7": "abc", "8": "abcdefg", "9": "abcdfg",
 	"-": "g", " ": "",
 }
+enum { SEM_PLACA, PLACA, PLACA_REDONDA }
 
 var digitos := 2
 var altura := 120.0
 var cor := Color(1.0, 0.46, 0.04) setget _set_cor
-var apagado := 0.13                 # força dos segmentos apagados
+var apagado := 0.45                 # força dos segmentos apagados
 var brilho := -1.0                  # largura do brilho (px); -1 = automático
 var inclinacao := 0.10
 var zeros := true                   # zeros à esquerda
 var texto := "" setget _set_texto   # mostra um texto livre ("--", "  ")
 var valor := 0 setget _set_valor
+var placa := PLACA
 var _casas: Array = []
+var _mat: ShaderMaterial
+var _placa: Placa
 
 
-func configurar(n_digitos: int, altura_px: float, c: Color, glow := -1.0) -> void:
+## A placa de vidro escuro atrás dos dígitos (desenhada uma vez).
+class Placa extends Node2D:
+	var tamanho := Vector2(100, 60)
+	var redonda := false
+	var cor := Color(1, 0.5, 0)
+
+	func _draw() -> void:
+		if redonda:
+			var r := tamanho.x * 0.5
+			draw_circle(Vector2.ZERO, r, Color(0.012, 0.006, 0.004, 0.93))
+			draw_circle(Vector2(0, -r * 0.08), r * 0.92, Color(0.03, 0.016, 0.01, 0.6))
+			draw_arc(Vector2.ZERO, r - 1.5, 0.0, TAU, 72, Color(cor.r, cor.g, cor.b, 0.35), 3.0, true)
+			return
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0.012, 0.006, 0.004, 0.93)
+		sb.set_corner_radius_all(int(min(tamanho.y * 0.18, 16.0)))
+		sb.set_border_width_all(2)
+		sb.border_color = Color(cor.r * 0.7, cor.g * 0.7, cor.b * 0.7, 0.55)
+		sb.anti_aliasing = true
+		draw_style_box(sb, Rect2(-tamanho * 0.5, tamanho))
+		# reflexo do vidro: uma faixa clara fina no alto
+		var faixa := Rect2(-tamanho.x * 0.5 + 8.0, -tamanho.y * 0.5 + 5.0, tamanho.x - 16.0, tamanho.y * 0.16)
+		draw_rect(faixa, Color(1, 1, 1, 0.035))
+
+
+func configurar(n_digitos: int, altura_px: float, c: Color, glow := -1.0, tipo_placa := PLACA) -> void:
 	digitos = n_digitos
 	altura = altura_px
 	brilho = glow
+	placa = tipo_placa
 	for m in _casas:
 		m.queue_free()
 	_casas = []
+	if _mat == null:
+		_mat = Arte.material("res://shaders/display7.shader")
+	if _placa == null:
+		_placa = Placa.new()
+		add_child(_placa)
+	_placa.visible = placa != SEM_PLACA
+	_placa.redonda = placa == PLACA_REDONDA
+	var total := largura_total()
+	if _placa.redonda:
+		_placa.tamanho = Vector2.ONE * max(total + altura * 0.5, altura * 1.6)
+	else:
+		_placa.tamanho = Vector2(total + altura * 0.62, altura * 1.18)
 	var w := altura * 0.56
 	var gap := altura * 0.20
-	var total := largura_total()
 	for i in digitos:
 		var m = MeshInstance2D.new()
+		m.material = _mat
 		m.position = Vector2(-total * 0.5 + i * (w + gap), -altura * 0.5)
 		add_child(m)
 		_casas.append(m)
@@ -50,7 +95,11 @@ func configurar(n_digitos: int, altura_px: float, c: Color, glow := -1.0) -> voi
 ## Prepara as malhas de todos os caracteres deste tamanho (preparação).
 func preparar_malhas() -> void:
 	for ch in SEGMENTOS:
-		malha(ch, altura, brilho if brilho >= 0.0 else altura * 0.11, inclinacao, apagado)
+		malha(ch, altura, _brilho_px(), inclinacao, apagado)
+
+
+func _brilho_px() -> float:
+	return brilho if brilho >= 0.0 else altura * 0.11
 
 
 func largura_total() -> float:
@@ -74,7 +123,11 @@ func _set_texto(t: String) -> void:
 
 func _set_cor(c: Color) -> void:
 	cor = c
-	modulate = Color(c.r, c.g, c.b, modulate.a)
+	if _mat != null:
+		_mat.set_shader_param("cor", c)
+	if _placa != null:
+		_placa.cor = c
+		_placa.update()
 
 
 func _string() -> String:
@@ -97,12 +150,13 @@ func _mostrar() -> void:
 	var s := _string()
 	for i in digitos:
 		var m: MeshInstance2D = _casas[i]
-		m.mesh = malha(s[i], altura, brilho if brilho >= 0.0 else altura * 0.11, inclinacao, apagado)
+		m.mesh = malha(s[i], altura, _brilho_px(), inclinacao, apagado)
 
 
-## A malha de um caractere (branca: o display pinta com o modulate).
+## A malha de um caractere. As cores dos pontos não são a cor do display:
+## g = aceso, r = miolo quente, a = transparência (display7.shader pinta).
 static func malha(ch: String, h: float, glow: float, inclinacao: float, apagado: float) -> ArrayMesh:
-	var chave := "d7_%s_%d_%d_%d_%d" % [ch, int(h * 10), int(glow * 10), int(inclinacao * 1000), int(apagado * 1000)]
+	var chave := "d7q_%s_%d_%d_%d_%d" % [ch, int(h * 10), int(glow * 10), int(inclinacao * 1000), int(apagado * 1000)]
 	var cache: Dictionary = Arte.cache_malhas
 	if cache.has(chave):
 		return cache[chave]
@@ -112,12 +166,15 @@ static func malha(ch: String, h: float, glow: float, inclinacao: float, apagado:
 	var cols := []
 	var idx := []
 	var acesos: String = SEGMENTOS.get(ch, "")
-	for seg in "abcdefg":
-		var poli = _segmento(seg, w, h, t, inclinacao)
-		if seg in acesos:
-			_poligono(poli, Color(1, 1, 1, 1), glow, pts, cols, idx)
-		elif apagado > 0.0:
-			_poligono(poli, Color(0.55, 0.45, 0.40, apagado), 0.0, pts, cols, idx)
+	# primeiro os apagados (por baixo), depois os acesos e o miolo quente
+	if apagado > 0.0:
+		for seg in "abcdefg":
+			if not seg in acesos:
+				_poligono(_segmento(seg, w, h, t, inclinacao), Color(0, 0, 0, apagado), 0.0, pts, cols, idx)
+	for seg in acesos:
+		_poligono(_segmento(seg, w, h, t, inclinacao), Color(0, 1, 0, 1), glow, pts, cols, idx)
+	for seg in acesos:
+		_poligono(_segmento(seg, w, h, t, inclinacao, 0.36), Color(1, 1, 0, 1), 0.0, pts, cols, idx)
 	var arr := []
 	arr.resize(Mesh.ARRAY_MAX)
 	arr[Mesh.ARRAY_VERTEX] = PoolVector2Array(pts)
@@ -131,9 +188,10 @@ static func malha(ch: String, h: float, glow: float, inclinacao: float, apagado:
 
 
 ## Hexágono do segmento (pontas em bisel), já inclinado (caixa w x h).
-static func _segmento(seg: String, w: float, h: float, t: float, inclinacao: float) -> PoolVector2Array:
+## "fino" < 1: o miolo do segmento (mais fino e um pouco mais curto).
+static func _segmento(seg: String, w: float, h: float, t: float, inclinacao: float, fino := 1.0) -> PoolVector2Array:
 	var m := t * 0.5
-	var g := t * 0.18
+	var g := t * 0.14
 	var a := Vector2()
 	var b := Vector2()
 	match seg:
@@ -159,6 +217,10 @@ static func _segmento(seg: String, w: float, h: float, t: float, inclinacao: flo
 			a = Vector2(w - m, h * 0.5 + g)
 			b = Vector2(w - m, h - m - g)
 	var d := (b - a).normalized()
+	if fino < 1.0:
+		a += d * m * 0.9
+		b -= d * m * 0.9
+		m *= fino
 	var n := Vector2(-d.y, d.x)
 	var out := PoolVector2Array([a, a + d * m + n * m, b - d * m + n * m, b, b - d * m - n * m, a + d * m - n * m])
 	for k in out.size():

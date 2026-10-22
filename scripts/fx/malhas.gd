@@ -39,40 +39,77 @@ static func tela(ret: Rect2, colunas: int, linhas: int) -> ArrayMesh:
 	return _malha(p, uv, idx)
 
 
-## A grade de quadrados (grade.shader): por quadrado, 4 cantos de fora, 4
-## de dentro (moldura) e 4 do miolo.
-static func grade(ret: Rect2, passo: float) -> ArrayMesh:
+## O PISO DE LED da quadra (piso.shader): ladrilhos em perspectiva, nas
+## linhas da quadra do fundo (as colunas fogem para o ponto de fuga, como
+## as laterais pintadas; cada fileira é um pouco mais alta que a de trás).
+## Cada ponto: VERTEX = centro do ladrilho na tela, UV = o canto (em px, a
+## partir do centro), COLOR = (u, v da textura, sorteio, profundidade: 0 no
+## fundo da quadra .. 1 na frente). Só entram os ladrilhos que aparecem.
+static func piso(fuga: Vector2, topo: float, fundo: float, passo0: float, achatar: float, largura: float, folga := 0.12) -> ArrayMesh:
 	var p := PoolVector2Array()
 	var uv := PoolVector2Array()
 	var cor := PoolColorArray()
 	var idx := PoolIntArray()
-	var cantos := [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]
+	var r := RandomNumberGenerator.new()
+	r.seed = 2024
+	var d0 := topo - fuga.y
+	var linhas := [topo]
+	var y := topo
+	while y < fundo:
+		y += passo0 * (y - fuga.y) / d0 * achatar
+		linhas.append(y)
+	var tcs := [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)]
+	for j in linhas.size() - 1:
+		var ya: float = linhas[j]
+		var yb: float = linhas[j + 1]
+		var sa := (ya - fuga.y) / d0
+		var sb := (yb - fuga.y) / d0
+		var prof: float = clamp((ya + yb) * 0.5 - topo, 0.0, fundo - topo) / (fundo - topo)
+		var n := int(ceil(largura * 0.5 / (passo0 * sa))) + 1
+		for c in range(-n, n + 1):
+			var cantos := [Vector2(fuga.x + (c - 0.5) * passo0 * sa, ya), Vector2(fuga.x + (c + 0.5) * passo0 * sa, ya),
+				Vector2(fuga.x + (c + 0.5) * passo0 * sb, yb), Vector2(fuga.x + (c - 0.5) * passo0 * sb, yb)]
+			if cantos[1].x < -10.0 or cantos[0].x > largura + 10.0:
+				continue
+			var centro: Vector2 = (cantos[0] + cantos[1] + cantos[2] + cantos[3]) * 0.25
+			var sorteio := r.randf()
+			var base := p.size()
+			for k in 4:
+				p.append(centro)
+				uv.append((cantos[k] - centro) * (1.0 - folga))
+				var tc: Vector2 = tcs[k]
+				cor.append(Color(tc.x, tc.y, sorteio, prof))
+			idx.append_array(PoolIntArray([base, base + 1, base + 2, base, base + 2, base + 3]))
+	return _malha(p, uv, idx, cor)
+
+
+## A PAREDE DE LED (piso.shader, com a mesma arrumação do piso): ladrilhos
+## retos de lado "passo", da borda de cima de "ret" para baixo.
+static func parede(ret: Rect2, passo: float, folga := 0.16) -> ArrayMesh:
+	var p := PoolVector2Array()
+	var uv := PoolVector2Array()
+	var cor := PoolColorArray()
+	var idx := PoolIntArray()
 	var r := RandomNumberGenerator.new()
 	r.seed = 2024
 	var colunas := int(ceil(ret.size.x / passo))
 	var linhas := int(ceil(ret.size.y / passo))
-	# grade centrada (sobra igual dos dois lados)
-	var sobra := (Vector2(colunas, linhas) * passo - ret.size) * 0.5
+	var sobra := (colunas * passo - ret.size.x) * 0.5
+	var tcs := [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)]
+	var meia := passo * 0.5 * (1.0 - folga)
+	var cantos := [Vector2(-meia, -meia), Vector2(meia, -meia), Vector2(meia, meia), Vector2(-meia, meia)]
 	for gy in linhas:
 		for gx in colunas:
-			var centro = ret.position - sobra + Vector2((gx + 0.5) * passo, (gy + 0.5) * passo)
-			var sorteio = r.randf()
-			var base = p.size()
-			for tipo in 3:      # 0 fora, 1 dentro, 2 miolo
-				for c in cantos:
-					p.append(centro)
-					uv.append(c)
-					cor.append(Color(1.0 if tipo == 1 else 0.0, 1.0 if tipo == 2 else 0.0, sorteio, 1.0))
-			# moldura: 4 trapézios entre fora (0..3) e dentro (4..7)
+			var centro := ret.position + Vector2(-sobra + (gx + 0.5) * passo, (gy + 0.5) * passo)
+			var sorteio := r.randf()
+			var prof := float(gy) / max(1, linhas - 1)
+			var base := p.size()
 			for k in 4:
-				var a = base + k
-				var b = base + (k + 1) % 4
-				var ai = a + 4
-				var bi = b + 4
-				idx.append_array(PoolIntArray([a, b, bi, a, bi, ai]))
-			# miolo
-			var m = base + 8
-			idx.append_array(PoolIntArray([m, m + 1, m + 2, m, m + 2, m + 3]))
+				p.append(centro)
+				uv.append(cantos[k])
+				var tc: Vector2 = tcs[k]
+				cor.append(Color(tc.x, tc.y, sorteio, prof))
+			idx.append_array(PoolIntArray([base, base + 1, base + 2, base, base + 2, base + 3]))
 	return _malha(p, uv, idx, cor)
 
 

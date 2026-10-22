@@ -1,12 +1,18 @@
 extends MeshInstance2D
 
-## A GRADE DE QUADRADOS QUE AFUNDA/ACENDE EM ONDA (grade.shader).
+## O PISO DE LED (ou a parede de LED) QUE ACENDE EM ONDA (piso.shader).
+## Na partida é o PISO DA QUADRA: ladrilhos em perspectiva nas linhas da
+## quadra do fundo, só da linha de fundo para baixo (nunca por cima do
+## placar). Na apresentação é uma PAREDE de ladrilhos atrás da quadra.
 ## Até 4 ondas ao mesmo tempo (a mais velha cede o lugar) + o modo
 ## RECORDE (duas ondas eternas amarelo/branco). Por quadro o script só
 ## passa 4 vetores ao shader.
 
 const Malhas = preload("res://scripts/fx/malhas.gd")
-const PASSO := 90.0
+# a quadra de fundo_jogo.png (ampliada para 1080 x 1920): as laterais
+# pintadas fogem para FUGA; a linha de fundo da quadra fica em TOPO_PISO
+const FUGA := Vector2(540, 88)
+const TOPO_PISO := 994.0
 
 var _ondas: Array = []
 var _mat: ShaderMaterial
@@ -15,15 +21,31 @@ var _rec_centro := Vector2(540, 700)
 var _rec_pulso := 0.0
 var _rec_forca := 0.0
 var base := 1.0 setget _set_base
+var _parede := 0.0
+
+
+## altura_parede > 0: parede de ladrilhos retos do alto da tela até essa
+## altura (apresentação); 0: o piso em perspectiva da partida.
+func _init(altura_parede := 0.0) -> void:
+	_parede = altura_parede
 
 
 func _ready() -> void:
-	mesh = Malhas.grade(Rect2(Vector2.ZERO, Vector2(1080, 1920)), PASSO)
-	_mat = Arte.material("res://shaders/grade.shader")
+	if _parede > 0.0:
+		mesh = Malhas.parede(Rect2(0, 0, 1080, _parede), 88.0)
+	else:
+		mesh = Malhas.piso(FUGA, TOPO_PISO, 1930.0, 62.0, 0.6, 1080.0)
+	texture = load("res://imagens/fx_ladrilho.png")
+	_mat = Arte.material("res://shaders/piso.shader")
 	material = _mat
-	_mat.set_shader_param("passo", PASSO)
 	_mat.set_shader_param("cor_base", Arte.LARANJA)
 	_limpar_uniformes()
+
+
+## A cor do piso parado (laranja; azul no SLAM MODE).
+func definir_cor_base(c: Color) -> void:
+	if _mat != null:
+		_mat.set_shader_param("cor_base", c)
 
 
 func _set_base(v: float) -> void:
