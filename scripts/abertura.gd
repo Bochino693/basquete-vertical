@@ -19,7 +19,7 @@ const Display7 = preload("res://scripts/fx/display7.gd")
 
 const SEGURAR_CONFIG := 4.0
 const SEGURAR_BOTOES := 10000
-const CORES_FASE := [Color(1.0, 0.46, 0.04), Color(0.25, 0.62, 1.0), Color(1.0, 0.80, 0.12)]
+const CORES_FASE := [Color(1.0, 0.46, 0.04), Color(0.25, 0.62, 1.0), Color(0.72, 0.45, 1.0)]
 
 var _pivo: Node2D
 var _poster: MeshInstance2D

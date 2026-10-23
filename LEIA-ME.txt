@@ -2,7 +2,7 @@ SLAM ARENA - BASQUETE ARCADE VERTICAL (1 JOGADOR, 3 FASES, SEM BOTAO)
 ======================================================================
 EDICAO OPENGL ES 2.0 - Godot 3.6.3 - para TV Box com Mali-400 / Mali-450
 (TX9 "comum": Amlogic S905X/S905W, Rockchip RK3229; MXQ, X96...).
-VERSAO 1.8-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
+VERSAO 1.9-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
 em Aplicativos > Slam Arena). VERSAO NOVA: aumente version/code e
 version/name no export_presets.cfg e o VERSAO do autoload/Ajustes.gd.
 
@@ -15,7 +15,7 @@ GERAR O APK (WINDOWS), PASSO A PASSO
   3. Dois cliques no GERAR_APK.bat. A 1a vez baixa o que faltar (5 a 20
      min); depois, 2 a 4 min.
   4. O APK sai em APK-Pronto\SlamArena-<versao>.apk (a pasta abre sozinha
-     no fim; ex.: SlamArena-1.8-gles2.apk): copie para o pendrive e
+     no fim; ex.: SlamArena-1.9-gles2.apk): copie para o pendrive e
      instale na TV Box (ele instala por cima da versao anterior).
   Se der erro, envie o arquivo build\android\GERACAO-COMPLETA.log.
   Onde ligar cada fio na maquina: docs\diagrama_montagem.png.
@@ -73,15 +73,29 @@ O JOGO
     No topo: RECORDE e MELHORES DE HOJE (os 3 melhores do dia); no
     circulo do relogio, "TEMPO" em cima dos numeros. Tudo em portugues e
     grande (o jogador fica a uns 2 metros da tela).
-  * TITULOS EM ETIQUETAS: RECORDE (dourado), MELHORES DE HOJE (rosa),
-    META (ciano) e PONTOS (amarelo) ficam em "pilulas" de vidro escuro com
-    a borda de neon da cor deles - nao se misturam com a moldura laranja e
-    cada informacao tem a sua cor. O ranking do dia tem medalhas de ouro,
-    prata e bronze.
-  * PASSOU DE FASE: a etiqueta vira "PASSOU!" (verde) e, no lugar da meta
-    ja batida, roda um LETREIRO DE LED "PASSOU DE FASE  -  RUMO A FASE 2"
-    com lampadas correndo em volta; a frase do meio fica verde. Na FINAL,
-    quem bate o recorde ve o letreiro dourado "VOCE E O RECORDE DA ARENA".
+  * AS CAIXAS DA PROPRIA ARTE COM A COR DE CADA INFORMACAO: a moldura da
+    META fica ciano, a dos PONTOS rosa e a da fase na cor da fase (FASE 1
+    laranja, FASE 2 azul, FINAL violeta) - e a mesma forma da arte
+    (chanfros, linha dupla, brilho), so o laranja troca de cor
+    (moldura_cor.shader, so na area de cada caixa). Os titulos ficam
+    DENTRO das caixas, na cor delas, com contorno escuro; RECORDE e
+    MELHORES DE HOJE em violeta com a coroa; o ranking do dia com
+    medalhas de ouro, prata e bronze. Sem amarelo junto do laranja.
+  * PASSOU DE FASE: o titulo vira "PASSOU!", a moldura da META e a da fase
+    ficam verdes e, no lugar da meta ja batida, roda um LETREIRO DE LED
+    "PASSOU DE FASE  -  RUMO A FASE 2" com lampadas correndo EM CIMA DA
+    MOLDURA DA ARTE. Na FINAL, quem bate o recorde ve o letreiro violeta
+    "VOCE E O RECORDE DA ARENA".
+  * COROA E MEDALHAS DETALHADAS: ouro com degrade e brilho, rubi, safiras,
+    esmeraldas e perolas na coroa; medalhas com aro serrilhado e o numero
+    gravado (tools/gerar_texturas.py, com mipmaps: lisas em qualquer
+    tamanho).
+  * FUNDO EM FULL HD E LIMPO: a arte original tinha um granulado de "papel
+    velho" na quadra inteira (parecia chamuscado/enrugado) e era esticada
+    de 941 para 1080 px. Agora o granulado sai (longe das linhas de neon)
+    e a imagem ja esta em 1080 x 1920 (tools/fundo_hd.py): desenhada pixel
+    por pixel. Os ladrilhos do piso de LED sao uma textura de 256 px com
+    mipmaps: nitidos na frente e lisos no fundo da quadra.
   * PLACAR DE LED: os numeros sao displays de 7 segmentos com o miolo
     quase branco (o LED quente), brilho em volta e os segmentos apagados
     escuros, numa placa de vidro escuro (redonda no cronometro): nenhum
@@ -95,8 +109,17 @@ O JOGO
     raios de luz, faiscas, as LINHAS DE NEON DA PROPRIA ARTE acendem quando
     a onda passa por elas, "+N" subindo, texto da sequencia (BOA! 2
     SEGUIDAS!... ESQUENTOU 4! PEGOU FOGO 5! EM CHAMAS 6! IMPARAVEL 9!
-    LENDARIO 13!), tremor da tela, som do
-    combo (1 a 12), LED "HIT".
+    IMPARAVEL 12! ALEM DO LIMITE! LENDARIO 14!), tremor da tela, som do
+    combo (1 a 12; cada um meio tom acima), LED "HIT".
+  * ALEM DO LIMITE (13 seguidas): o som especial combo_alem - o proprio
+    sino do combo_12 sobe numa escala pentatonica de fliperama chines e
+    explode num acorde maior com pancada grave, chuva de moedas e
+    brilhinhos - com flashes, bolas e ondas rosa. Ele volta a cada 6
+    cestas; entre eles o sino do 12 continua subindo meio tom por cesta.
+  * RAIO DO MODO ENTERRADA: fino e com o brilho sutil; a forca varia ao
+    acaso pelo caminho, o brilho afina e SOME nas pontas (o fim nao
+    aparece cortado), galhos e sub-galhos mudam a cada tremida, em ritmo
+    irregular.
   * A BOLA SAI DA CESTA E CAI PARA FORA DA TELA: cai na quadra la no
     fundo, quica vindo para a frente (cresce: perspectiva, com sombra e o
     "toc" no piso) e sai pela borda de baixo. Com muitas cestas saem
@@ -368,8 +391,8 @@ PASTAS
   autoload/   Tela (giro e qualidade), Ajustes (ajustes, recorde, ranking,
               fichas), Arte (fontes, texturas, estilos), Sons, Controles
               (Zero Delay), Arduino (LEDs)
-  shaders/    fundo_vivo, poster, piso, display7, placa_redonda,
-              tracinhos, onda, anel, traco, barras, bola
+  shaders/    fundo_vivo, moldura_cor, poster, piso, display7,
+              placa_redonda, tracinhos, onda, anel, traco, barras, bola
   imagens/    poster, fundo_jogo (o fundo sem o cronometro desenhado na
               arte), icones, aberturas, fx_* (texturas de efeito feitas a
               mao)
@@ -382,7 +405,7 @@ PASTAS
   tools/      preparar_arte.py (fundo, poster, icones, aberturas, sons a
               partir das pastas images/ e songs/ do jogo antigo, que
               ficou no historico do repositorio: commit 1ba5184),
-              gerar_sons.py, gerar_texturas.py, android/ (APK no Linux),
+              fundo_hd.py, gerar_sons.py, gerar_texturas.py, android/ (APK no Linux),
               diagrama/ (o diagrama de montagem), testes/ (conferir_scripts,
               roteiro, medir_funcoes, foto_rapida, gravar_splash - a
               imagem de abertura)

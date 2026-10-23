@@ -14,7 +14,7 @@ signal acabou(acao)
 const Display7 = preload("res://scripts/fx/display7.gd")
 const VOLTA_SEGUNDOS := 14
 const GUARDA_CESTA := 2.5
-const CORES_FASE := [Color(1.0, 0.46, 0.04), Color(0.25, 0.62, 1.0), Color(1.0, 0.80, 0.12)]
+const CORES_FASE := [Color(1.0, 0.46, 0.04), Color(0.25, 0.62, 1.0), Color(0.72, 0.45, 1.0)]
 
 var _painel: Panel
 var _titulo: Label

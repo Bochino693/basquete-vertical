@@ -44,15 +44,25 @@ const Resultado = preload("res://scripts/resultado.gd")
 
 enum { ENTRADA, MAPA, CONTAGEM, JOGANDO, FIM_FASE, RESULTADO }
 
-# medidas da arte (fundo_jogo.png 941 x 1672, ampliada para 1080 x 1920)
+# medidas da arte (fundo_jogo.png, 1080 x 1920)
 const ANEL := Vector2(539.4, 299.0)
 const CESTA := Vector2(540.0, 776.0)
 const BOLA_OURO := Vector2(540.0, 1010.0)
-const PASS_POS := Vector2(214.0, 562.0)
+const PASS_POS := Vector2(216.4, 566.0)       # o meio da caixa da META
+const PONTOS_POS := Vector2(862.5, 566.0)     # o meio da caixa dos PONTOS
 const RELOGIO_DESCE := 26.0     # os dígitos do relógio descem para caber o "TEMPO"
-const COR_PONTOS := Color(1.0, 0.86, 0.18)
+# cores vivas que combinam com o laranja da arena (amarelo não combina)
+const COR_PONTOS := Color(1.0, 0.30, 0.72)
 const MAPA_SEGUNDOS := 2.4
-const CORES_FASE := [Color(1.0, 0.46, 0.04), Color(0.25, 0.62, 1.0), Color(1.0, 0.80, 0.12)]
+const CORES_FASE := [Color(1.0, 0.46, 0.04), Color(0.25, 0.62, 1.0), Color(0.72, 0.45, 1.0)]
+# as caixas da arte que ganham a cor da informação (o quadrado do
+# moldura_cor.shader: a caixa com o brilho dela, sem pegar outras linhas)
+const CAIXA_META := Rect2(56, 456, 320, 167)
+const CAIXA_PONTOS := Rect2(703, 456, 320, 167)
+const CAIXA_FASE := Rect2(347, 665, 385, 227)
+# a moldura da META na arte (chanfros): as lâmpadas do PASSOU correm nela
+const MOLDURA_META := [Vector2(67.7, 467.1), Vector2(328.3, 467.1), Vector2(365.0, 511.9),
+	Vector2(365.0, 611.7), Vector2(105.6, 611.7), Vector2(67.7, 572.7)]
 const VERDE := Color(0.3, 1.0, 0.5)
 const FINAL := 2
 
@@ -111,7 +121,11 @@ var _hud: Control
 var _disp_high: Display7
 var _disp_pass: Display7
 var _disp_atual: Display7
-var _lbl_pass: Panel
+var _lbl_pass: Label
+var _mat_meta: ShaderMaterial
+var _mat_pontos: ShaderMaterial
+var _mat_fase: ShaderMaterial
+var _molduras: Array = []
 var _letreiro: Letreiro
 var _lista_top: VBoxContainer
 var _mult_lbl: Node2D
@@ -174,6 +188,10 @@ func _montar_fundo() -> void:
 	_mat_fundo = Arte.material("res://shaders/fundo_vivo.shader")
 	_fundo.material = _mat_fundo
 	_mundo.add_child(_fundo)
+	# as caixas da própria arte, cada uma na cor da sua informação
+	_mat_meta = _moldura(CAIXA_META, Arte.CIANO)
+	_mat_pontos = _moldura(CAIXA_PONTOS, COR_PONTOS)
+	_mat_fase = _moldura(CAIXA_FASE, CORES_FASE[0])
 	# equalizador nas "asas" da arena
 	for lado in 2:
 		var b = Barras.new()
@@ -204,25 +222,56 @@ func _montar_fundo() -> void:
 	_mundo.add_child(_tempo_lbl)
 
 
+## Recolore UMA caixa da arte (a forma, os chanfros e o brilho dela ficam
+## exatamente como na arte; só o laranja vira a cor dada).
+func _moldura(ret: Rect2, cor: Color) -> ShaderMaterial:
+	var pts := PoolVector2Array([ret.position, Vector2(ret.end.x, ret.position.y), ret.end, Vector2(ret.position.x, ret.end.y)])
+	var uvs := PoolVector2Array()
+	for p in pts:
+		uvs.append(p / Vector2(LARGURA, ALTURA))
+	var arr := []
+	arr.resize(Mesh.ARRAY_MAX)
+	arr[Mesh.ARRAY_VERTEX] = pts
+	arr[Mesh.ARRAY_TEX_UV] = uvs
+	arr[Mesh.ARRAY_INDEX] = PoolIntArray([0, 1, 2, 0, 2, 3])
+	var malha := ArrayMesh.new()
+	malha.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+	var m := MeshInstance2D.new()
+	m.mesh = malha
+	m.texture = _fundo.texture
+	var mat := Arte.material("res://shaders/moldura_cor.shader")
+	mat.set_shader_param("caixa", Plane(ret.position.x, ret.position.y, ret.end.x, ret.end.y))
+	mat.set_shader_param("cor", cor)
+	m.material = mat
+	_mundo.add_child(m)
+	_molduras.append(mat)
+	return mat
+
+
 func _montar_hud() -> void:
 	_hud = Control.new()
 	_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hud.rect_size = Vector2(LARGURA, ALTURA)
 	_mundo.add_child(_hud)
-	# RECORDE (topo esquerdo)
+	# RECORDE (topo esquerdo), com a coroa
 	# (tudo grande e em português: o jogador fica a uns 2 metros da tela;
-	# cada título numa ETIQUETA de vidro com a borda de neon da cor dele:
-	# não se mistura com a moldura laranja e cada informação tem a sua cor)
-	var t1 := Arte.etiqueta("RECORDE", 30, Arte.OURO)
-	pos(t1, 44, 40, 236, 48)
+	# os títulos ficam DENTRO das caixas da arte, na cor da informação,
+	# com contorno escuro: não se misturam com a moldura laranja)
+	var coroa := Sprite.new()
+	coroa.texture = Arte.tex_coroa
+	coroa.scale = Vector2.ONE * 60.0 / Arte.tex_coroa.get_width()
+	coroa.position = Vector2(70, 66)
+	_hud.add_child(coroa)
+	var t1 := Arte.texto("RECORDE", 36, Arte.VIOLETA, 6, Color(0.05, 0.0, 0.12))
+	pos(t1, 100, 44, 180, 46)
 	_hud.add_child(t1)
 	_disp_high = Display7.new()
-	_disp_high.configurar(4, 80, Arte.OURO)
+	_disp_high.configurar(4, 80, Arte.VIOLETA)
 	_disp_high.position = Vector2(172, 152)
 	_hud.add_child(_disp_high)
 	# MELHORES DE HOJE (topo direito): os 3 melhores do dia
-	var t2 := Arte.etiqueta("MELHORES DE HOJE", 27, Arte.ROSA)
-	pos(t2, 698, 40, 340, 48)
+	var t2 := Arte.texto("MELHORES DE HOJE", 31, Arte.VIOLETA, 6, Color(0.05, 0.0, 0.12), Label.ALIGN_RIGHT)
+	pos(t2, 730, 46, 300, 44)
 	_hud.add_child(t2)
 	# os 3 melhores: medalha de ouro, prata e bronze + os pontos
 	_lista_top = VBoxContainer.new()
@@ -230,38 +279,43 @@ func _montar_hud() -> void:
 	_lista_top.add_constant_override("separation", 0)
 	pos(_lista_top, 760, 98, 258, 120)
 	_hud.add_child(_lista_top)
-	var medalhas := [Arte.OURO, Arte.PRATA, Arte.BRONZE]
 	for i in 3:
 		var linha := Control.new()
 		linha.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		linha.rect_min_size = Vector2(258, 40)
 		_lista_top.add_child(linha)
-		var m := Arte.medalha(i + 1, medalhas[i], 32.0)
-		m.rect_position = Vector2(92, 4)
+		var m := Arte.medalha(i + 1, 38.0)
+		m.rect_position = Vector2(88, 1)
 		linha.add_child(m)
 		var l := Arte.texto("", 34, Color(1, 1, 1), 4, Color(0, 0, 0), Label.ALIGN_RIGHT)
 		l.name = "P"
 		pos(l, 130, 0, 128, 40)
 		linha.add_child(l)
-	# META (caixa esquerda) e PONTOS (caixa direita)
-	_lbl_pass = Arte.etiqueta("META", 30, Arte.CIANO)
-	pos(_lbl_pass, 104, 454, 220, 46)
+	# META (caixa esquerda) e PONTOS (caixa direita): o título em cima,
+	# dentro da caixa da arte, e o display embaixo
+	_lbl_pass = Arte.texto("META", 36, Arte.CIANO, 6, Color(0.0, 0.05, 0.10))
+	pos(_lbl_pass, PASS_POS.x - 120, 469, 240, 44)
 	_hud.add_child(_lbl_pass)
 	_disp_pass = Display7.new()
-	_disp_pass.configurar(3, 82, Arte.CIANO)
+	_disp_pass.configurar(3, 68, Arte.CIANO)
 	_disp_pass.position = PASS_POS
 	_hud.add_child(_disp_pass)
-	# passou: no lugar da meta, o letreiro "PASSOU DE FASE" rodando
+	# passou: no lugar da meta, o letreiro "PASSOU DE FASE" rodando, com
+	# as lâmpadas correndo em cima da própria moldura da arte
 	_letreiro = Letreiro.new()
-	_letreiro.montar(Vector2(258, 90), 44)
-	_letreiro.rect_position = PASS_POS - Vector2(129, 45)
+	_letreiro.montar(Vector2(236, 76), 40)
+	_letreiro.rect_position = PASS_POS - Vector2(118, 36)
+	var caminho := PoolVector2Array()
+	for p in MOLDURA_META:
+		caminho.append(p - _letreiro.rect_position)
+	_letreiro.lampadas_no_caminho(caminho)
 	_hud.add_child(_letreiro)
-	var t3 := Arte.etiqueta("PONTOS", 30, COR_PONTOS)
-	pos(t3, 756, 454, 220, 46)
+	var t3 := Arte.texto("PONTOS", 36, COR_PONTOS, 6, Color(0.10, 0.0, 0.05))
+	pos(t3, PONTOS_POS.x - 120, 469, 240, 44)
 	_hud.add_child(t3)
 	_disp_atual = Display7.new()
-	_disp_atual.configurar(3, 82, COR_PONTOS)
-	_disp_atual.position = Vector2(866, 562)
+	_disp_atual.configurar(3, 68, COR_PONTOS)
+	_disp_atual.position = PONTOS_POS
 	_hud.add_child(_disp_atual)
 	# multiplicador (caixa do meio)
 	_mult_titulo = Arte.texto("MULTIPLICADOR", 21, Color(1, 1, 1), 4, Color(0.05, 0.02, 0.0))
@@ -522,7 +576,7 @@ func entrar(dados := {}) -> void:
 	_escuro.modulate.a = 0.0
 	_sair_slam(true)
 	_alertar(false)
-	_mat_fundo.set_shader_param("apagado", 0.0)
+	_apagar(0.0)
 	_disp_high.valor = Ajustes.recorde
 	_disp_atual.valor = 0
 	_preparar_fase_hud(0)
@@ -869,7 +923,7 @@ func _cesta() -> void:
 	if nivel >= 6:
 		_holofotes.flashes(2 + int(min(nivel, 14) / 4))
 	_faisca().restart()
-	Sons.tocar("combo_%d" % int(clamp(nivel, 1, 12)))
+	_tocar_combo(nivel)
 	_mostrar_combo(nivel)
 	_flutuar("+%d" % ganho, Arte.OURO if ouro else (Grade.cor_do_combo(nivel) if nivel >= 3 else Arte.LARANJA))
 	_tremer(4.0 + min(nivel, 12) * 0.9)
@@ -880,6 +934,29 @@ func _cesta() -> void:
 	_atualizar_mult(true)
 	_conferir_pass()
 	_atualizar_alvo()
+
+
+## Os sons da sequência são combo_1..combo_12 (cada um meio tom acima).
+## ALÉM DO LIMITE (13 seguidas): o som especial combo_alem (o sino do 12
+## subindo e explodindo em festa), que volta a cada 6 cestas; entre eles o
+## sino do 12 continua subindo meio tom por cesta (até uma oitava).
+func _tocar_combo(nivel: int) -> void:
+	if nivel >= 13 and (nivel - 13) % 6 == 0:
+		Sons.tocar("combo_alem", 1.5)
+		_alem_do_limite()
+	elif nivel > 12:
+		Sons.tocar("combo_12", 0.0, pow(2.0, min(nivel - 12, 12) / 12.0))
+	else:
+		Sons.tocar("combo_%d" % int(max(nivel, 1)))
+
+
+## A festa de passar do limite: flashes, todas as bolas e a onda dourada.
+func _alem_do_limite() -> void:
+	_holofotes.flashes(8)
+	_bolas_fx.soltar(6, Color(1.0, 0.3, 0.9), BolasCaindo.OURO)
+	_onda().disparar(CESTA, 13, 1.5, false, Color(1.0, 0.35, 0.95))
+	_grade.disparar(CESTA, 13, false, Color(1.0, 0.35, 0.95), 0.1)
+	_tremer(22.0)
 
 
 ## Quantas bolas saem da cesta: mais com o combo (no MODO ENTERRADA, uma a mais).
@@ -987,11 +1064,16 @@ func _mostrar_combo(nivel: int) -> void:
 			txt = "EM CHAMAS %d!" % nivel
 		9, 10, 11, 12:
 			txt = "IMPARÁVEL %d!" % nivel
+		13:
+			txt = "ALÉM DO LIMITE!"
 		_:
 			txt = "LENDÁRIO %d!" % nivel
 	var cor_contorno := Color(1.0, 0.38, 0.02)
 	var cor_texto := Color(1, 1, 1)
-	if nivel >= 13:
+	if nivel == 13:
+		cor_contorno = Color(1.0, 0.10, 0.78)
+		cor_texto = Color(1, 1, 1)
+	elif nivel >= 13:
 		cor_contorno = Color(1.0, 0.02, 0.0)
 		cor_texto = Color(1.0, 0.88, 0.84)
 	elif nivel >= 9:
@@ -1105,28 +1187,35 @@ func _atualizar_alvo() -> void:
 	if fase < FINAL:
 		_disp_pass.valor = _alvo
 		if passou[fase]:
-			Arte.pintar_etiqueta(_lbl_pass, "PASSOU!", VERDE)
+			_lbl_pass.text = "PASSOU!"
+			Arte.pintar(_lbl_pass, VERDE)
 			_disp_pass.cor = VERDE
 			letreiro = "PASSOU DE FASE  •  RUMO À %s" % Ajustes.NOMES_FASE[fase + 1]
 			_sub_fase.text = "VOCÊ É O RECORDE!" if recorde_meu else "PASSOU DE FASE! SIGA PONTUANDO"
 		else:
-			Arte.pintar_etiqueta(_lbl_pass, "META", Arte.CIANO)
+			_lbl_pass.text = "META"
+			Arte.pintar(_lbl_pass, Arte.CIANO)
 			_disp_pass.cor = Arte.CIANO
 			_sub_fase.text = "FALTAM %d PARA PASSAR" % (_alvo - pontos)
 	else:
-		Arte.pintar_etiqueta(_lbl_pass, "RECORDE", Arte.OURO)
-		_disp_pass.cor = Arte.OURO
+		_lbl_pass.text = "RECORDE"
+		Arte.pintar(_lbl_pass, Arte.VIOLETA)
+		_disp_pass.cor = Arte.VIOLETA
 		_disp_pass.valor = Ajustes.recorde
 		if recorde_meu:
 			letreiro = "VOCÊ É O RECORDE DA ARENA  •  CONTINUE ACERTANDO"
-			cor_letreiro = Arte.OURO
+			cor_letreiro = Arte.VIOLETA
 			_sub_fase.text = "VOCÊ É O RECORDE DA ARENA!"
 		elif Ajustes.recorde > 0:
 			_sub_fase.text = "FALTAM %d PARA O RECORDE" % (Ajustes.recorde + 1 - pontos)
 		else:
 			_sub_fase.text = "FAÇA O PRIMEIRO RECORDE!"
-	# a frase do meio: verde quando passou
-	_sub_fase.add_color_override("font_color", VERDE if (fase < FINAL and passou[fase]) else Color(1.0, 0.9, 0.62))
+	# a frase do meio e as caixas da arte: verde quando passou
+	var ja_passou: bool = fase < FINAL and passou[fase]
+	_sub_fase.add_color_override("font_color", VERDE if ja_passou else Color(1.0, 0.9, 0.62))
+	_mat_meta.set_shader_param("cor", VERDE if ja_passou else (Arte.CIANO if fase < FINAL else Arte.VIOLETA))
+	_mat_meta.set_shader_param("brilho", 0.35 if letreiro != "" else 0.0)
+	_mat_fase.set_shader_param("cor", VERDE if ja_passou else CORES_FASE[fase])
 	# meta batida: o letreiro roda no lugar dos números
 	if letreiro != "":
 		_letreiro.mostrar(letreiro, cor_letreiro)
@@ -1209,6 +1298,8 @@ func _azul(v: float) -> void:
 
 func _apagar(v: float) -> void:
 	_mat_fundo.set_shader_param("apagado", v)
+	for m in _molduras:
+		m.set_shader_param("apagado", v)
 
 
 func _raio_slam() -> void:
@@ -1330,7 +1421,7 @@ func _fim_da_fase() -> void:
 			if not vale(s):
 				return
 		_conferir_recorde()
-		_flutuar("+%d" % bonus, Arte.OURO, Vector2(866, 765))
+		_flutuar("+%d" % bonus, Arte.OURO, PONTOS_POS + Vector2(0, 200))
 		yield(get_tree().create_timer(1.0), "timeout")
 		if not vale(s):
 			return
@@ -1438,7 +1529,10 @@ func _process(delta: float) -> void:
 		_mundo.position = Vector2.ZERO
 		_tremor = 0.0
 	# fundo vivo: respiração + radar que desce + onda da cesta
-	_mat_fundo.set_shader_param("respiro", 0.5 + 0.5 * sin(_t * 1.5))
+	var respiro := 0.5 + 0.5 * sin(_t * 1.5)
+	_mat_fundo.set_shader_param("respiro", respiro)
+	for m in _molduras:
+		m.set_shader_param("respiro", respiro)
 	var radar := fmod(_t, 6.0)
 	_mat_fundo.set_shader_param("scan_y", lerp(-100.0, 2050.0, radar / 2.2) if radar < 2.2 else -500.0)
 	_mat_fundo.set_shader_param("scan_forca", 0.55)

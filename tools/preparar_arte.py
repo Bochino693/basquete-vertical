@@ -10,7 +10,8 @@ novo so se a arte original mudar:
 O que faz:
   * imagens/fundo_jogo.png - o fundo da partida SEM os tracinhos e o arco
     do cronometro desenhados na arte (o cronometro de verdade e desenhado
-    pelo jogo, aceso conforme o tempo, exatamente no mesmo lugar);
+    pelo jogo, aceso conforme o tempo, exatamente no mesmo lugar), depois
+    limpo do granulado e ampliado para 1080 x 1920 (tools/fundo_hd.py);
   * imagens/poster.png - a arte da abertura;
   * icones do Android (192 e adaptativo 432), banner da TV (320x180) e as
     imagens de abertura da TV Box (uma para cada giro da tela);
@@ -168,6 +169,9 @@ def main():
     for d in ("imagens", "sons", "musicas", os.path.join("tools", "android")):
         os.makedirs(os.path.join(P, d), exist_ok=True)
     limpar_cronometro()
+    # o fundo sem o granulado da arte e ja em 1080 x 1920 (tools/fundo_hd.py)
+    import fundo_hd
+    fundo_hd.main()
     poster()
     icones()
     aberturas()

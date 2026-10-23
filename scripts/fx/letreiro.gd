@@ -1,15 +1,16 @@
 extends Control
 
 ## LETREIRO DE LED QUE RODA: o texto passa sem parar da direita para a
-## esquerda dentro de uma placa de vidro escuro com a borda de neon, e
-## LÂMPADAS correm em volta, como letreiro de parque. No placar ele entra
-## no lugar da meta já batida: "PASSOU DE FASE  •  RUMO À FASE 2".
+## esquerda dentro de uma placa de vidro escuro, e LÂMPADAS correm em volta
+## (no placar, em cima da moldura da própria arte), como letreiro de parque.
+## No placar ele entra no lugar da meta já batida: "PASSOU DE FASE  •
+## RUMO À FASE 2".
 ## Leve: um texto que só anda (posição em pixel inteiro: as letras não
 ## borram) e lâmpadas que são brilhos prontos.
 
 var velocidade := 150.0          # pixels por segundo
 var margem_lampadas := 10.0
-var n_lampadas := 24
+var n_lampadas := 28
 
 var _placa: Panel
 var _janela: Control
@@ -67,6 +68,27 @@ func montar(tamanho: Vector2, fonte := 46) -> void:
 		_lampadas[i][1].position = p
 
 
+## As lâmpadas em cima de um caminho fechado (coordenadas deste letreiro):
+## no placar, a própria moldura da caixa da arte.
+func lampadas_no_caminho(pontos: PoolVector2Array) -> void:
+	var n := pontos.size()
+	var total := 0.0
+	for i in n:
+		total += pontos[i].distance_to(pontos[(i + 1) % n])
+	for k in _lampadas.size():
+		var s := total * float(k) / _lampadas.size()
+		for i in n:
+			var a: Vector2 = pontos[i]
+			var b: Vector2 = pontos[(i + 1) % n]
+			var l := a.distance_to(b)
+			if s <= l:
+				var p := a.linear_interpolate(b, s / max(l, 0.001))
+				_lampadas[k][0].position = p
+				_lampadas[k][1].position = p
+				break
+			s -= l
+
+
 ## Liga (ou troca) o texto que roda. O mesmo texto não recomeça do zero.
 func mostrar(t: String, cor: Color) -> void:
 	if visible and t == _texto and cor == _cor:
@@ -84,7 +106,14 @@ func mostrar(t: String, cor: Color) -> void:
 	_txt.text = s
 	_txt.rect_size = Vector2(_periodo * copias + 8.0, _janela.rect_size.y)
 	_txt.add_color_override("font_color", cor.linear_interpolate(Color(1, 1, 1), 0.25))
-	_placa.add_stylebox_override("panel", Arte.estilo_neon(cor, 0.95, 16, 3, 16, 0.10))
+	# a mesma placa de vidro escuro dos displays (o neon fica na moldura da arte)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.012, 0.006, 0.004, 0.93)
+	sb.set_corner_radius_all(14)
+	sb.set_border_width_all(2)
+	sb.border_color = Color(cor.r * 0.8, cor.g * 0.8, cor.b * 0.8, 0.7)
+	sb.anti_aliasing = true
+	_placa.add_stylebox_override("panel", sb)
 	# começa já com o começo da frase à vista (lê-se "PASSOU..." na hora)
 	_x = -8.0
 	_t = 0.0

@@ -22,6 +22,10 @@ fim_jogo        nao passou de fase (tres notas que caem)
 vaia            a torcida vaiando (nao passou da fase 1)
 vaia_curta      "uuuh" da torcida (muito tempo sem cesta, nao passou da 2)
 aplausos        palmas e assobios (campeao, recorde)
+combo_alem      ALEM DO LIMITE: a sequencia passou do combo_12 (o ultimo som de
+                combo). Feito com o PROPRIO sino do combo_12: sobe numa escala
+                pentatonica (de fliperama chines), explode num acorde maior
+                com pancada grave, chuva de moedas e brilhinhos (44100 Hz).
 Precisa de numpy.
 """
 import os
@@ -254,7 +258,92 @@ def main():
     borracha = np.sin(2 * np.pi * 330 * t) * np.exp(-t * 55) * 0.35
     estalo = passa_baixa(np.random.default_rng(11).uniform(-1, 1, len(t)), 0.25) * np.exp(-t * 160) * 0.6
     gravar("quique", toc + borracha + estalo, 0.9)
+    gerar_combo_alem()
     print("ok: sons feitos a mao em", os.path.relpath(SAIDA, os.path.dirname(AQUI)))
+
+
+# ------------------------------------------------------- ALEM DO LIMITE
+def gerar_combo_alem():
+    TX = 44100
+    with wave.open(os.path.join(SAIDA, "combo_12.wav")) as w:
+        sino = np.frombuffer(w.readframes(w.getnframes()), dtype="<i2").astype(np.float64) / 32768
+        if w.getnchannels() == 2:
+            sino = sino.reshape(-1, 2).mean(axis=1)
+        tx_sino = w.getframerate()
+    sino = sino / (np.max(np.abs(sino)) or 1.0)
+    dur = 2.7
+    n = int(dur * TX)
+    x = np.zeros(n)
+    rng = np.random.default_rng(13)
+
+    def nota(semitons, t0, vol, queda=None):
+        # o sino do combo_12 transposto (lido mais rapido = mais agudo)
+        r = 2 ** (semitons / 12) * tx_sino / TX
+        idx = np.arange(0, len(sino) - 1, r)
+        v = np.interp(idx, np.arange(len(sino)), sino)
+        if queda is not None:
+            v = v * np.exp(-np.arange(len(v)) / TX * queda)
+        i0 = int(t0 * TX)
+        m = min(len(v), n - i0)
+        x[i0:i0 + m] += v[:m] * vol
+
+    def senoide(f, t0, d, vol, queda):
+        i0 = int(t0 * TX)
+        t = np.arange(int(d * TX)) / TX
+        v = np.sin(2 * np.pi * f * t) * np.exp(-t * queda) * np.minimum(1, t / 0.002)
+        m = min(len(v), n - i0)
+        x[i0:i0 + m] += v[:m] * vol
+
+    # 1. a sequencia continua subindo, rapida (pentatonica: "fliperama chines")
+    for k, st in enumerate([2, 4, 7, 9, 12, 14]):
+        nota(st, 0.06 * k, 0.55 + 0.05 * k, queda=9.0)
+    # 2. o "vuuup" que leva ate a explosao
+    t = np.arange(int(0.42 * TX)) / TX
+    u = t / 0.42
+    ruido = rng.uniform(-1, 1, len(t))
+    a = 0.02 + 0.5 * u ** 2
+    y = np.zeros_like(ruido)
+    acc = 0.0
+    for i in range(len(ruido)):
+        acc += (ruido[i] - acc) * a[i]
+        y[i] = ruido[i] - acc
+    x[:len(y)] += y * u ** 2 * 0.35
+    # 3. A EXPLOSAO (0,42 s): acorde maior com o mesmo sino + grave + prato
+    t0 = 0.42
+    for st, vol in [(-12, 0.75), (-8, 0.55), (-5, 0.60), (0, 0.65), (4, 0.45), (7, 0.40)]:
+        nota(st, t0, vol)
+    t = np.arange(int(0.7 * TX)) / TX
+    f = 38 + 70 * np.exp(-t * 14)
+    grave = np.sin(np.cumsum(2 * np.pi * f / TX)) * np.exp(-t * 5.5)
+    i0 = int(t0 * TX)
+    x[i0:i0 + len(grave)] += grave * 1.1
+    t = np.arange(int(1.1 * TX)) / TX
+    prato = rng.uniform(-1, 1, len(t))
+    prato = prato - np.concatenate([[0], prato[:-1]])          # so o agudo
+    x[i0:i0 + len(prato)] += prato * np.exp(-t * 4.5) * 0.22
+    # 4. chuva de moedas (jackpot) e brilhinhos
+    for k in range(22):
+        tm = t0 + 0.08 + rng.uniform(0, 1.3) * (k / 22) ** 0.7 + rng.uniform(0, 0.05)
+        fb = rng.uniform(1750, 2150)
+        senoide(fb, tm, 0.12, 0.16, 30)
+        senoide(fb * 1.335, tm + 0.035, 0.16, 0.13, 24)
+    for k in range(46):
+        tm = t0 + rng.uniform(0.0, 1.9) ** 1.4 / 1.9 ** 0.4
+        senoide(rng.uniform(3200, 7200), tm, 0.06, 0.07, 55)
+    # 5. o floreio final: o sino sobe mais uma oitava, fraquinho
+    for k, st in enumerate([12, 14, 16, 19, 21, 24]):
+        nota(st, 1.05 + 0.05 * k, 0.22, queda=7.0)
+    # mistura: limita macio, sem estalo no fim
+    x = np.tanh(x * 1.1)
+    fim = int(0.35 * TX)
+    x[-fim:] *= np.linspace(1, 0, fim) ** 2
+    x = x / (np.max(np.abs(x)) or 1.0) * 0.92
+    dados = (np.clip(x, -1, 1) * 32000).astype("<i2").tobytes()
+    with wave.open(os.path.join(SAIDA, "combo_alem.wav"), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(TX)
+        w.writeframes(dados)
 
 
 if __name__ == "__main__":

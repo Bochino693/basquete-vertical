@@ -9,7 +9,7 @@ extends MeshInstance2D
 ## passa 4 vetores ao shader.
 
 const Malhas = preload("res://scripts/fx/malhas.gd")
-# a quadra de fundo_jogo.png (ampliada para 1080 x 1920): as laterais
+# a quadra de fundo_jogo.png (1080 x 1920): as laterais
 # pintadas fogem para FUGA; a linha de fundo da quadra fica em TOPO_PISO
 const FUGA := Vector2(540, 88)
 const TOPO_PISO := 994.0

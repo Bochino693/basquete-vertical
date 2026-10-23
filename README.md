@@ -7,7 +7,7 @@ multiplicador x2/x3/x4 e MODO ENTERRADA, bola de ouro, apresentação animada, t
 (vaias e aplausos), recorde e ranking do dia, modo crédito, sensor e botões na
 placa Zero Delay e LEDs no Arduino.
 
-**Versão 1.8-gles2** (aparece no rodapé da tela de configuração). A configuração
+**Versão 1.9-gles2** (aparece no rodapé da tela de configuração). A configuração
 opera também pelo **controle remoto da TV Box**: MENU, VOLTAR ou uma seta na
 abertura abre; setas escolhem e mudam, OK confirma, VOLTAR salva e sai.
 

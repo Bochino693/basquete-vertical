@@ -5,13 +5,19 @@ extends Node2D
 ## faixa contínua com textura de borda macia (fx_linha): brilho largo,
 ## faixa média e o miolo branco - liso, sem a "escadinha" das linhas
 ## comuns. Refeito só quando treme (uma chamada de desenho por faixa).
+##
+## Para parecer raio de verdade (e não um "tubo" de brilho): a força varia
+## AO ACASO ao longo do caminho, o brilho afina e SOME nas pontas (o fim
+## não aparece cortado), os galhos e sub-galhos mudam de número e de lugar
+## a cada tremida e o tremor tem ritmo irregular.
 
 var cor := Color(0.35, 0.80, 1.0)
-var _caminhos: Array = []
+var _caminhos: Array = []         # [pontos, é galho, força]
 var _de := Vector2()
 var _ate := Vector2()
 var _vida := 0.0
 var _tremer := 0.0
+var _proxima := 0.06
 var _r := RandomNumberGenerator.new()
 
 
@@ -34,13 +40,22 @@ func disparar(de: Vector2, ate: Vector2, duracao := 0.32) -> void:
 
 func _gerar() -> void:
 	_caminhos = []
-	var principal := _zigue(_de, _ate, 5, 0.22)
-	_caminhos.append(principal)
-	for g in 2:
-		var i = _r.randi_range(2, principal.size() - 3)
+	# o fim mexe um pouquinho a cada tremida (não acerta sempre o mesmo ponto)
+	var fim := _ate + Vector2(_r.randf_range(-10, 10), _r.randf_range(-8, 8))
+	var principal := _zigue(_de, fim, 5, _r.randf_range(0.16, 0.26))
+	_caminhos.append([principal, false, 1.0])
+	var comprimento := _de.distance_to(fim)
+	for g in _r.randi_range(2, 4):
+		var i := _r.randi_range(2, principal.size() - 4)
 		var p: Vector2 = principal[i]
-		var dir = (_ate - _de).normalized().rotated(_r.randf_range(-0.9, 0.9))
-		_caminhos.append(_zigue(p, p + dir * _de.distance_to(_ate) * _r.randf_range(0.18, 0.32), 3, 0.3))
+		var dir := (fim - _de).normalized().rotated(_r.randf_range(-1.0, 1.0))
+		var galho := _zigue(p, p + dir * comprimento * _r.randf_range(0.10, 0.30), 3, 0.32)
+		_caminhos.append([galho, true, _r.randf_range(0.45, 0.8)])
+		# às vezes um sub-galho, mais fraco
+		if _r.randf() < 0.45 and galho.size() > 5:
+			var q: Vector2 = galho[_r.randi_range(1, galho.size() - 3)]
+			var d2 := dir.rotated(_r.randf_range(-1.1, 1.1))
+			_caminhos.append([_zigue(q, q + d2 * comprimento * _r.randf_range(0.05, 0.12), 2, 0.35), true, 0.35])
 	update()
 
 
@@ -68,24 +83,50 @@ func _process(delta: float) -> void:
 		set_process(false)
 		return
 	_tremer += delta
-	if _tremer >= 0.07:
+	if _tremer >= _proxima:
 		_tremer = 0.0
+		_proxima = _r.randf_range(0.035, 0.09)
 		_gerar()
-	modulate.a = clamp(_vida * 6.0, 0.0, 1.0) * (0.75 + 0.25 * _r.randf())
+	modulate.a = clamp(_vida * 6.0, 0.0, 1.0) * (0.7 + 0.3 * _r.randf())
 
 
 func _draw() -> void:
-	for i in _caminhos.size():
-		var c: PoolVector2Array = _caminhos[i]
-		var g = 1.0 if i == 0 else 0.6
-		_faixa(c, Color(cor.r, cor.g, cor.b, 0.22), 40.0 * g)
-		_faixa(c, Color(cor.r, cor.g, cor.b, 0.75), 14.0 * g)
-		_faixa(c, Color(0.92, 0.98, 1.0, 1.0), 5.5 * g)
+	for cam in _caminhos:
+		var c: PoolVector2Array = cam[0]
+		var galho: bool = cam[1]
+		var forca: float = cam[2]
+		var g: float = 0.55 if galho else 1.0
+		var pesos := _pesos(c.size(), galho)
+		# o brilho largo é sutil e some antes nas pontas; o miolo vai até o fim
+		_faixa(c, pesos, 1.6, Color(cor.r, cor.g, cor.b, 0.12 * forca), 44.0 * g)
+		_faixa(c, pesos, 1.0, Color(cor.r, cor.g, cor.b, 0.55 * forca), 12.0 * g)
+		_faixa(c, pesos, 0.5, Color(0.92, 0.98, 1.0, forca), 4.5 * g)
 
 
-## Uma faixa de largura "larg" ao longo do caminho (as juntas com a média
-## das direções), com a textura macia atravessada (u = de um lado ao outro).
-func _faixa(c: PoolVector2Array, cor_faixa: Color, larg: float) -> void:
+## A força de cada ponto: some suave nas pontas (galho: afina até a ponta;
+## o raio principal: entra e sai suave) e varia ao acaso pelo caminho.
+func _pesos(n: int, galho: bool) -> PoolRealArray:
+	var p := PoolRealArray()
+	var anterior := 1.0
+	for k in n:
+		var s := float(k) / max(n - 1, 1)
+		var ponta: float
+		if galho:
+			ponta = pow(1.0 - s, 0.9)
+		else:
+			ponta = smoothstep(0.0, 0.05, s) * (1.0 - 0.8 * smoothstep(0.86, 1.0, s))
+		# acaso, um pouco amaciado com o ponto anterior (não pisca em degraus)
+		var acaso: float = lerp(anterior, _r.randf_range(0.45, 1.0), 0.6)
+		anterior = acaso
+		p.append(ponta * acaso)
+	return p
+
+
+## Uma faixa ao longo do caminho (as juntas com a média das direções), com
+## a textura macia atravessada (u = de um lado ao outro). A largura e a
+## transparência seguem os pesos (elevados a "curva": o brilho largo afina
+## antes, o miolo depois).
+func _faixa(c: PoolVector2Array, pesos: PoolRealArray, curva: float, cor_faixa: Color, larg: float) -> void:
 	var n := c.size()
 	if n < 2:
 		return
@@ -99,13 +140,15 @@ func _faixa(c: PoolVector2Array, cor_faixa: Color, larg: float) -> void:
 			d += (c[k] - c[k - 1]).normalized()
 		if k < n - 1:
 			d += (c[k + 1] - c[k]).normalized()
-		var normal := Vector2(-d.y, d.x).normalized() * larg * 0.5
+		var w := pow(max(pesos[k], 0.0), curva)
+		var normal := Vector2(-d.y, d.x).normalized() * larg * 0.5 * (0.35 + 0.65 * w)
 		pts.append(c[k] + normal)
 		pts.append(c[k] - normal)
 		uvs.append(Vector2(0, 0.5))
 		uvs.append(Vector2(1, 0.5))
-		cores.append(cor_faixa)
-		cores.append(cor_faixa)
+		var ck := Color(cor_faixa.r, cor_faixa.g, cor_faixa.b, cor_faixa.a * w)
+		cores.append(ck)
+		cores.append(ck)
 		if k > 0:
 			var a: int = (k - 1) * 2
 			idx.append_array(PoolIntArray([a, a + 1, a + 3, a, a + 3, a + 2]))
