@@ -2,7 +2,7 @@ SLAM ARENA - BASQUETE ARCADE VERTICAL (1 JOGADOR, 3 FASES, SEM BOTAO)
 ======================================================================
 EDICAO OPENGL ES 2.0 - Godot 3.6.3 - para TV Box com Mali-400 / Mali-450
 (TX9 "comum": Amlogic S905X/S905W, Rockchip RK3229; MXQ, X96...).
-VERSAO 1.9-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
+VERSAO 1.9.1-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
 em Aplicativos > Slam Arena). VERSAO NOVA: aumente version/code e
 version/name no export_presets.cfg e o VERSAO do autoload/Ajustes.gd.
 
@@ -15,7 +15,7 @@ GERAR O APK (WINDOWS), PASSO A PASSO
   3. Dois cliques no GERAR_APK.bat. A 1a vez baixa o que faltar (5 a 20
      min); depois, 2 a 4 min.
   4. O APK sai em APK-Pronto\SlamArena-<versao>.apk (a pasta abre sozinha
-     no fim; ex.: SlamArena-1.9-gles2.apk): copie para o pendrive e
+     no fim; ex.: SlamArena-1.9.1-gles2.apk): copie para o pendrive e
      instale na TV Box (ele instala por cima da versao anterior).
   Se der erro, envie o arquivo build\android\GERACAO-COMPLETA.log.
   Onde ligar cada fio na maquina: docs\diagrama_montagem.png.
@@ -277,8 +277,9 @@ CONFIGURACAO DO OPERADOR
   - PONTUACAO: COM MULTIPLICADOR (x2 x3 x4 + bola de ouro) ou CLASSICA (2 por
     cesta)
   - BOLA DE OURO: sim/nao
-  - TRAVA DO SENSOR: tempo minimo entre duas cestas (padrao 0,7 s, o
-    mesmo do Swish Arena)
+  - TRAVA DO SENSOR: tempo minimo entre duas cestas (padrao 0,9 s, o
+    mesmo do Swish Arena: a mesma bola girando no aro nao marca duas
+    cestas; a 1.9.1 passa para 0,9 s a configuracao gravada com menos)
   - TEMPO DA SEQUENCIA: tempo maximo entre cestas para a sequencia continuar
   - VOLUME da musica e dos efeitos
   - GIRO DA TELA: AUTOMATICO (padrao) / topo a esquerda / topo a direita /

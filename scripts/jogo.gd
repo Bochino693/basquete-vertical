@@ -876,6 +876,7 @@ func _cesta() -> void:
 		return
 	if estado != JOGANDO:
 		return
+	# a trava (0,9 s): a mesma bola girando no aro não marca duas cestas
 	if _decorrido - _ultima_cesta < Ajustes.trava_sensor:
 		return
 	var intervalo := _decorrido - _ultima_cesta

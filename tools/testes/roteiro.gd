@@ -21,6 +21,7 @@ func _ready() -> void:
 	Directory.new().make_dir_recursive(pasta)
 	# (headless: os eventos injetados não esperam o próximo quadro)
 	Input.use_accumulated_input = false
+	# (as cestas do roteiro vêm a cada 0,95 s: acima da trava de 0,9 s)
 	Ajustes.tempo_fase = [16, 14, 12]
 	Ajustes.meta_fase = [6, 8]
 	Ajustes.recorde = 6
@@ -139,12 +140,12 @@ func _rodar() -> void:
 	yield(_esperar(0.22), "completed")
 	yield(_foto("18_cesta"), "completed")
 	for i in 3:
-		yield(_esperar(0.8), "completed")
+		yield(_esperar(0.95), "completed")
 		Controles.injetar("input_cesta")
 	yield(_esperar(0.3), "completed")
 	yield(_foto("19_passou"), "completed")
 	for i in 2:
-		yield(_esperar(0.8), "completed")
+		yield(_esperar(0.95), "completed")
 		Controles.injetar("input_cesta")
 	yield(_esperar(0.25), "completed")
 	yield(_foto("20_combo6"), "completed")
@@ -152,7 +153,7 @@ func _rodar() -> void:
 	yield(_esperar(0.8), "completed")
 	yield(_foto("21_bola_de_ouro"), "completed")
 	for i in 4:
-		yield(_esperar(0.8), "completed")
+		yield(_esperar(0.95), "completed")
 		Controles.injetar("input_cesta")
 	yield(_esperar(0.35), "completed")
 	yield(_foto("22_slam_mode"), "completed")
@@ -201,7 +202,7 @@ func _rodar() -> void:
 		while jg.estado != jg.JOGANDO:
 			yield(get_tree(), "idle_frame")
 		for i in 5:
-			yield(_esperar(0.8), "completed")
+			yield(_esperar(0.95), "completed")
 			Controles.injetar("input_cesta")
 		jg._decorrido = jg._total - 0.5
 		while not (jg.estado == jg.MAPA and jg._mapa_pronto):
@@ -212,12 +213,12 @@ func _rodar() -> void:
 	while jg.estado != jg.JOGANDO:
 		yield(get_tree(), "idle_frame")
 	for i in 3:
-		yield(_esperar(0.8), "completed")
+		yield(_esperar(0.95), "completed")
 		Controles.injetar("input_cesta")
 	yield(_esperar(0.3), "completed")
 	yield(_foto("33_final_turbo"), "completed")
 	for i in 3:
-		yield(_esperar(0.8), "completed")
+		yield(_esperar(0.95), "completed")
 		Controles.injetar("input_cesta")
 	yield(_esperar(0.4), "completed")
 	yield(_foto("34_final_slam"), "completed")

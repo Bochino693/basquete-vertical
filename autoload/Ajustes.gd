@@ -12,7 +12,7 @@ extends Node
 
 signal mudou
 
-const VERSAO := "1.9-gles2"
+const VERSAO := "1.9.1-gles2"
 
 const ARQ_AJUSTES := "user://slam_ajustes.cfg"
 const ARQ_RECORDES := "user://slam_recordes.cfg"
@@ -35,7 +35,7 @@ var meta_fase := [20, 30]          # pontos a fazer na FASE 1 e na FASE 2
 var modo_credito := false          # LIVRE ou CRÉDITO (1 ficha por partida)
 var modo_arcade := true            # combo multiplica + bola de ouro; falso = 2 pontos por cesta
 var bola_de_ouro := true
-var trava_sensor := 0.7            # tempo mínimo entre duas cestas (s)
+var trava_sensor := 0.9            # tempo mínimo entre duas cestas (s)
 var janela_combo := 4.0            # tempo máximo entre cestas para manter o combo (s)
 var vol_musica := 0.8
 var vol_efeitos := 1.0
@@ -117,6 +117,11 @@ func carregar() -> void:
 		modo_arcade = bool(c.get_value("jogo", "modo_arcade", modo_arcade))
 		bola_de_ouro = bool(c.get_value("jogo", "bola_de_ouro", bola_de_ouro))
 		trava_sensor = float(c.get_value("jogo", "trava_sensor", trava_sensor))
+		# 1.9.1: a trava passa a ser de no mínimo 0,9 s (a mesma bola girando
+		# no aro não marca duas cestas); o que as versões anteriores gravaram
+		# com menos sobe para 0,9 s
+		if int(c.get_value("jogo", "versao_trava", 1)) < 2:
+			trava_sensor = max(trava_sensor, 0.9)
 		janela_combo = float(c.get_value("jogo", "janela_combo", janela_combo))
 		vol_musica = clamp(float(c.get_value("som", "musica", vol_musica)), 0.0, 1.0)
 		vol_efeitos = clamp(float(c.get_value("som", "efeitos", vol_efeitos)), 0.0, 1.0)
@@ -160,6 +165,7 @@ func salvar() -> void:
 	c.set_value("jogo", "modo_arcade", modo_arcade)
 	c.set_value("jogo", "bola_de_ouro", bola_de_ouro)
 	c.set_value("jogo", "trava_sensor", trava_sensor)
+	c.set_value("jogo", "versao_trava", 2)
 	c.set_value("jogo", "janela_combo", janela_combo)
 	c.set_value("som", "musica", vol_musica)
 	c.set_value("som", "efeitos", vol_efeitos)
