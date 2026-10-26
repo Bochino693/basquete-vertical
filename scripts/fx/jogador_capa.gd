@@ -8,10 +8,10 @@ extends Node2D
 ##
 ## Os braços giram no ombro (braco_e: o levantado, com a bola; braco_d: o
 ## da mão aberta); a bola fica na mão (na_mao) ou solta (o jogo a move:
-## posicao_bola). Em volta, a AURA (o jogador inteiro borrado, azul,
-## como o brilho da capa) e um RASTRO de aura das posições de antes
-## (movimento rápido). Desenho leve: quatro imagens, a aura e o rastro só
-## nos movimentos rápidos.
+## posicao_bola). Em volta, a AURA (o jogador borrado, azul, como o brilho
+## da capa - em peças: o brilho de cada braço gira junto com ele) e um
+## RASTRO de aura das posições de antes (movimento rápido). Desenho leve:
+## quatro imagens e as três da aura; o rastro só nos movimentos rápidos.
 
 const OMBRO_E := Vector2(352, 300)
 const OMBRO_D := Vector2(548, 392)
@@ -24,7 +24,10 @@ var luz := 1.0 setget _set_luz              # o brilho em volta (aura)
 var rastro := 0.0                           # 0 sem rastro, 1 forte
 var na_mao := true setget _set_na_mao
 
-var _aura_azul: Sprite
+var _auras: Node2D           # as três peças da aura (a luz muda as três)
+var _aura_corpo: Sprite
+var _aura_e: Node2D           # giram com os braços
+var _aura_d: Node2D
 var _pivo_e: Node2D
 var _pivo_d: Node2D
 var _bola: Sprite
@@ -36,8 +39,9 @@ var _brasas: CPUParticles2D
 
 func _init() -> void:
 	var caixas := _ler_caixas()
-	var aura: Texture = load("res://imagens/jogador_aura.png")
-	# o rastro: a aura nas posições de antes (fica no mundo, não no jogador)
+	var aura: Texture = load("res://imagens/jogador_aura_corpo.png")
+	# o rastro: a aura do corpo nas posições de antes (fica no mundo, não
+	# no jogador)
 	for i in RASTRO:
 		var r := Sprite.new()
 		r.texture = aura
@@ -47,10 +51,17 @@ func _init() -> void:
 		r.visible = false
 		add_child(r)
 		_rastros.append(r)
-	_aura_azul = _peca(aura, caixas["jogador_aura"])
-	_aura_azul.material = Arte.mat_aditivo
-	_aura_azul.modulate = Color(0.35, 0.55, 1.0, 0.5)
-	add_child(_aura_azul)
+	# a aura, atrás de tudo: o corpo e os braços (cada um no seu ombro)
+	_auras = Node2D.new()
+	_auras.modulate.a = 0.5
+	add_child(_auras)
+	_aura_corpo = _peca(aura, caixas["jogador_aura_corpo"])
+	_aura_e = _aura_braco("jogador_aura_braco_e", caixas, OMBRO_E)
+	_aura_d = _aura_braco("jogador_aura_braco_d", caixas, OMBRO_D)
+	for a in [_aura_corpo, _aura_e.get_child(0), _aura_d.get_child(0)]:
+		a.material = Arte.mat_aditivo
+		a.modulate = Color(0.35, 0.55, 1.0)
+	_auras.add_child(_aura_corpo)
 	# o braço levantado e a bola (atrás do corpo: é o braço de lá)
 	_pivo_e = Node2D.new()
 	_pivo_e.position = OMBRO_E
@@ -100,8 +111,21 @@ static func _ler_caixas() -> Dictionary:
 		"jogador_braco_e": Rect2(98, 52, 269, 321),
 		"jogador_braco_d": Rect2(520, 349, 238, 357),
 		"jogador_bola": Rect2(83, 34, 195, 167),
-		"jogador_aura": Rect2(58, 0, 730, 956),
+		"jogador_aura_corpo": Rect2(96, 129, 521, 827),
+		"jogador_aura_braco_e": Rect2(56, 0, 355, 407),
+		"jogador_aura_braco_d": Rect2(480, 316, 308, 424),
 	}
+
+
+## A aura de um braço, num pivô no ombro (gira com o braço).
+func _aura_braco(nome: String, caixas: Dictionary, ombro: Vector2) -> Node2D:
+	var pivo := Node2D.new()
+	pivo.position = ombro
+	var s := _peca(load("res://imagens/%s.png" % nome), caixas[nome])
+	s.position -= ombro
+	pivo.add_child(s)
+	_auras.add_child(pivo)
+	return pivo
 
 
 static func _peca(tex: Texture, caixa: Rect2) -> Sprite:
@@ -116,18 +140,20 @@ func _set_braco_e(v: float) -> void:
 	braco_e = v
 	if _pivo_e != null:
 		_pivo_e.rotation = v
+		_aura_e.rotation = v
 
 
 func _set_braco_d(v: float) -> void:
 	braco_d = v
 	if _pivo_d != null:
 		_pivo_d.rotation = v
+		_aura_d.rotation = v
 
 
 func _set_luz(v: float) -> void:
 	luz = v
-	if _aura_azul != null:
-		_aura_azul.modulate.a = 0.5 * clamp(v, 0.0, 2.0)
+	if _auras != null:
+		_auras.modulate.a = 0.5 * clamp(v, 0.0, 2.0)
 
 
 func _set_na_mao(v: bool) -> void:
@@ -164,6 +190,6 @@ func _process(_delta: float) -> void:
 			continue
 		var t: Transform2D = _historico[k]
 		r.visible = true
-		r.global_transform = t.translated(_aura_azul.position)
+		r.global_transform = t.translated(_aura_corpo.position)
 		var f: float = rastro * 0.22 * (1.0 - float(k) / (RASTRO + 1))
 		r.modulate = Color(0.45, 0.65, 1.0, f).linear_interpolate(Color(1.0, 0.5, 0.1, f), float(k) / RASTRO)

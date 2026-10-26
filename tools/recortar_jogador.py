@@ -122,13 +122,23 @@ def main():
     buraco = borrar(mao, 2.0) * disco(tam, BOLA, RAIO_BOLA - 4, 1.0)
     bola_rgb = espelhar(rgb, buraco, BOLA)
     bola_a = np.maximum(bola_a, buraco * disco(tam, BOLA, 84, 2.0))
-    # a aura: o jogador inteiro borrado (o jogo pinta de azul e laranja)
+    # a aura: o jogador inteiro borrado (o jogo pinta de azul e laranja) -
+    # inteira (o poster vivo) e em pecas que giram junto com os bracos (a
+    # apresentacao: o brilho do braco vai com o braco). Por dentro do
+    # jogador o brilho e mais fraco (o do jogador inteiro, nas pecas tambem)
     tudo = np.maximum(m, bola)
-    aura = np.clip(borrar(tudo, 22) * 1.6, 0, 1) * (1 - 0.6 * np.clip(borrar(tudo, 3) * 2 - 1, 0, 1))
+    dentro = 1 - 0.6 * np.clip(borrar(tudo, 3) * 2 - 1, 0, 1)
+    aura = np.clip(borrar(tudo, 22) * 1.6, 0, 1) * dentro
+    def aura_de(a):
+        return np.clip(borrar(a, 22) * 1.6, 0, 1) * dentro
+    branco = np.ones_like(rgb)
     pecas = []
     for nome, cor, alfa in (("jogador_corpo", rgb, corpo), ("jogador_braco_e", rgb, braco_e),
                             ("jogador_braco_d", rgb, braco_d), ("jogador_bola", bola_rgb, bola_a),
-                            ("jogador_aura", np.ones_like(rgb), aura)):
+                            ("jogador_aura", branco, aura),
+                            ("jogador_aura_corpo", branco, aura_de(corpo)),
+                            ("jogador_aura_braco_e", branco, aura_de(np.maximum(braco_e, bola_a))),
+                            ("jogador_aura_braco_d", branco, aura_de(braco_d))):
         cx = caixa_de(alfa)
         gravar(nome, cor, alfa, cx)
         pecas.append((nome, cx))

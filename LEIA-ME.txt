@@ -2,7 +2,7 @@ SLAM ARENA - BASQUETE ARCADE VERTICAL (1 JOGADOR, 3 FASES, SEM BOTAO)
 ======================================================================
 EDICAO OPENGL ES 2.0 - Godot 3.6.3 - para TV Box com Mali-400 / Mali-450
 (TX9 "comum": Amlogic S905X/S905W, Rockchip RK3229; MXQ, X96...).
-VERSAO 2.0-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
+VERSAO 2.0.1-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
 em Aplicativos > Slam Arena). VERSAO NOVA: aumente version/code e
 version/name no export_presets.cfg e o VERSAO do autoload/Ajustes.gd.
 
@@ -15,7 +15,7 @@ GERAR O APK (WINDOWS), PASSO A PASSO
   3. Dois cliques no GERAR_APK.bat. A 1a vez baixa o que faltar (5 a 20
      min); depois, 2 a 4 min.
   4. O APK sai em APK-Pronto\SlamArena-<versao>.apk (a pasta abre sozinha
-     no fim; ex.: SlamArena-2.0-gles2.apk): copie para o pendrive e
+     no fim; ex.: SlamArena-2.0.1-gles2.apk): copie para o pendrive e
      instale na TV Box (ele instala por cima da versao anterior).
   Se der erro, envie o arquivo build\android\GERACAO-COMPLETA.log.
   Onde ligar cada fio na maquina: docs\diagrama_montagem.png.
@@ -46,7 +46,9 @@ O JOGO
     luz e faiscas; a parede de LED treme), a bola sobe, corte com clarao e
     ele entra VOANDO com rastro de energia, camera lenta ate a pose da
     capa e ENTERRA: o braco gira, a bola passa pela rede, o aro balanca,
-    raios e faiscas na cesta. Depois dois raios caem e o poster SLAM
+    raios e faiscas na cesta. A aura azul tambem e em pecas (2.0.1): o
+    brilho do braco gira junto com o braco (nao fica um "fantasma" do
+    braco e da bola no alto). Depois dois raios caem e o poster SLAM
     ARENA entra com impacto. Uma CESTA ja comeca a partida; START pula
     para a abertura.
   * ABERTURA VIVA: o poster respira e aproxima devagar, um brilho atravessa
