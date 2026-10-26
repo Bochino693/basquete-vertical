@@ -1,7 +1,7 @@
-"""O JOGADOR DA CAPA COMO PERSONAGEM 2D ARTICULADO (a apresentacao):
+"""O JOGADOR DA CAPA EM PECAS (a materia-prima dos quadros da apresentacao):
 
-    python3 -I tools/rig_jogador.py            # as pecas
-    python3 -I tools/rig_jogador.py previa DIR # + quadros de previa do movimento
+    python3 -I tools/rig_jogador.py            # as pecas e os remendos
+    python3 -I tools/rig_jogador.py previa DIR # + quadros de previa das poses
 
 O jogador inteiro, da propria arte do poster (tools/arte/poster_original.png
 e o recorte tools/arte/jogador_mascara.png), em PECAS INTEIRAS E RIGIDAS,
@@ -9,19 +9,17 @@ como um boneco de animacao 2D: pernas (com o calcao), tronco, cabeca, o
 braco da bola em duas partes (braco e antebraco com a mao) e a bola, o
 outro braco em duas partes. As pecas se encontram nas juntas com sobra
 (ombro, cotovelo, pescoco, cintura): a peca de cima acaba macia por cima
-da de baixo, entao a junta nao abre nem aparece quando gira - e nada e
-entortado (cada peca so gira e anda inteira). O jogo monta o boneco com
-ossos (scripts/fx/jogador_capa.gd) e anima de verdade, a 60 quadros.
+da de baixo, entao a junta nao abre nem aparece quando gira.
 
 As juntas do braco da bola (o ombro, que SOBE com o braco por cima, e o
 cotovelo) ficam certas pixel a pixel: para cada angulo sai um REMENDO feito
 da arte que refaz a juncao (veja "as juntas" abaixo).
 
-Grava imagens/jogador_<peca>.png, imagens/jogador_<peca>_aura.png (o
-brilho em volta, metade do tamanho), tools/arte/jogador_pecas.txt (onde
-cada peca fica no poster e as juntas: vai no jogador_capa.gd), o atlas dos
-remendos imagens/jogador_juntas.png e scripts/fx/jogador_juntas_dados.gd.
-Precisa de numpy e Pillow (~2 minutos).
+O jogo NAO monta este boneco: o tools/quadros_jogador.py faz dele cada
+QUADRO da animacao inteiro (o jogador todo numa imagem so, pose a pose) e o
+jogo so passa os quadros. Grava tudo em tools/arte/pecas/ (fora do jogo):
+<peca>.png, pecas.txt (onde cada peca fica no poster e as juntas), o atlas
+dos remendos juntas.png e juntas.txt. Precisa de numpy e Pillow (~2 min).
 """
 import math
 import os
@@ -34,8 +32,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import recortar_jogador as rj  # noqa: E402
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-IMG = os.path.join(RAIZ, "imagens")
 ARTE = os.path.join(RAIZ, "tools", "arte")
+PECAS = os.path.join(ARTE, "pecas")
 
 # as juntas no poster original (941 x 1672)
 J = {
@@ -49,6 +47,12 @@ J = {
     "cotovelo_d": (603.0, 530.0),
     "pulso_d": (670.0, 626.0),
     "bola": (190.0, 112.0),
+    # as pernas (desenhadas: tools/pernas_jogador.py), em pe
+    "pelve": (427.0, 590.0),
+    "quadril_c": (478.0, 592.0), "joelho_c": (478.0, 777.0), "tornozelo_c": (478.0, 972.0),
+    "quadril_l": (376.0, 588.0), "joelho_l": (376.0, 773.0), "tornozelo_l": (376.0, 968.0),
+    # o centro da bola embaixo da mao aberta (quicando)
+    "bola_mao_d": (708.0, 748.0),
 }
 # a cabeca: o cabelo e a nuca acima do vao azul que separa o cabelo do
 # ombro, e acima da linha laranja da alca da camisa (a alca fica no tronco:
@@ -65,6 +69,9 @@ AXILA = [(240, 360), (324, 343), (404, 307), (404, 420), (240, 420)]
 # o braco de ca (do ombro aos dedos), passando no vao entre o joelho e o
 # antebraco (a luz do joelho fica nas pernas)
 BRACO_D = [(540, 336), (655, 380), (820, 600), (820, 790), (606, 790), (582, 600), (526, 488), (524, 405)]
+# a barra da camisa (o tronco acaba nela; o short fica por baixo)
+BARRA = [(200, 0), (941, 0), (941, 556), (560, 553), (512, 547), (497, 544), (447, 537), (380, 531),
+         (340, 523), (313, 515), (290, 511), (200, 511)]
 TAM = (941, 1672)
 
 
@@ -128,10 +135,9 @@ def pecas():
     corpo = np.maximum(corpo, m * rj.disco(tam, J["ombro_d"], 44, 8.0))
     corpo *= 1 - c["bola"]
     corpo *= 1 - zona
-    # pernas (com o calcao) e tronco: a cintura com sobra, o tronco por cima
-    n_cint = (0.22, 1.0)
-    pernas = corpo * plano((J["cintura"][0], J["cintura"][1] - 34), n_cint, 2)
-    tronco = corpo * (1 - plano(J["cintura"], n_cint, 16))
+    # o tronco acaba na barra da camisa (o short e as pernas sao as pecas
+    # desenhadas do tools/pernas_jogador.py, por baixo dela)
+    tronco = corpo * poligono_liso(BARRA)
     # cabeca por cima do pescoco (o tronco fica com o pescoco inteiro)
     n_pesc = (0.12, -1.0)
     cabeca_pol = poligono_liso(CABECA)
@@ -145,12 +151,14 @@ def pecas():
     # cobre o corte - o remendo nao ve borda ali; o cabelo nao entra)
     nuca = rj.poligono(tam, [(418, 150), (941, 150), (941, 400), (418, 400)])
     tronco_pescoco = np.maximum(tronco, tronco_todo * nuca * (1 - plano((J["pescoco"][0], J["pescoco"][1] - 30), n_pesc, 2)))
+    import pernas_jogador
     lista = [
-        # nome, cor, alfa (a ordem do desenho)
-        ("pernas", rgb, pernas),
+        # nome, cor, alfa (a ordem do desenho: o braco de la atras de tudo, as
+        # pernas e o short, o tronco, a cabeca, o braco de ca na frente)
         ("braco_e", rgb, braco_e),
         ("bola", c["bola_rgb"], c["bola"]),
         ("antebraco_e", rgb, antebraco_e),
+    ] + pernas_jogador.pecas_pernas() + [
         ("tronco", rgb, tronco),
         ("cabeca", rgb, cabeca),
         ("braco_d", rgb, braco_d),
@@ -173,33 +181,15 @@ def caixa(alfa, margem):
     return x0, y0, x1, y1
 
 
-def gravar(nome, cor, alfa, brilho=True):
-    """A peca (recortada no tamanho dela) e o brilho em volta (com folga
-    para o brilho caber, metade do tamanho, so a transparencia)."""
+def gravar(nome, cor, alfa):
+    """A peca, recortada no tamanho dela."""
     x0, y0, x1, y1 = caixa(alfa, 3)
     rgba = np.zeros((y1 - y0, x1 - x0, 4))
     rgba[..., :3] = cor[y0:y1, x0:x1]
     rgba[..., 3] = alfa[y0:y1, x0:x1]
     Image.fromarray((np.clip(rgba, 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA").save(
-        os.path.join(IMG, "jogador_%s.png" % nome), optimize=True)
-    r = [(x0, y0, x1 - x0, y1 - y0)]
-    if brilho:
-        # (com uma borda vazia em volta do poster: o brilho de quem encosta
-        # na borda, como a bola, nao fica cortado)
-        P = 64
-        cheio = np.pad(alfa, P)
-        ys, xs = np.where(cheio > 0.004)
-        bx0, by0 = xs.min() - 64, ys.min() - 64
-        bx1 = bx0 + (xs.max() + 65 - bx0) // 2 * 2
-        by1 = by0 + (ys.max() + 65 - by0) // 2 * 2
-        a = cheio[by0:by1, bx0:bx1]
-        bx0, by0, bx1, by1 = bx0 - P, by0 - P, bx1 - P, by1 - P
-        dentro = 1 - 0.6 * np.clip(rj.borrar(a, 3) * 2 - 1, 0, 1)
-        au = np.clip(rj.borrar(a, 22) * 1.6, 0, 1) * dentro
-        im = Image.fromarray((au * 255 + 0.5).astype(np.uint8), "L").resize(((bx1 - bx0) // 2, (by1 - by0) // 2), Image.LANCZOS)
-        Image.merge("LA", (Image.new("L", im.size, 255), im)).save(os.path.join(IMG, "jogador_%s_aura.png" % nome), optimize=True)
-        r.append((bx0, by0, bx1 - bx0, by1 - by0))
-    return r
+        os.path.join(PECAS, "%s.png" % nome), optimize=True)
+    return (x0, y0, x1 - x0, y1 - y0)
 
 
 # ------------------------------------------------------------ as juntas
@@ -217,10 +207,10 @@ def gravar(nome, cor, alfa, brilho=True):
 # fina nas de baixo, como la). O remendo so pinta onde a arte das pecas
 # ficaria errada: a luz velha que foi para dentro, os cortes que ficaram
 # para fora, o vao entre as pecas. Na pose da capa ele e vazio (a arte fica
-# igualzinha). Tudo vai num atlas so (imagens/jogador_juntas.png) e os
-# numeros no scripts/fx/jogador_juntas_dados.gd (gerado).
+# igualzinha). Tudo vai num atlas so (tools/arte/pecas/juntas.png) e os
+# numeros no juntas.txt.
 PASSO = 2.5
-OMBRO_DE, OMBRO_ATE = -40.0, 130.0
+OMBRO_DE, OMBRO_ATE = -140.0, 130.0
 COTOVELO_DE, COTOVELO_ATE = -40.0, 25.0
 OMBRO_ERGUIDO = (-8.0, -42.0)       # o ombro com o braco la em cima
 OMBRO_BAIXADO = (3.0, 8.0)          # o ombro com o braco la embaixo
@@ -554,39 +544,38 @@ def remendos(extra):
         img = todos[nome][i][1]
         h, w = img.shape[:2]
         atlas[lug[1]:lug[1] + h, lug[0]:lug[0] + w] = img
-    Image.fromarray(atlas, "RGBA").save(os.path.join(IMG, "jogador_juntas.png"), optimize=True)
-    with open(os.path.join(RAIZ, "scripts", "fx", "jogador_juntas_dados.gd"), "w") as f:
-        f.write("extends Reference\n\n")
-        f.write("## GERADO por tools/rig_jogador.py (nao editar a mao): os remendos das\n")
-        f.write("## juntas do braco da bola, um por angulo, no atlas imagens/jogador_juntas.png\n")
-        f.write("## (coordenadas do poster original).\n\n")
-        f.write("const PASSO := %.1f\n" % PASSO)
-        f.write("const ERGUIDO := Vector2(%.1f, %.1f)\nconst BAIXADO := Vector2(%.1f, %.1f)\n" % (OMBRO_ERGUIDO + OMBRO_BAIXADO))
-        f.write("const ERGUE_ATE := %.1f\nconst BAIXA_ATE := %.1f\n" % (ERGUE_ATE, BAIXA_ATE))
-        f.write("# [graus, pivo andado x, y, canto do remendo x, y, no atlas x, y, largura, altura]\n")
-        f.write("# (largura 0: nada a remendar)\n")
+    Image.fromarray(atlas, "RGBA").save(os.path.join(PECAS, "juntas.png"), optimize=True)
+    with open(os.path.join(PECAS, "juntas.txt"), "w") as f:
+        f.write("# os remendos das juntas do braco da bola, um por angulo, no atlas juntas.png\n")
+        f.write("# (coordenadas do poster original): junta, graus, pivo andado x, y, canto do\n")
+        f.write("# remendo x, y, no atlas x, y, largura, altura (largura 0: nada a remendar)\n")
         for cfg in juntas:
             nome = cfg["nome"]
-            f.write("const %s_DE := %.1f\n" % (nome.upper(), cfg["de"]))
-            f.write("const %s := [\n" % nome.upper())
             for i, (ang, img, canto, P2) in enumerate(todos[nome]):
                 if img is None:
-                    f.write("\t[%.1f, %.3f, %.3f, 0, 0, 0, 0, 0, 0],\n" % (ang, P2[0], P2[1]))
+                    f.write("%s %.1f %.3f %.3f 0 0 0 0 0 0\n" % (nome, ang, P2[0], P2[1]))
                 else:
                     h, w = img.shape[:2]
                     lug = lugares[(nome, i)]
-                    f.write("\t[%.1f, %.3f, %.3f, %d, %d, %d, %d, %d, %d],\n" % (ang, P2[0], P2[1], canto[0], canto[1], lug[0], lug[1], w, h))
-            f.write("]\n")
+                    f.write("%s %.1f %.3f %.3f %d %d %d %d %d %d\n" % (nome, ang, P2[0], P2[1], canto[0], canto[1], lug[0], lug[1], w, h))
     print("  atlas das juntas: %d x %d" % (atlas.shape[1], atlas.shape[0]))
     return todos
 
 
 # ------------------------------------------------------------ previa
-OSSOS_PAI = {"pernas": None, "tronco": None, "cabeca": "tronco", "ombro_e": "tronco",
+OSSOS = ["tronco", "pelve", "coxa_l", "joelho_l", "pe_l", "coxa_c", "joelho_c", "pe_c", "cabeca",
+         "ombro_e", "cotovelo_e", "ombro_d", "cotovelo_d"]
+OSSOS_PAI = {"pelve": "tronco", "coxa_l": "pelve", "joelho_l": "coxa_l", "pe_l": "joelho_l",
+             "coxa_c": "pelve", "joelho_c": "coxa_c", "pe_c": "joelho_c",
+             "tronco": None, "cabeca": "tronco", "ombro_e": "tronco",
              "cotovelo_e": "ombro_e", "ombro_d": "tronco", "cotovelo_d": "ombro_d"}
-PIVOS = {"pernas": "quadril", "tronco": "cintura", "cabeca": "pescoco", "ombro_e": "ombro_e",
+PIVOS = {"pelve": "pelve", "coxa_l": "quadril_l", "joelho_l": "joelho_l", "pe_l": "tornozelo_l",
+         "coxa_c": "quadril_c", "joelho_c": "joelho_c", "pe_c": "tornozelo_c",
+         "tronco": "cintura", "cabeca": "pescoco", "ombro_e": "ombro_e",
          "cotovelo_e": "cotovelo_e", "ombro_d": "ombro_d", "cotovelo_d": "cotovelo_d"}
-PECA_OSSO = {"pernas": "pernas", "braco_e": "ombro_e", "bola": "cotovelo_e", "antebraco_e": "cotovelo_e",
+PECA_OSSO = {"canela_l": "joelho_l", "pe_l": "pe_l", "coxa_l": "coxa_l",
+             "canela_c": "joelho_c", "pe_c": "pe_c", "coxa_c": "coxa_c", "pelve": "pelve",
+             "braco_e": "ombro_e", "bola": "cotovelo_e", "antebraco_e": "cotovelo_e",
              "tronco": "tronco", "cabeca": "cabeca", "braco_d": "ombro_d", "antebraco_d": "cotovelo_d"}
 
 
@@ -604,7 +593,7 @@ def mover(v):
 def ossos(pose):
     """As transformacoes dos ossos (como o jogo: o ombro anda com o braco)."""
     o = {}
-    for nome in ["pernas", "tronco", "cabeca", "ombro_e", "cotovelo_e", "ombro_d", "cotovelo_d"]:
+    for nome in OSSOS:
         pai = OSSOS_PAI[nome]
         base = o[pai] if pai else np.eye(3)
         if nome == "ombro_e":
@@ -632,7 +621,7 @@ def previa(pasta, pecas_img, caixas, poses, todos, zoom=True):
     os.makedirs(pasta, exist_ok=True)
     for i, (nome_pose, pose) in enumerate(poses):
         o = ossos(pose)
-        tela = Image.new("RGBA", (1100, 1250), (26, 22, 42, 255))
+        tela = Image.new("RGBA", (1100, 1400), (26, 22, 42, 255))
         desl = mover((80, 250))
 
         def por(img, t):
@@ -666,43 +655,54 @@ def previa(pasta, pecas_img, caixas, poses, todos, zoom=True):
             z.save(os.path.join(pasta, "%02d_%s_ombro.png" % (i, nome_pose)))
 
 
+# as pernas da capa (no ar: o joelho de ca para cima, a perna de la embaixo)
+PERNAS_CAPA = {"coxa_c": -58, "joelho_c": 125, "pe_c": 40, "coxa_l": 15, "joelho_l": 35, "pe_l": 30}
+
+
+def _com(pose, extra):
+    r = dict(PERNAS_CAPA)
+    r.update(pose)
+    r.update(extra)
+    return r
+
+
 POSES_PREVIA = [
-    ("decolagem", {"pernas": 10, "tronco": -8, "cabeca": -4, "ombro_e": -35, "cotovelo_e": 20, "ombro_d": 20, "cotovelo_d": 10}),
-    ("subindo", {"pernas": 5, "tronco": -4, "cabeca": -2, "ombro_e": -18, "cotovelo_e": 10, "ombro_d": 10, "cotovelo_d": 5}),
-    ("capa", {}),
-    # a enterrada: o ombro sobe, o cotovelo vai alto, a bola passa POR CIMA
-    # da cabeca (que abaixa um pouco) e desce na FRENTE do rosto
-    ("e1", {"pernas": -3, "tronco": 3, "cabeca": 3, "ombro_e": 32.5, "cotovelo_e": -24.5, "ombro_d": -8, "cotovelo_d": -4}),
-    ("e2", {"pernas": -5, "tronco": 6, "cabeca": 5, "ombro_e": 67.5, "cotovelo_e": -34.5, "ombro_d": -15, "cotovelo_d": -7}),
-    ("e3", {"pernas": -7, "tronco": 10, "cabeca": 7, "ombro_e": 92.5, "cotovelo_e": -24.5, "ombro_d": -22, "cotovelo_d": -9}),
-    ("e4", {"pernas": -9, "tronco": 14, "cabeca": 8, "ombro_e": 112.5, "cotovelo_e": 0.5, "ombro_d": -28, "cotovelo_d": -11}),
-    ("e5", {"pernas": -10, "tronco": 16, "cabeca": 8, "ombro_e": 122.5, "cotovelo_e": 10.5, "ombro_d": -32, "cotovelo_d": -13}),
-    # pendurado no aro: o braco esticado para CIMA segurando, o corpo embaixo
-    ("pendurado", {"pernas": 8, "tronco": 4, "cabeca": 5, "ombro_e": 105.5, "cotovelo_e": -32.5, "ombro_d": -10, "cotovelo_d": -4}),
+    ("empe", {}),
+    # correndo (a perna de ca na frente / atras) com a bola quicando na mao
+    # de ca e o braco de la balancando atras
+    ("corre_a", {"coxa_c": -32, "joelho_c": 15, "pe_c": -8, "coxa_l": 25, "joelho_l": 45, "pe_l": 30,
+                 "ombro_e": -100, "cotovelo_e": -20, "ombro_d": 6, "cotovelo_d": 8}),
+    ("corre_b", {"coxa_c": 15, "joelho_c": 100, "pe_c": 25, "coxa_l": -30, "joelho_l": 95, "pe_l": 10,
+                 "ombro_e": -80, "cotovelo_e": -30, "ombro_d": 0, "cotovelo_d": -4}),
+    ("capa", _com({}, {})),
+    ("e1", _com({}, {"tronco": 3, "cabeca": 3, "ombro_e": 32.5, "cotovelo_e": -24.5, "ombro_d": -8, "cotovelo_d": -4})),
+    ("e3", _com({}, {"tronco": 10, "cabeca": 7, "ombro_e": 92.5, "cotovelo_e": -24.5, "ombro_d": -22, "cotovelo_d": -9})),
+    ("e5", _com({}, {"tronco": 16, "cabeca": 8, "ombro_e": 122.5, "cotovelo_e": 10.5, "ombro_d": -32, "cotovelo_d": -13})),
+    ("pendurado", {"coxa_c": -20, "joelho_c": 40, "pe_c": 25, "coxa_l": 5, "joelho_l": 25, "pe_l": 20,
+                   "tronco": 4, "cabeca": 5, "ombro_e": 105.5, "cotovelo_e": -32.5, "ombro_d": -10, "cotovelo_d": -4}),
+    ("braco_baixo", {"ombro_e": -130, "cotovelo_e": -30}),
 ]
 
 
 def main():
+    os.makedirs(PECAS, exist_ok=True)
     lista, extra = pecas()
     caixas = {}
     imgs = []
-    brilhos = {}
     for nome, cor, alfa in lista:
-        r = gravar(nome, cor, alfa, nome != "bola")
-        caixas[nome] = r[0]
-        if len(r) > 1:
-            brilhos[nome] = r[1]
-        imgs.append((nome, Image.open(os.path.join(IMG, "jogador_%s.png" % nome)).convert("RGBA")))
+        caixas[nome] = gravar(nome, cor, alfa)
+        imgs.append((nome, Image.open(os.path.join(PECAS, "%s.png" % nome)).convert("RGBA")))
         print("  %s: x %d y %d  %d x %d" % ((nome,) + caixas[nome]))
-    with open(os.path.join(ARTE, "jogador_pecas.txt"), "w") as f:
+    with open(os.path.join(PECAS, "pecas.txt"), "w") as f:
+        f.write("# a ordem do desenho: peca x y largura altura (no poster original)\n")
         for nome, _, _ in lista:
-            f.write("%s %d %d %d %d\n" % ((nome,) + caixas[nome]))
-        for nome, cx in brilhos.items():
-            f.write("%s_aura %d %d %d %d\n" % ((nome,) + cx))
+            f.write("peca %s %d %d %d %d\n" % ((nome,) + caixas[nome]))
+        f.write("# as juntas: nome x y\n")
         for k, v in J.items():
-            f.write("%s %.1f %.1f\n" % (k, v[0], v[1]))
-    todos = remendos(extra)
-    if len(sys.argv) > 2 and sys.argv[1] == "previa":
+            f.write("junta %s %.1f %.1f\n" % (k, v[0], v[1]))
+    # ("rapida": so as pecas e a previa, sem refazer os remendos)
+    todos = remendos(extra) if not (len(sys.argv) > 1 and sys.argv[1] == "rapida") else None
+    if len(sys.argv) > 2 and sys.argv[1] in ("previa", "rapida"):
         previa(sys.argv[2], imgs, caixas, POSES_PREVIA, todos)
 
 

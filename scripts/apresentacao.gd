@@ -7,15 +7,16 @@ extends "res://scripts/tela_base.gd"
 ##      bola some no clarão e o LOGO DA LAZER & SPORT salta no lugar, com
 ##      um reflexo dourado; GAMES bate letra por letra e APRESENTA;
 ##   2. a quadra de neon se desenha sozinha no escuro (a grade cintila);
-##   3. a BOLA DE FOGO quica três vezes, cada vez mais forte (cada quique:
-##      raios no chão, onda de luz, poeira, a grade treme), com a SOMBRA do
-##      jogador correndo no chão; a cesta de neon se desenha; o último
-##      quique manda a bola lá para o alto;
-##   4. CORTE (clarão): o JOGADOR DA CAPA - o próprio, recortado do pôster
-##      (regata, short, tênis, a bola de fogo) - entra voando, a câmera
-##      enquadra igual ao pôster e ele sobe em CÂMERA LENTA até a pose da
-##      capa; o braço gira e ele ENTERRA: o aro verga, a rede balança,
-##      faíscas, raios em volta da bola;
+##   3. o JOGADOR DA CAPA - ele inteiro, quadro a quadro, renderizado da
+##      arte do pôster (scripts/fx/jogador_quadros.gd) - entra correndo e
+##      quicando a BOLA DE FOGO (cada quique: raios no chão, onda de luz,
+##      poeira, a grade treme, cada vez mais forte); a cesta de neon se
+##      desenha; o último quique manda a bola lá para o alto;
+##   4. ele salta, pega a bola lá em cima, a câmera chega perto e fica
+##      LENTA até a POSE DA CAPA; o braço passa por cima da cabeça e ele
+##      ENTERRA: o aro verga, a rede balança, faíscas, raios; ele fica
+##      pendurado no aro e a MESMA bola cai pela rede e quica (uma bola só
+##      do começo ao fim, sem corte);
 ##   5. dois raios caem na cesta, a tela pisca e o pôster SLAM ARENA entra
 ##      com impacto, faíscas e o brilho atravessando o letreiro;
 ##   6. segue direto para a abertura (o mesmo pôster: sem corte).
@@ -25,12 +26,12 @@ const Malhas = preload("res://scripts/fx/malhas.gd")
 const Grade = preload("res://scripts/fx/grade.gd")
 const OndaLuz = preload("res://scripts/fx/onda_luz.gd")
 const Traco = preload("res://scripts/fx/traco_neon.gd")
-const Bola = preload("res://scripts/fx/bola.gd")
 const Raio = preload("res://scripts/fx/raio_eletrico.gd")
 const Rede = preload("res://scripts/fx/rede.gd")
 
 const Emblema = preload("res://scripts/fx/emblema.gd")
-const JogadorCapa = preload("res://scripts/fx/jogador_capa.gd")
+const JogadorQuadros = preload("res://scripts/fx/jogador_quadros.gd")
+const Jog = preload("res://scripts/fx/jogador_quadros_dados.gd")
 const PosterVivo = preload("res://scripts/fx/poster_vivo.gd")
 
 const CHAO := 1520.0
@@ -38,20 +39,9 @@ const ARO := Vector2(540, 560)
 const LOGO := Vector2(540, 790)
 const LOGO_ESCALA := 0.594      # o logo (1280 x 849) com 760 de largura
 
-# o jogador da capa (tempos em segundos, a partir da bola de fogo)
-const BOLA_FOGO := 104.0        # a bola dos quiques
-const QUIQUES := [[0.42, 300.0, 0.6], [1.0, 450.0, 0.85], [1.52, 590.0, 1.25]]   # quando, onde, força
-const T_CORTE := 1.86           # o corte (clarão) e o jogador entra
-const T_ENTRA := 0.42           # entra voando
-const T_LENTO := 0.95           # câmera lenta até a pose da capa
-const T_ENTERRA := 0.32         # a enterrada: o braço passa por cima e a bola entra
-const T_IMPACTO := T_CORTE + T_ENTRA + T_LENTO + T_ENTERRA
-const ESCALA_CAPA := 1080.0 / 941.0
-# depois do corte a câmera enquadra como o pôster: o aro onde ele fica na
-# capa, do tamanho de lá
-const ARO_CAPA := Vector2(884, 282)
-const ZOOM_CAPA := 1.1
-const ZOOM_LENTO := 1.15
+# o jogador da capa: o que acontece, quando e onde, sai do roteiro gerado
+# (Jog: scripts/fx/jogador_quadros_dados.gd, 60 vezes por segundo)
+const ALTURA_CORRE := 1171.0    # a cintura dele correndo (para a sombra)
 
 var _mundo: Node2D
 var _grade: Grade
@@ -62,8 +52,10 @@ var _aro_frente: Traco
 var _tabela: Traco
 var _quadrado: Traco
 var _rede: Rede
-var _bola: Bola
+var _bola_pivo: Node2D         # a bola (amassa no chão sem girar o amassado)
+var _bola: Sprite               # a bola da capa, com o fogo (a mesma do começo ao fim)
 var _sombra: Sprite
+var _sombra_jog: Sprite         # a sombra do jogador no chão
 var _poeira: CPUParticles2D
 var _faiscas: Array = []
 var _raios: Array = []
@@ -82,23 +74,20 @@ var _mat_poster: ShaderMaterial
 var _r := RandomNumberGenerator.new()
 
 # o jogador da capa
-var _jog                        # JogadorCapa (o da capa, colorido)
-var _jog_sombra                 # JogadorCapa escuro (a sombra no chão)
+var _jog                        # JogadorQuadros
 var _bola_fogo: Sprite          # o brilho de fogo em volta da bola
 var _chamas: CPUParticles2D     # o fogo saindo da bola
 var _raio_chao: Raio
 var _raios_bola: Array = []     # raios pequenos em volta da bola (câmera lenta)
 var _jt := 0.0
-var _jparte := ""
-var _jquique := -1
-var _jq0 := Vector2()           # onde o jogador estava quando a parte começou
-var _bola_solta := false
-var _bola_vel := Vector2()
+var _evento := 0                # o próximo acontecimento do roteiro
+var _bola_frente := true
+var _giro_bola := 0.0
+var _amassa := 1.0
 var _zoom := 1.0
 var _cam := Vector2()           # deslocamento da câmera (o tremor vai por cima)
 var _aro_t := -1.0
 var _raio_t := 0.0
-var _bola_base := 1.0           # a escala da bola sem amassar
 
 # a bola
 var _fase := ""
@@ -156,7 +145,11 @@ func _ready() -> void:
 	_sombra = Arte.sprite_brilho(Color(0, 0, 0, 0.6), 160.0)
 	_sombra.material = null
 	_mundo.add_child(_sombra)
-	_bola_fogo = Arte.sprite_brilho(Color(1.0, 0.5, 0.1, 0.9), 300.0)
+	_sombra_jog = Arte.sprite_brilho(Color(0, 0, 0, 0.75), 160.0)
+	_sombra_jog.material = null
+	_sombra_jog.visible = false
+	_mundo.add_child(_sombra_jog)
+	_bola_fogo = Arte.sprite_brilho(Color(1.0, 0.5, 0.1, 0.9), 250.0)
 	_bola_fogo.visible = false
 	_mundo.add_child(_bola_fogo)
 	_chamas = CPUParticles2D.new()
@@ -177,26 +170,24 @@ func _ready() -> void:
 	_chamas.color_ramp = Arte.rampa([Color(1.0, 0.9, 0.5, 0.9), Color(1.0, 0.45, 0.05, 0.7), Color(0.6, 0.05, 0.0, 0.0)], [0.0, 0.4, 1.0])
 	_chamas.emitting = false
 	_mundo.add_child(_chamas)
-	_bola = Bola.new()
-	_bola.tamanho(150)
-	_bola.velocidade = 4.0
-	_bola.visible = false
-	_mundo.add_child(_bola)
+	_bola_pivo = Node2D.new()
+	_bola_pivo.visible = false
+	_bola = Sprite.new()
+	_bola.texture = load("res://imagens/jogador_bola.png")
+	_bola.centered = false
+	_bola.offset = -Jog.BOLA_CENTRO
+	_bola_pivo.add_child(_bola)
+	_mundo.add_child(_bola_pivo)
 	_aro_frente = Traco.new()
 	_aro_frente.montar(Malhas.elipse(ARO, Vector2(120, 26), 40, 0.0, 180.0), 7.0, 16.0)
 	_aro_frente.cor = Arte.LARANJA
 	_mundo.add_child(_aro_frente)
-	# o jogador da capa (na frente do aro: o braço passa por cima dele)
-	_jog = JogadorCapa.new()
+	# o jogador da capa (na frente do aro: o braço passa por cima dele); a
+	# bola vai entre o corpo e os dedos dele
+	_jog = JogadorQuadros.new()
 	_jog.visible = false
 	_mundo.add_child(_jog)
-	# a sombra dele no chão (o mesmo jogador, escuro e deitado)
-	_jog_sombra = JogadorCapa.new()
-	_jog_sombra.luz = 0.0
-	_jog_sombra.modulate = Color(0, 0, 0, 0.82)
-	_jog_sombra.visible = false
-	_mundo.add_child(_jog_sombra)
-	_mundo.move_child(_jog_sombra, _tabela.get_index())
+	_mundo.add_child(_jog.dedos)
 	_raio_chao = Raio.new()
 	_raio_chao.cor = Color(0.4, 0.8, 1.0)
 	_mundo.add_child(_raio_chao)
@@ -304,7 +295,7 @@ func aquecer() -> void:
 	_apresenta.visible = true
 	_poster_pivo.visible = true
 	_poster.aquecer()
-	_bola.visible = true
+	_bola_pivo.visible = true
 	_rede.visible = true
 	for t in _quadra:
 		t.progresso = 1.0
@@ -316,10 +307,10 @@ func aquecer() -> void:
 	_raio_chao.disparar(Vector2(100, CHAO), Vector2(400, CHAO))
 	_raios_bola[0].disparar(Vector2(100, 600), Vector2(300, 700))
 	_jog.visible = true
-	_jog.position = Vector2(100, 400)
+	_jog.por(0, Vector2(300, 900), 0.0, true)
 	_jog.rastro = 1.0
-	_jog.brasas(true)
-	_jog_sombra.visible = true
+	_jog.aquecer(true)
+	_sombra_jog.visible = true
 	_bola_fogo.visible = true
 	_chamas.emitting = true
 	yield(get_tree().create_timer(0.1), "timeout")
@@ -329,7 +320,7 @@ func aquecer() -> void:
 func _preparar_cena() -> void:
 	_poster_pivo.visible = false
 	_poster.ligar(false)
-	_bola.visible = false
+	_bola_pivo.visible = false
 	_sombra.visible = false
 	_rede.visible = false
 	_flash.modulate.a = 0.0
@@ -361,18 +352,15 @@ func _preparar_cena() -> void:
 		t.alfa = 1.0
 	_jog.visible = false
 	_jog.rastro = 0.0
-	_jog.brasas(false)
-	_jog.na_mao = true
-	_jog.pose(JogadorCapa.CAPA)
-	_jog.rotation = 0.0
-	_jog_sombra.visible = false
+	_jog.luz = 1.0
+	_jog.aquecer(false)
+	_jog.dedos.visible = false
+	_sombra_jog.visible = false
 	_bola_fogo.visible = false
 	_chamas.emitting = false
-	_bola_solta = false
 	_zoom = 1.0
 	_cam = Vector2.ZERO
 	_aro_t = -1.0
-	_bola.modulate.a = 1.0
 	for n in [_aro_tras, _aro_frente, _rede]:
 		n.position.y = 0.0 if n != _rede else ARO.y
 	_grade.limpar()
@@ -477,23 +465,20 @@ func _roteiro() -> void:
 	yield(espera(1.2), "timeout")
 	if not vale(s):
 		return
-	# 3. a BOLA DE FOGO quica (a sombra do jogador corre no chão) e
-	# 4. CORTE: o jogador da capa voa, câmera lenta, ENTERRA (no _process)
+	# 3. o jogador entra correndo e quicando a BOLA DE FOGO e
+	# 4. salta, pega a bola lá em cima, câmera lenta, ENTERRA (no _process)
 	_jt = 0.0
-	_jparte = ""
-	_jquique = -1
-	_bola_solta = false
-	_bola.visible = true
-	_bola.modulate.a = 1.0
-	_bola.tamanho(BOLA_FOGO)
-	_bola_base = _bola.scale.x
-	_bola.velocidade = 6.0
+	_evento = 0
+	_bola_pivo.visible = true
 	_bola_fogo.visible = true
 	_chamas.emitting = true
 	_sombra.visible = true
-	_sombra_jogador(0.0)
-	_jog_sombra.visible = true
+	_jog.visible = true
+	_jog.rastro = 0.0
+	_jog.luz = 1.0
+	_sombra_jog.visible = true
 	_bola_na_frente(true)
+	_animar_jogador(0.0)
 	_fase = "jogador"
 	Sons.tocar("vento", -4.0, 1.4)
 	yield(espera(0.55), "timeout")
@@ -509,7 +494,7 @@ func _roteiro() -> void:
 	_rede.modulate.a = 0.0
 	var tr := create_tween()
 	tr.tween_property(_rede, "modulate:a", 1.0, 0.4).set_delay(0.4)
-	yield(espera(T_IMPACTO - 0.55 + 0.34), "timeout")
+	yield(espera(Jog.T_IMPACTO - 0.55 + 0.34), "timeout")
 	if not vale(s):
 		return
 	# 5. raios, flash e o pôster
@@ -552,17 +537,18 @@ func _relampago(v: float) -> void:
 
 
 # ================================================================ o jogador
-## A bola na frente do jogador ou atrás do aro da frente (passando pela
-## cesta).
+## A bola na frente do jogador (entre o corpo e os dedos dele) ou atrás do
+## aro da frente (passando pela cesta).
 func _bola_na_frente(sim: bool) -> void:
+	_bola_frente = sim
 	# o fogo logo atrás da bola
 	_mundo.remove_child(_bola_fogo)
-	_mundo.remove_child(_bola)
+	_mundo.remove_child(_bola_pivo)
 	var i: int = _jog.get_index() + 1 if sim else _aro_frente.get_index()
 	_mundo.add_child(_bola_fogo)
 	_mundo.move_child(_bola_fogo, i)
-	_mundo.add_child(_bola)
-	_mundo.move_child(_bola, i + 1)
+	_mundo.add_child(_bola_pivo)
+	_mundo.move_child(_bola_pivo, i + 1)
 
 
 static func _suave(k: float) -> float:
@@ -570,174 +556,83 @@ static func _suave(k: float) -> float:
 	return k * k * (3.0 - 2.0 * k)
 
 
-## Onde o jogador fica no mundo para aparecer na tela num ponto e numa
-## escala (a câmera desta hora: _cam e _zoom).
-func _da_tela(p: Vector2) -> Vector2:
-	return (p - _cam) / _zoom
-
-
-## A câmera igual ao pôster: o aro onde ele fica na capa.
-func _camera_capa(zoom: float) -> void:
-	_zoom = zoom
-	_cam = ARO_CAPA - ARO * zoom
-
-
+## O roteiro do jogador (gerado: quadro, corpo, bola, câmera, 60 vezes por
+## segundo) no tempo de agora, e os acontecimentos que passaram.
 func _animar_jogador(delta: float) -> void:
 	_jt += delta
-	var t := _jt
-	if t < T_CORTE:
-		# 3. a bola de fogo quica (cada vez mais forte) e sobe lá para o alto
-		var x0 := -60.0
-		var y0 := 760.0
-		var t0 := 0.0
-		var pos := Vector2()
-		var feito := false
-		for i in QUIQUES.size():
-			var q: Array = QUIQUES[i]
-			if t < q[0]:
-				var u: float = (t - t0) / (q[0] - t0)
-				var chao := CHAO - BOLA_FOGO * 0.5
-				if i == 0:
-					pos = Vector2(lerp(x0, q[1], u), lerp(y0, chao, u * u))
-				else:
-					var altura: float = 420.0 * QUIQUES[i - 1][2]
-					pos = Vector2(lerp(x0, q[1], u), chao - 4.0 * altura * u * (1.0 - u))
-				feito = true
-				break
-			x0 = q[1]
-			t0 = q[0]
-			if _jquique < i:
-				_jquique = i
-				_quique_fogo(q[1], q[2], i)
-		if not feito:
-			# o último quique manda a bola lá para o alto (sai da tela)
-			var u: float = (t - t0) / (T_CORTE - t0)
-			pos = Vector2(x0 + 140.0 * u, CHAO - BOLA_FOGO * 0.5 - (CHAO + 300.0) * (1.0 - (1.0 - u) * (1.0 - u)))
-		_pos = pos
-		# a sombra do jogador: deitada no chão, correndo atrás da bola
-		_sombra_jogador(t / T_CORTE)
-		# (a sombra corre: as pernas e os braços balançam)
-		var passo := sin(t * 6.0)
-		_jog_sombra.pose({"pernas": 10.0 * passo, "tronco": -4.0, "ombro_e": -20.0 + 15.0 * passo,
-			"cotovelo_e": 15.0, "ombro_d": 18.0 * abs(passo), "cotovelo_d": 10.0})
-		return
-	if _jparte == "":
-		_corte()
-	var hero_pos := _da_tela(Vector2.ZERO)
-	var hero_esc := ESCALA_CAPA / _zoom
-	if t < T_CORTE + T_ENTRA:
-		# 4. ele entra voando de baixo (rápido) - a bola já na mão
-		var k: float = (t - T_CORTE) / T_ENTRA
-		var e := 1.0 - pow(1.0 - k, 3.0)
-		_jog.position = hero_pos + _da_tela(Vector2(-420, 980)).linear_interpolate(_da_tela(Vector2(-70, 110)), e) - _da_tela(Vector2.ZERO)
-		_jog.scale = Vector2.ONE * hero_esc * lerp(0.86, 0.98, e)
-		_jog.rotation = lerp(-0.12, -0.03, e)
-		# o corpo inteiro: decolando, subindo e chegando na pose da capa
-		_jog.pose_entre([JogadorCapa.DECOLAGEM, JogadorCapa.SUBINDO, JogadorCapa.CAPA], min(e * 1.15, 1.0))
-		_jog.rastro = 1.0
-		_jog.luz = lerp(1.6, 1.0, e)
-	elif t < T_IMPACTO - T_ENTERRA:
-		# 5. CÂMERA LENTA até a pose da capa (a câmera chega perto)
-		if _jparte != "lento":
-			_jparte = "lento"
-			_jq0 = _jog.position
-			Sons.tocar("sobe", -4.0, 0.8)
-		var k: float = (t - T_CORTE - T_ENTRA) / T_LENTO
-		var z: float = lerp(ZOOM_CAPA, ZOOM_LENTO, _suave(k))
-		_camera_capa(z)
-		hero_pos = _da_tela(Vector2.ZERO)
-		hero_esc = ESCALA_CAPA / _zoom
-		var e := _suave(k)
-		_jog.position = _jq0.linear_interpolate(hero_pos, e)
-		_jog.scale = Vector2.ONE * hero_esc * lerp(0.98, 1.0, e)
-		_jog.rotation = lerp(-0.03, 0.0, e)
-		_jog.pose(JogadorCapa.CAPA)
-		_jog.rastro = lerp(0.6, 0.0, k)
-		_jog.luz = 1.0 + 0.25 * sin(k * PI)
-		# a energia: raios pequenos em volta da bola, de vez em quando
+	var t: float = min(_jt, Jog.T_FIM)
+	var n: int = Jog.ROTEIRO.size()
+	var x: float = t * Jog.FPS
+	var i := int(min(floor(x), n - 2))
+	var f: float = clamp(x - i, 0.0, 1.0)
+	var a: Array = Jog.ROTEIRO[i]
+	var b: Array = Jog.ROTEIRO[i + 1]
+	# (o corpo anda com o quadro: entre dois quadros diferentes não mistura -
+	# o pé no chão não escorrega; a bola solta anda lisa)
+	var mesmo: bool = int(a[0]) == int(b[0])
+	var k: float = f if mesmo else 0.0
+	var na_mao: bool = int(a[9]) == 1
+	var kb: float = f if (mesmo or not na_mao) else 0.0
+	_jog.por(int(a[0]), Vector2(lerp(a[1], b[1], k), lerp(a[2], b[2], k)), lerp(a[3], b[3], k), na_mao)
+	_pos = Vector2(lerp(a[4], b[4], kb), lerp(a[5], b[5], kb))
+	_giro_bola = lerp(a[6], b[6], kb)
+	_amassa = lerp(a[7], b[7], f)
+	if (int(a[8]) == 1) != _bola_frente:
+		_bola_na_frente(int(a[8]) == 1)
+	_zoom = lerp(a[10], b[10], f)
+	_cam = Vector2(540, 960) - Vector2(lerp(a[11], b[11], f), lerp(a[12], b[12], f)) * _zoom
+	while _evento < Jog.EVENTOS.size() and Jog.EVENTOS[_evento][0] <= t:
+		_acontece(Jog.EVENTOS[_evento])
+		_evento += 1
+	# a sombra dele no chão (menor e mais clara lá no alto)
+	var alto: float = clamp((ALTURA_CORRE - _jog.position.y) / 700.0, 0.0, 1.0)
+	_sombra_jog.position = Vector2(_jog.position.x + 12.0, CHAO + 6.0)
+	_sombra_jog.scale = Vector2(2.6, 0.32) * lerp(1.0, 0.45, alto)
+	_sombra_jog.modulate.a = lerp(1.0, 0.25, alto)
+	# a energia: o rastro subindo e na enterrada, e na câmera lenta raios
+	# pequenos em volta da bola
+	if t < Jog.T_SAI:
+		_jog.rastro = 0.0
+	elif t < Jog.T_PEGA:
+		_jog.rastro = 1.0 - (t - Jog.T_SAI) / (Jog.T_PEGA - Jog.T_SAI) * 0.6
+	elif t < Jog.T_GOLPE:
+		_jog.rastro = max(0.0, _jog.rastro - delta * 2.0)
+		var kl: float = (t - Jog.T_PEGA) / (Jog.T_GOLPE - Jog.T_PEGA)
+		_jog.luz = 1.0 + 0.3 * sin(kl * PI)
 		_raio_t -= delta
 		if _raio_t <= 0.0:
 			_raio_t = _r.randf_range(0.12, 0.25)
-			var c: Vector2 = _jog.bola_na_mao()
 			var rb: Raio = _raios_bola[_r.randi() % 2]
-			var a := _r.randf() * TAU
-			var r: float = _jog.raio_bola() * 1.1
-			rb.disparar(c + Vector2(cos(a), sin(a)) * r, c + Vector2(cos(a + 1.6), sin(a + 1.6)) * r * 1.5, 0.16)
-	elif t < T_IMPACTO:
-		# 6. a ENTERRADA: o braço gira por cima da cabeça e a bola vai ao aro
-		if _jparte != "enterra":
-			_jparte = "enterra"
-			_jq0 = _jog.position
-			_jog.rastro = 1.0
-			Sons.tocar("vento", -2.0, 1.5)
-		var k: float = (t - (T_IMPACTO - T_ENTERRA)) / T_ENTERRA
-		var e := k * k
-		_jog.rotation = lerp(0.0, 0.05, e)
-		# o corpo inteiro na enterrada: o braço passa por cima da cabeça,
-		# o tronco vem para a frente, o outro braço vai para trás
-		_jog.pose_entre(JogadorCapa.ENTERRADA, e)
-		# o corpo vai junto até a bola chegar no aro
-		var alvo := ARO + Vector2(4, 12)
-		_jog.position = Vector2.ZERO
-		var b: Vector2 = _jog.bola_na_mao()
-		var fim := alvo - b
-		_jog.position = _jq0.linear_interpolate(fim, e)
+			var ang := _r.randf() * TAU
+			var r: float = Jog.RAIO_BOLA * 1.15
+			rb.disparar(_pos + Vector2(cos(ang), sin(ang)) * r, _pos + Vector2(cos(ang + 1.6), sin(ang + 1.6)) * r * 1.5, 0.16)
+	elif t < Jog.T_IMPACTO:
+		_jog.rastro = 1.0
 		_jog.luz = 1.3
 	else:
-		# 7. pendurado no aro; a bola de fogo cai pela rede
-		if _jparte != "pendura":
-			_jparte = "pendura"
-			_jq0 = _jog.position
+		_jog.rastro = max(0.0, 1.0 - (t - Jog.T_IMPACTO) * 4.0)
+		_jog.luz = 1.0 + 0.8 * max(0.0, 1.0 - (t - Jog.T_IMPACTO) * 3.0)
+
+
+func _acontece(e: Array) -> void:
+	match e[1]:
+		"quique":
+			_quique_fogo(e[2], e[3], int(e[4]))
+		"salta":
+			Sons.tocar("vento", -4.0, 1.4)
+			Sons.tocar("sobe", -6.0, 1.3)
+			_tremor = 6.0
+		"pega":
+			Sons.tocar("impacto", -6.0)
+			Sons.tocar("sobe", -4.0, 0.8)
+			_tremor = 8.0
+			_faiscas[1].position = _pos
+			_faiscas[1].restart()
+			_faiscas[1].emitting = true
+		"golpe":
+			Sons.tocar("vento", -2.0, 1.5)
+		"impacto":
 			_impacto_enterrada()
-		var k: float = min((t - T_IMPACTO) / 0.6, 1.0)
-		_jog.pose(JogadorCapa.misturar(JogadorCapa.ENTERRADA[JogadorCapa.ENTERRADA.size() - 1], JogadorCapa.PENDURADO, _suave(k)))
-		_jog.rotation = lerp(0.05, 0.02, _suave(k)) + sin((t - T_IMPACTO) * 9.0) * 0.03 * (1.0 - k)
-		# a mão fica presa no aro (onde a bola entrou) e o corpo fica
-		# pendurado embaixo dela, balançando
-		_jog.position = Vector2.ZERO
-		_jog.position = ARO + Vector2(4, 12) - _jog.bola_na_mao()
-		_jog.rastro = max(0.0, 1.0 - (t - T_IMPACTO) * 4.0)
-		_jog.luz = 1.0 + 0.8 * max(0.0, 1.0 - (t - T_IMPACTO) * 3.0)
-	if _jog.na_mao:
-		_pos = _jog.bola_na_mao()
-	# a bola solta caindo pela rede
-	if _bola_solta:
-		_bola_vel.y += 2600.0 * delta
-		_pos += _bola_vel * delta
-		if _pos.y > ARO.y + 230.0 and _bola.get_index() < _jog.get_index():
-			_bola_na_frente(true)
-		if _pos.y >= CHAO - BOLA_FOGO * 0.5 and _bola_vel.y > 0.0:
-			_pos.y = CHAO - BOLA_FOGO * 0.5
-			_bola_vel.y = -_bola_vel.y * 0.45
-			_quique_fogo(_pos.x, 0.7, 1)
-
-
-## A sombra do jogador deitada na quadra (a luz vem de trás da cesta),
-## correndo atrás da bola.
-func _sombra_jogador(corre: float) -> void:
-	_jog_sombra.transform = Transform2D(Vector2(0, 0.24), Vector2(-0.62, 0), Vector2(lerp(500.0, 820.0, corre), CHAO - 175.0))
-
-
-## O CORTE: clarão, a câmera enquadra como o pôster, o jogador da capa
-## entra (com a bola na mão: pegou lá em cima) e a bola de fogo some (é a
-## dele agora).
-func _corte() -> void:
-	_jparte = "entra"
-	_flash.modulate.a = 0.9
-	var tf := create_tween()
-	tf.tween_property(_flash, "modulate:a", 0.0, 0.3)
-	_camera_capa(ZOOM_CAPA)
-	_jog_sombra.visible = false
-	_bola.visible = false
-	_bola_fogo.visible = false
-	_chamas.emitting = false
-	_sombra.visible = false
-	_jog.visible = true
-	_jog.na_mao = true
-	_jog.brasas(true)
-	Sons.tocar("impacto", -2.0)
-	Sons.tocar("sobe", -6.0, 1.3)
-	_tremor = 10.0
 
 
 ## Um quique da bola de fogo: raios correndo pelo chão, onda de luz,
@@ -761,23 +656,11 @@ func _quique_fogo(x: float, forca: float, n: int) -> void:
 	Sons.tocar("quique", linear2db(clamp(forca, 0.3, 1.0)))
 	Sons.tocar("impacto", -12.0 + 5.0 * n)
 	_tremor = 6.0 + 6.0 * n
-	_bola.scale = Vector2(1.3, 0.7) * _bola_base
-	_bola.velocidade = -_bola.velocidade
 
 
 ## A bola entra: o aro verga, a rede balança, faíscas, o brilho do jogador
-## estoura e a bola de fogo cai pela rede.
+## estoura (a bola de fogo cai pela rede: o roteiro leva).
 func _impacto_enterrada() -> void:
-	_jog.na_mao = false
-	_bola_solta = true
-	_bola_vel = Vector2(30, 950)
-	_pos = ARO + Vector2(4, 12)
-	_bola.visible = true
-	_bola.tamanho(150.0)
-	_bola_base = _bola.scale.x
-	_bola_fogo.visible = true
-	_chamas.emitting = true
-	_bola_na_frente(false)
 	_rede.balancar(1.5)
 	_aro_t = 0.0
 	_tremor = 26.0
@@ -816,15 +699,15 @@ func _process(delta: float) -> void:
 		_rede.position.y = ARO.y + dy
 		if _aro_t > 2.0:
 			_aro_t = -1.0
-	_bola.position = _pos
-	if _fase == "jogador":
-		_bola.scale = _bola.scale.linear_interpolate(Vector2.ONE * _bola_base, clamp(delta * 12.0, 0.0, 1.0))
+	_bola_pivo.position = _pos
+	_bola_pivo.scale = Vector2(2.0 - _amassa, _amassa) * Jog.ESC
+	_bola.rotation = _giro_bola
 	_bola_fogo.position = _pos
 	_bola_fogo.modulate.a = 0.75 + 0.25 * sin(_t * 23.0)
 	_chamas.position = _pos
 	_sombra.position = Vector2(_pos.x, CHAO + 6)
-	_sombra.scale = Vector2(1.6, 0.35) * clamp(1.0 - (CHAO - _pos.y) / 900.0, 0.2, 1.0) * BOLA_FOGO / 64.0
-	_sombra.visible = _bola.visible and _fase == "jogador"
+	_sombra.scale = Vector2(1.6, 0.35) * clamp(1.0 - (CHAO - _pos.y) / 900.0, 0.2, 1.0) * Jog.RAIO_BOLA / 32.0
+	_sombra.visible = _bola_pivo.visible and _fase == "jogador"
 	# câmera (o enquadramento do pôster depois do corte) e tremor
 	var tremor := Vector2.ZERO
 	if _tremor > 0.1:
