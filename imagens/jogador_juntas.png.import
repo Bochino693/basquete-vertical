@@ -2,15 +2,15 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/jogador_tampa_ombro.png-3c007abd3e10fb97cf9d4cc44746ccce.stex"
+path="res://.import/jogador_juntas.png-12ea6ca9d03d0e239eb46299016791ba.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://imagens/jogador_tampa_ombro.png"
-dest_files=[ "res://.import/jogador_tampa_ombro.png-3c007abd3e10fb97cf9d4cc44746ccce.stex" ]
+source_file="res://imagens/jogador_juntas.png"
+dest_files=[ "res://.import/jogador_juntas.png-12ea6ca9d03d0e239eb46299016791ba.stex" ]
 
 [params]
 

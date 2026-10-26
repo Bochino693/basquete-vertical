@@ -692,7 +692,10 @@ func _animar_jogador(delta: float) -> void:
 		var k: float = min((t - T_IMPACTO) / 0.6, 1.0)
 		_jog.pose(JogadorCapa.misturar(JogadorCapa.ENTERRADA[JogadorCapa.ENTERRADA.size() - 1], JogadorCapa.PENDURADO, _suave(k)))
 		_jog.rotation = lerp(0.05, 0.02, _suave(k)) + sin((t - T_IMPACTO) * 9.0) * 0.03 * (1.0 - k)
-		_jog.position = _jq0 + Vector2(-18, 46) * _suave(k)
+		# a mão fica presa no aro (onde a bola entrou) e o corpo fica
+		# pendurado embaixo dela, balançando
+		_jog.position = Vector2.ZERO
+		_jog.position = ARO + Vector2(4, 12) - _jog.bola_na_mao()
 		_jog.rastro = max(0.0, 1.0 - (t - T_IMPACTO) * 4.0)
 		_jog.luz = 1.0 + 0.8 * max(0.0, 1.0 - (t - T_IMPACTO) * 3.0)
 	if _jog.na_mao:

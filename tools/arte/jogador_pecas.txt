@@ -1,20 +1,18 @@
-pernas 136 492 436 416
-braco_e 181 229 232 143
+pernas 136 492 439 416
+braco_e 195 245 213 103
 bola 82 34 197 166
-antebraco_e 99 53 157 251
-tronco 295 266 280 332
-tampa_ombro 320 253 109 119
-cabeca 369 169 153 157
+antebraco_e 99 53 139 249
+tronco 295 244 280 354
+cabeca 369 169 153 159
 braco_d 521 371 120 197
-antebraco_d 559 493 198 214
-pernas_aura 75 431 558 538
-braco_e_aura 120 168 354 264
-bola_aura 21 -27 318 288
-antebraco_e_aura 38 -8 278 372
-tronco_aura 234 205 402 454
-cabeca_aura 308 108 274 278
+antebraco_d 566 493 191 214
+pernas_aura 75 431 560 538
+braco_e_aura 134 184 334 224
+antebraco_e_aura 38 -8 260 370
+tronco_aura 234 183 402 476
+cabeca_aura 308 108 274 280
 braco_d_aura 460 310 242 318
-antebraco_d_aura 498 432 320 336
+antebraco_d_aura 505 432 312 336
 cintura 455.0 545.0
 pescoco 440.0 305.0
 quadril 400.0 560.0
