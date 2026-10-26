@@ -10,8 +10,13 @@ extends Node2D
 ## AO ACASO ao longo do caminho, o brilho afina e SOME nas pontas (o fim
 ## não aparece cortado), os galhos e sub-galhos mudam de número e de lugar
 ## a cada tremida e o tremor tem ritmo irregular.
+## ENERGIA BRILHANTE: quatro camadas - um brilho LARGO e macio (perfil em
+## sino, imagens/fx_raio.png: liso, sem "quina"), o brilho da cor, o miolo
+## quente e o fio branco - e um CLARÃO onde o raio bate, piscando junto.
+## "espessura" deixa o raio maior ou menor (1 = o padrão, já grande).
 
 var cor := Color(0.35, 0.80, 1.0)
+var espessura := 1.0
 var _caminhos: Array = []         # [pontos, é galho, força]
 var _de := Vector2()
 var _ate := Vector2()
@@ -19,6 +24,8 @@ var _vida := 0.0
 var _tremer := 0.0
 var _proxima := 0.06
 var _r := RandomNumberGenerator.new()
+var _clarao: Sprite
+var _clarao_ini: Sprite
 
 
 func _ready() -> void:
@@ -26,6 +33,11 @@ func _ready() -> void:
 	material = Arte.mat_aditivo
 	visible = false
 	set_process(false)
+	# o clarão onde o raio bate (e um menor de onde ele sai)
+	_clarao = Arte.sprite_brilho(Color(1, 1, 1), 1.0)
+	add_child(_clarao)
+	_clarao_ini = Arte.sprite_brilho(Color(1, 1, 1), 1.0)
+	add_child(_clarao_ini)
 
 
 func disparar(de: Vector2, ate: Vector2, duracao := 0.32) -> void:
@@ -34,6 +46,11 @@ func disparar(de: Vector2, ate: Vector2, duracao := 0.32) -> void:
 	_vida = duracao
 	_tremer = 0.0
 	_gerar()
+	var lado: float = _clarao.texture.get_width()
+	_clarao.position = ate
+	_clarao.scale = Vector2.ONE * 320.0 * espessura / lado
+	_clarao_ini.position = de
+	_clarao_ini.scale = Vector2.ONE * 120.0 * espessura / lado
 	visible = true
 	set_process(true)
 
@@ -88,19 +105,47 @@ func _process(delta: float) -> void:
 		_proxima = _r.randf_range(0.035, 0.09)
 		_gerar()
 	modulate.a = clamp(_vida * 6.0, 0.0, 1.0) * (0.7 + 0.3 * _r.randf())
+	var pisca := 0.55 + 0.45 * _r.randf()
+	_clarao.modulate = Color(lerp(cor.r, 1.0, 0.5), lerp(cor.g, 1.0, 0.5), lerp(cor.b, 1.0, 0.5), 0.85 * pisca)
+	_clarao_ini.modulate = Color(cor.r, cor.g, cor.b, 0.5 * pisca)
 
 
 func _draw() -> void:
+	var quente := cor.linear_interpolate(Color(1, 1, 1), 0.55)
 	for cam in _caminhos:
 		var c: PoolVector2Array = cam[0]
 		var galho: bool = cam[1]
 		var forca: float = cam[2]
-		var g: float = 0.55 if galho else 1.0
+		var g: float = (0.55 if galho else 1.0) * espessura
 		var pesos := _pesos(c.size(), galho)
-		# o brilho largo é sutil e some antes nas pontas; o miolo vai até o fim
-		_faixa(c, pesos, 1.6, Color(cor.r, cor.g, cor.b, 0.12 * forca), 44.0 * g)
-		_faixa(c, pesos, 1.0, Color(cor.r, cor.g, cor.b, 0.55 * forca), 12.0 * g)
-		_faixa(c, pesos, 0.5, Color(0.92, 0.98, 1.0, forca), 4.5 * g)
+		# o brilho largo e macio some antes nas pontas; o fio vai até o fim
+		# (os brilhos largos seguem o caminho alisado: nas dobras fechadas a
+		# faixa larga não cruza ela mesma)
+		var c4 := _alisar(c, 4)
+		var c2 := _alisar(c, 2)
+		_faixa(c4, _pesos_de(pesos, 4, c4.size()), 1.8, Color(cor.r, cor.g, cor.b, 0.32 * forca), 150.0 * g, Arte.tex_raio)
+		_faixa(c2, _pesos_de(pesos, 2, c2.size()), 1.2, Color(cor.r, cor.g, cor.b, 0.7 * forca), 46.0 * g, Arte.tex_raio)
+		_faixa(c, pesos, 0.8, Color(quente.r, quente.g, quente.b, 0.95 * forca), 15.0 * g, Arte.tex_linha)
+		_faixa(c, pesos, 0.5, Color(1.0, 1.0, 1.0, forca), 5.5 * g, Arte.tex_linha)
+
+
+## O caminho com um ponto a cada "passo" (o último sempre).
+static func _alisar(c: PoolVector2Array, passo: int) -> PoolVector2Array:
+	var r := PoolVector2Array()
+	var i := 0
+	while i < c.size() - 1:
+		r.append(c[i])
+		i += passo
+	r.append(c[c.size() - 1])
+	return r
+
+
+static func _pesos_de(p: PoolRealArray, passo: int, n: int) -> PoolRealArray:
+	var r := PoolRealArray()
+	for k in n:
+		r.append(p[min(k * passo, p.size() - 1)])
+	r.set(n - 1, p[p.size() - 1])
+	return r
 
 
 ## A força de cada ponto: some suave nas pontas (galho: afina até a ponta;
@@ -126,7 +171,7 @@ func _pesos(n: int, galho: bool) -> PoolRealArray:
 ## a textura macia atravessada (u = de um lado ao outro). A largura e a
 ## transparência seguem os pesos (elevados a "curva": o brilho largo afina
 ## antes, o miolo depois).
-func _faixa(c: PoolVector2Array, pesos: PoolRealArray, curva: float, cor_faixa: Color, larg: float) -> void:
+func _faixa(c: PoolVector2Array, pesos: PoolRealArray, curva: float, cor_faixa: Color, larg: float, tex: Texture) -> void:
 	var n := c.size()
 	if n < 2:
 		return
@@ -152,4 +197,4 @@ func _faixa(c: PoolVector2Array, pesos: PoolRealArray, curva: float, cor_faixa: 
 		if k > 0:
 			var a: int = (k - 1) * 2
 			idx.append_array(PoolIntArray([a, a + 1, a + 3, a, a + 3, a + 2]))
-	VisualServer.canvas_item_add_triangle_array(get_canvas_item(), idx, pts, cores, uvs, PoolIntArray(), PoolRealArray(), Arte.tex_linha.get_rid())
+	VisualServer.canvas_item_add_triangle_array(get_canvas_item(), idx, pts, cores, uvs, PoolIntArray(), PoolRealArray(), tex.get_rid())

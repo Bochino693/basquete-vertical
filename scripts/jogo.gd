@@ -400,8 +400,8 @@ func _montar_efeitos() -> void:
 	_faiscas_ouro.initial_velocity = 1000.0
 	_faiscas_ouro.position = BOLA_OURO
 	_mundo.add_child(_faiscas_ouro)
-	# raios do MODO ENTERRADA
-	for i in 3:
+	# raios: a energia da cesta caindo no painel e os do MODO ENTERRADA
+	for i in 6:
 		var r = Raio.new()
 		_mundo.add_child(r)
 		_raios.append(r)
@@ -599,31 +599,41 @@ func sair() -> void:
 
 
 func aquecer() -> void:
-	# tudo aparece uma vez (a capa cobre)
-	_letreiro.mostrar("PASSOU DE FASE", VERDE)
-	_entrada.visible = true
-	_mapa.visible = true
-	_banner.visible = true
-	_combo_banner.visible = true
-	_contagem.visible = true
-	_ouro.visible = true
-	_borda.visible = true
+	# tudo aparece uma vez (a capa cobre), um grupo por vez: o custo da placa
+	# de vídeo dividido em vários quadros (a bola da capa não para)
 	_borda.modulate.a = 1.0
+	for n in [_entrada, _mapa, _banner, _combo_banner, _contagem, _ouro, _borda]:
+		n.visible = true
+		yield(get_tree(), "idle_frame")
+		yield(get_tree(), "idle_frame")
+	_letreiro.mostrar("PASSOU DE FASE", VERDE)
+	yield(get_tree(), "idle_frame")
+	# os efeitos, um por vez
 	for o in _ondas:
 		o.disparar(CESTA, 13)
+	yield(get_tree(), "idle_frame")
 	_grade.disparar(CESTA, 9)
 	_grade.modo_recorde(true, CESTA)
+	yield(get_tree(), "idle_frame")
 	for f in _faiscas:
 		f.restart()
 		f.emitting = true
+		yield(get_tree(), "idle_frame")
 	_faiscas_ouro.restart()
 	_faiscas_ouro.emitting = true
+	yield(get_tree(), "idle_frame")
 	_raios[0].disparar(Vector2(100, 100), CESTA)
+	yield(get_tree(), "idle_frame")
 	_bolas_fx.soltar(3, Arte.LARANJA, BolasCaindo.FOGO)
+	yield(get_tree(), "idle_frame")
 	_holofotes.flashes(4)
+	yield(get_tree(), "idle_frame")
+	yield(get_tree(), "idle_frame")
 	for f in _flutuantes:
 		f.visible = true
+	yield(get_tree(), "idle_frame")
 	_resultado.aquecer()
+	yield(get_tree(), "idle_frame")
 	yield(get_tree().create_timer(0.12), "timeout")
 	_entrada.visible = false
 	_mapa.visible = false
@@ -913,6 +923,7 @@ func _cesta() -> void:
 		if nivel >= 9:
 			_grade.disparar(CESTA, nivel, false, null, 0.14)
 	_onda_no_fundo(CESTA, Color(1.0, 0.75, 0.35))
+	_raios_da_cesta(nivel)
 	# a bola sai da cesta e cai para fora da tela (com combo, várias)
 	var tipo_bola := BolasCaindo.NORMAL
 	if ouro or _festa_feita:
@@ -1305,10 +1316,37 @@ func _apagar(v: float) -> void:
 
 func _raio_slam() -> void:
 	var origens := [Vector2(40, 60), Vector2(1040, 60), Vector2(30, 900), Vector2(1050, 900), Vector2(540, 20)]
-	var r: Raio = _raios[_r.randi() % _raios.size()]
+	var r: Raio = _proximo_raio_livre()
+	r.cor = Color(0.35, 0.80, 1.0)
+	r.espessura = 1.3
 	r.disparar(origens[_r.randi() % origens.size()], CESTA + Vector2(_r.randf_range(-60, 60), _r.randf_range(-30, 30)), 0.3)
 	if _r.randf() < 0.35:
 		Sons.tocar("trovao", -12.0, _r.randf_range(0.9, 1.2))
+
+
+var _raio_i := 0
+
+
+func _proximo_raio_livre() -> Raio:
+	var r: Raio = _raios[_raio_i % _raios.size()]
+	_raio_i += 1
+	return r
+
+
+## Em TODA cesta: a energia da cesta (que fica acima da tela) cai em raios
+## do alto da tela no painel do meio - um numa cesta comum, dois com
+## combo, três com combo alto, na cor do combo e cada vez mais grossos.
+func _raios_da_cesta(nivel: int) -> void:
+	var n := 1 if nivel < 3 else (2 if nivel < 9 else 3)
+	var cor: Color = Grade.cor_do_combo(nivel) if nivel >= 3 else Color(0.45, 0.82, 1.0)
+	for i in n:
+		var r: Raio = _proximo_raio_livre()
+		r.cor = cor.linear_interpolate(Color(0.5, 0.85, 1.0), 0.25)
+		r.espessura = 0.85 + 0.05 * min(nivel, 10)
+		var x := _r.randf_range(160.0, 920.0)
+		var de := Vector2(x, -30.0)
+		var ate := Vector2(clamp(x, 380.0, 700.0) + _r.randf_range(-60, 60), 668.0)
+		r.disparar(de, ate, 0.26 + 0.02 * min(nivel, 6))
 
 
 # ============================================================== bola de ouro

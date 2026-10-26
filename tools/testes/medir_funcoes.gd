@@ -30,7 +30,10 @@ func _rodar() -> void:
 		yield(get_tree(), "idle_frame")
 	yield(get_tree().create_timer(0.5), "timeout")
 	var ap = principal.telas["apresentacao"]
-	yield(_medir("apresentação: quique", ap, "_quique", [1.0]), "completed")
+	yield(_medir("apresentação: quique", ap, "_quique_fogo", [540.0, 1.0, 2]), "completed")
+	yield(_medir("apresentação: enterrada", ap, "_impacto_enterrada"), "completed")
+	var ab = principal.telas["abertura"]
+	yield(_medir("abertura: faísca no jogador", ab._poster, "_faiscar"), "completed")
 	principal.ir("jogo", {"sem_escuro": true})
 	yield(get_tree().create_timer(0.5), "timeout")
 	var jg = principal.telas["jogo"]

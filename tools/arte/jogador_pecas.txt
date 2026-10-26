@@ -1,0 +1,8 @@
+jogador_corpo 135 168 440 741
+jogador_braco_e 98 52 269 321
+jogador_braco_d 520 349 238 357
+jogador_bola 83 34 195 167
+jogador_aura 58 0 730 956
+ombro_e 352 300
+ombro_d 548 392
+bola 190 112

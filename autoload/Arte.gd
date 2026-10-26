@@ -40,6 +40,7 @@ var tex_fumaca: Texture
 var tex_confete: Texture
 var tex_linha: Texture
 var tex_faixa: Texture
+var tex_raio: Texture
 var _tex_d7 := {}
 var tex_coroa: Texture
 var _tex_medalha := []
@@ -293,6 +294,7 @@ func _gerar_texturas() -> void:
 	tex_confete = load("res://imagens/fx_confete.png")
 	tex_linha = load("res://imagens/fx_linha.png")
 	tex_faixa = load("res://imagens/fx_faixa.png")
+	tex_raio = load("res://imagens/fx_raio.png")
 	# coroa e medalhas detalhadas (tools/gerar_texturas.py)
 	tex_coroa = load("res://imagens/coroa.png")
 	for n in 3:

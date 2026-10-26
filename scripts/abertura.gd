@@ -9,20 +9,26 @@ extends "res://scripts/tela_base.gd"
 ##     cada duas voltas, a APRESENTAÇÃO animada);
 ##   * NENHUM BOTÃO: a primeira CESTA já começa a partida (START também,
 ##     para o operador);
+##   * ENTRADA em sequência (a faixa sobe, a chamada cresce com um clarão,
+##     as linhas abrem, as bolas sobem) e os painéis COMO JOGAR / RECORDES
+##     são cartões de vidro que ABREM DO MEIO, com as linhas entrando uma a
+##     uma (texto com contorno nunca meio transparente: tudo por recorte e
+##     escala);
 ##   * modo CRÉDITO: uma ficha por partida (fichas guardadas no aparelho);
 ##   * segurar SELECT 4 s = CONFIGURAÇÃO; segurar qualquer botão 10 s =
 ##     ASSISTENTE DE BOTÕES (se a placa estiver com os botões trocados).
 
-const Malhas = preload("res://scripts/fx/malhas.gd")
 const Bola = preload("res://scripts/fx/bola.gd")
 const Display7 = preload("res://scripts/fx/display7.gd")
+const CartaoVidro = preload("res://scripts/fx/cartao_vidro.gd")
+const PosterVivo = preload("res://scripts/fx/poster_vivo.gd")
 
 const SEGURAR_CONFIG := 4.0
 const SEGURAR_BOTOES := 10000
 const CORES_FASE := [Color(1.0, 0.46, 0.04), Color(0.25, 0.62, 1.0), Color(0.72, 0.45, 1.0)]
 
 var _pivo: Node2D
-var _poster: MeshInstance2D
+var _poster: Node2D
 var _mat_poster: ShaderMaterial
 var _brasas: CPUParticles2D
 var _estrelas: CPUParticles2D
@@ -41,6 +47,15 @@ var _rec_rodape: Label
 var _icones_como: Array = []
 var _segurar: Node2D
 var _segurar_texto: Label
+var _faixa: Polygon2D
+var _luz_start: Sprite
+var _como_linhas: Array = []     # [fundo, ícone, texto] de cada linha do COMO JOGAR
+var _rec_fundos: Array = []      # o fundo de cada linha do ranking
+var _painel_atual: Control
+var _tw_painel: SceneTreeTween
+var _tw_entrada: Array = []
+var _start_k := 1.0              # a chamada crescendo na entrada
+var _bolas_desce := 0.0          # as bolas subindo na entrada
 
 var _t := 0.0
 var _estado := "poster"
@@ -70,13 +85,11 @@ func _montar_poster() -> void:
 	_pivo = Node2D.new()
 	_pivo.position = Vector2(540, 960)
 	add_child(_pivo)
-	_poster = MeshInstance2D.new()
-	_poster.mesh = Malhas.tela(Rect2(0, 0, 1080, 1920), 12, 22)
-	_poster.texture = load("res://imagens/poster.png")
-	_mat_poster = Arte.material("res://shaders/poster.shader")
-	_poster.material = _mat_poster
+	# o pôster VIVO (as luzes, o neon, o fogo e a energia da arte mexendo)
+	_poster = PosterVivo.new()
 	_poster.position = Vector2(-540, -960)
 	_pivo.add_child(_poster)
+	_mat_poster = _poster.mat
 
 
 func _montar_efeitos() -> void:
@@ -90,6 +103,7 @@ func _montar_efeitos() -> void:
 		f.scale = Vector2(9.0, 15.0)
 		f.position = Vector2(140 if i == 0 else 940, -40)
 		f.modulate = Color(1.0, 0.7, 0.35, 0.13) if i == 0 else Color(0.4, 0.7, 1.0, 0.13)
+		f.set_meta("alfa", 0.13)
 		add_child(f)
 		_feixes.append(f)
 	# brasas subindo do chão
@@ -140,21 +154,29 @@ func _montar_efeitos() -> void:
 
 func _montar_rodape() -> void:
 	# faixa escura embaixo (o texto fica legível em cima do chão brilhante)
-	var faixa := Polygon2D.new()
-	faixa.polygon = PoolVector2Array([Vector2(0, 1520), Vector2(1080, 1520), Vector2(1080, 1660), Vector2(0, 1660),
-		Vector2(0, 1920), Vector2(1080, 1920)])
+	_faixa = Polygon2D.new()
+	_faixa.polygon = PoolVector2Array([Vector2(0, 1520), Vector2(1080, 1520), Vector2(1080, 1660), Vector2(0, 1660),
+		Vector2(0, 2340), Vector2(1080, 2340)])
 	var escuro := Color(0.02, 0.01, 0.04, 0.96)
-	faixa.vertex_colors = PoolColorArray([Color(0, 0, 0, 0), Color(0, 0, 0, 0), escuro, escuro, escuro, escuro])
-	faixa.polygons = [PoolIntArray([0, 1, 2, 3]), PoolIntArray([3, 2, 5, 4])]
-	add_child(faixa)
+	_faixa.vertex_colors = PoolColorArray([Color(0, 0, 0, 0), Color(0, 0, 0, 0), escuro, escuro, escuro, escuro])
+	_faixa.polygons = [PoolIntArray([0, 1, 2, 3]), PoolIntArray([3, 2, 5, 4])]
+	add_child(_faixa)
+	# o clarão atrás da chamada quando ela entra
+	_luz_start = Arte.sprite_brilho(Arte.LARANJA, 1100.0)
+	_luz_start.scale.y *= 0.45
+	_luz_start.position = Vector2(540, 1716)
+	_luz_start.modulate.a = 0.0
+	add_child(_luz_start)
 	_start = Arte.texto_solto("ACERTE A CESTA!", 84, Color(1, 1, 1), 9, Arte.LARANJA)
 	_start.position = Vector2(540, 1716)
 	add_child(_start)
 	_start_sub = Arte.texto("PARA COMEÇAR A JOGAR", 32, Arte.LARANJA_CLARO, 4, Color(0.1, 0.03, 0.0))
 	pos(_start_sub, 0, 1772, 1080, 50)
+	_start_sub.rect_pivot_offset = Vector2(540, 25)
 	add_child(_start_sub)
 	_info = Arte.texto("", 28, Color(1.0, 0.85, 0.6), 4, Color(0.1, 0.03, 0.0))
 	pos(_info, 0, 1836, 1080, 56)
+	_info.rect_pivot_offset = Vector2(540, 28)
 	add_child(_info)
 	# duas bolas quicando dos lados da chamada
 	for i in 2:
@@ -170,19 +192,49 @@ func _montar_rodape() -> void:
 	add_child(_fichas_pop)
 
 
+## Painel = recorte (abre do meio) + o que vai dentro, no lugar de sempre.
+func _novo_painel(caixa: Rect2, cor: Color) -> Control:
+	var p := Control.new()
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	p.rect_size = Vector2(LARGURA, ALTURA)
+	p.rect_clip_content = true
+	p.visible = false
+	add_child(p)
+	var dentro := Control.new()
+	dentro.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dentro.rect_size = Vector2(LARGURA, ALTURA)
+	p.add_child(dentro)
+	var cartao := CartaoVidro.new(cor, 40)
+	pos(cartao, caixa.position.x, caixa.position.y, caixa.size.x, caixa.size.y)
+	dentro.add_child(cartao)
+	p.set_meta("caixa", caixa)
+	p.set_meta("dentro", dentro)
+	p.set_meta("cartao", cartao)
+	return p
+
+
+## Fundo de uma linha: cápsula clara bem suave (abre da esquerda).
+func _capsula(x: float, y: float, w: float, h: float, cor: Color, alfa: float) -> Panel:
+	var f := Panel.new()
+	f.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(cor.r, cor.g, cor.b, alfa)
+	sb.set_corner_radius_all(int(h * 0.5))
+	sb.corner_detail = 8
+	sb.anti_aliasing = true
+	f.add_stylebox_override("panel", sb)
+	pos(f, x, y, w, h)
+	f.rect_pivot_offset = Vector2(0, h * 0.5)
+	return f
+
+
 func _montar_como_jogar() -> void:
-	_como = Control.new()
-	_como.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_como.rect_size = Vector2(1080, 1920)
-	_como.modulate.a = 0.0
-	_como.visible = false
-	add_child(_como)
-	var p := Arte.painel(Arte.LARANJA, 0.86, 40, 3, 26)
-	pos(p, 70, 330, 940, 1150)
-	_como.add_child(p)
+	_como = _novo_painel(Rect2(70, 330, 940, 1150), Arte.LARANJA)
+	var dentro: Control = _como.get_meta("dentro")
 	var titulo := Arte.texto("COMO JOGAR", 84, Color(1, 1, 1), 9, Arte.LARANJA)
 	pos(titulo, 70, 360, 940, 110)
-	_como.add_child(titulo)
+	dentro.add_child(titulo)
+	var cores := {"bola": Arte.LARANJA, "fases": Arte.AZUL_RAIO, "combo": Arte.LARANJA_CLARO, "ouro": Arte.OURO, "coroa": Arte.OURO}
 	var linhas := [
 		["bola", "ACERTE A CESTA PARA COMEÇAR\nNÃO PRECISA APERTAR NADA"],
 		["fases", "3 FASES: BATA A META\nPARA CHEGAR NA FINAL"],
@@ -192,14 +244,19 @@ func _montar_como_jogar() -> void:
 	]
 	for i in linhas.size():
 		var y = 520.0 + i * 182.0
+		var fundo := _capsula(110, y - 8, 860, 140, cores[linhas[i][0]], 0.09)
+		dentro.add_child(fundo)
 		var icone = _icone(linhas[i][0])
 		icone.position = Vector2(205, y + 62)
 		icone.set_meta("y0", y + 62)
-		_como.add_child(icone)
+		icone.set_meta("escala0", icone.scale)
+		dentro.add_child(icone)
 		_icones_como.append(icone)
 		var l = Arte.texto(linhas[i][1], 34, Color(1, 1, 1), 4, Color(0.15, 0.05, 0.0), Label.ALIGN_LEFT)
 		pos(l, 300, y, 680, 124)
-		_como.add_child(l)
+		l.rect_pivot_offset = Vector2(0, 62)
+		dentro.add_child(l)
+		_como_linhas.append([fundo, icone, l])
 
 
 ## Os ícones da explicação, desenhados à mão e mexendo.
@@ -242,45 +299,51 @@ func _icone(tipo: String) -> Node2D:
 
 
 func _montar_recordes() -> void:
-	_recordes = Control.new()
-	_recordes.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_recordes.rect_size = Vector2(1080, 1920)
-	_recordes.modulate.a = 0.0
-	_recordes.visible = false
-	add_child(_recordes)
-	var p := Arte.painel(Arte.OURO, 0.88, 40, 3, 28)
-	pos(p, 70, 300, 940, 1210)
-	_recordes.add_child(p)
+	_recordes = _novo_painel(Rect2(70, 300, 940, 1210), Arte.OURO)
+	var dentro: Control = _recordes.get_meta("dentro")
 	var titulo := Arte.texto("RECORDE DA ARENA", 70, Color(1, 1, 1), 8, Arte.AMBAR)
 	pos(titulo, 70, 330, 940, 100)
-	_recordes.add_child(titulo)
+	dentro.add_child(titulo)
 	var coroa := Arte.coroa(Arte.OURO, 0.9)
 	coroa.position = Vector2(540, 470)
 	coroa.name = "Coroa"
-	_recordes.add_child(coroa)
+	dentro.add_child(coroa)
 	_rec_display = Display7.new()
 	_rec_display.configurar(4, 170, Arte.OURO)
 	_rec_display.position = Vector2(540, 640)
-	_recordes.add_child(_rec_display)
+	dentro.add_child(_rec_display)
 	_rec_data = Arte.texto("", 30, Color(1.0, 0.85, 0.5), 3, Color(0, 0, 0))
 	pos(_rec_data, 70, 735, 940, 50)
-	_recordes.add_child(_rec_data)
+	dentro.add_child(_rec_data)
 	var sub := Arte.texto("MELHORES DE HOJE", 52, Color(1, 1, 1), 6, Arte.LARANJA)
 	pos(sub, 70, 810, 940, 80)
-	_recordes.add_child(sub)
+	dentro.add_child(sub)
+	# o fundo de cada linha (atrás da lista)
+	var tons := [Arte.OURO, Color(0.85, 0.9, 1.0), Color(1.0, 0.6, 0.3), Arte.LARANJA_CLARO, Arte.LARANJA_CLARO]
+	for i in 5:
+		var f := _capsula(100, 904 + i * 94, 880, 94 - 6, tons[i], 0.12 if i < 3 else 0.06)
+		dentro.add_child(f)
+		_rec_fundos.append(f)
 	_rec_lista = VBoxContainer.new()
 	_rec_lista.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_rec_lista.add_constant_override("separation", 12)
 	pos(_rec_lista, 130, 910, 820, 470)
-	_recordes.add_child(_rec_lista)
+	dentro.add_child(_rec_lista)
 	for i in 5:
 		var linha = HBoxContainer.new()
 		linha.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		linha.rect_min_size = Vector2(820, 82)
+		linha.rect_pivot_offset = Vector2(0, 41)
 		linha.add_constant_override("separation", 20)
-		var pos_ = Arte.texto("%dº" % (i + 1), 46, Arte.OURO if i == 0 else Color(1, 1, 1), 5, Color(0, 0, 0))
-		pos_.rect_min_size = Vector2(100, 82)
-		linha.add_child(pos_)
+		# 1º, 2º e 3º: as medalhas; depois o número
+		if i < 3:
+			var m := Arte.medalha(i + 1, 76)
+			m.rect_min_size = Vector2(100, 82)
+			linha.add_child(m)
+		else:
+			var pos_ = Arte.texto("%dº" % (i + 1), 46, Color(1, 1, 1), 5, Color(0, 0, 0))
+			pos_.rect_min_size = Vector2(100, 82)
+			linha.add_child(pos_)
 		# até onde chegou (FASE 1, FASE 2, FINAL)
 		var chip = Panel.new()
 		chip.rect_min_size = Vector2(160, 56)
@@ -303,7 +366,7 @@ func _montar_recordes() -> void:
 	_rec_rodape = Arte.texto("", 32, Color(1.0, 0.85, 0.6), 4, Color(0, 0, 0))
 	_rec_rodape.autowrap = true
 	pos(_rec_rodape, 90, 1390, 900, 100)
-	_recordes.add_child(_rec_rodape)
+	dentro.add_child(_rec_rodape)
 
 
 func _preencher_recordes() -> void:
@@ -366,7 +429,10 @@ func entrar(dados := {}) -> void:
 	_select_t = 0.0
 	_como.visible = false
 	_recordes.visible = false
+	if _tw_painel != null and _tw_painel.is_valid():
+		_tw_painel.kill()
 	_mat_poster.set_shader_param("escurecer", 0.0)
+	_poster.ligar(true)
 	_brasas.emitting = true
 	_estrelas.emitting = true
 	_segurar.visible = false
@@ -377,31 +443,89 @@ func entrar(dados := {}) -> void:
 	Arduino.janelas_ok = true
 	Tela.medir(false)
 	_atualizar_info()
-	if not dados.get("da_apresentacao", false):
-		neon_liga(_start, 0.3)
+	_entrada(dados.get("da_apresentacao", false))
+
+
+## A ENTRADA, peça por peça: a faixa escura sobe, a chamada cresce com um
+## clarão atrás, as linhas de baixo abrem, as bolas sobem e os holofotes
+## acendem. Vindo da partida (tela escura clareando) o pôster ainda chega
+## um pouco mais perto e assenta.
+func _entrada(da_apresentacao: bool) -> void:
+	for tw in _tw_entrada:
+		if tw != null and tw.is_valid():
+			tw.kill()
+	_tw_entrada.clear()
+	var a := 0.1 if da_apresentacao else 0.3
+	_faixa.position.y = 420.0
+	var tf := create_tween()
+	tf.tween_interval(a)
+	tf.tween_property(_faixa, "position:y", 0.0, 0.6).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	_tw_entrada.append(tf)
+	_start_k = 0.0
+	_start.modulate.a = 1.0
+	var ts := create_tween()
+	ts.tween_interval(a + 0.22)
+	ts.tween_property(self, "_start_k", 1.0, 0.6).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_tw_entrada.append(ts)
+	_luz_start.modulate.a = 0.0
+	var tl := create_tween()
+	tl.tween_interval(a + 0.2)
+	tl.tween_property(_luz_start, "modulate:a", 0.75, 0.15)
+	tl.tween_property(_luz_start, "modulate:a", 0.0, 0.7).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_tw_entrada.append(tl)
+	for i in 2:
+		var l: Label = [_start_sub, _info][i]
+		l.rect_scale = Vector2(1, 0)
+		var tt := create_tween()
+		tt.tween_interval(a + 0.45 + 0.1 * i)
+		tt.tween_property(l, "rect_scale", Vector2.ONE, 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		_tw_entrada.append(tt)
+	_bolas_desce = 320.0
+	var tb := create_tween()
+	tb.tween_interval(a + 0.35)
+	tb.tween_property(self, "_bolas_desce", 0.0, 0.75).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_tw_entrada.append(tb)
+	for f in _feixes:
+		var alvo: float = f.get_meta("alfa")
+		f.modulate.a = 0.0
+		var th := create_tween()
+		th.tween_interval(a)
+		th.tween_property(f, "modulate:a", alvo, 1.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		_tw_entrada.append(th)
+	if not da_apresentacao:
+		_zoom = 0.06
+		var tz := create_tween()
+		tz.tween_property(self, "_zoom", 0.0, 1.1).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+		_tw_entrada.append(tz)
 
 
 func sair() -> void:
 	.sair()
 	Arduino.janelas_ok = false
+	_poster.ligar(false)
 	_brasas.emitting = false
 	_estrelas.emitting = false
 
 
 func aquecer() -> void:
 	_como.visible = true
-	_como.modulate.a = 1.0
+	_painel_atual = _como
+	_abertura_painel(1.0)
 	_recordes.visible = true
-	_recordes.modulate.a = 1.0
+	_painel_atual = _recordes
+	_abertura_painel(1.0)
 	_preencher_recordes()
+	_como.get_meta("cartao").varrer()
+	_recordes.get_meta("cartao").varrer()
 	_brasas.emitting = true
 	_estrelas.emitting = true
+	_poster.aquecer()
 	yield(get_tree().create_timer(0.1), "timeout")
 	_brasas.preprocess = 0.0
 	_como.visible = false
-	_como.modulate.a = 0.0
 	_recordes.visible = false
-	_recordes.modulate.a = 0.0
+	if not ativo:
+		_poster.ligar(false)
 
 
 func _atualizar_info() -> void:
@@ -450,6 +574,9 @@ func _animar_poster(delta: float) -> void:
 	if _proximo_relampago <= 0.0:
 		_proximo_relampago = _r.randf_range(3.0, 7.0)
 		_relampago = 0.0
+		# (quase sempre com um raio caindo na antena do prédio)
+		if _r.randf() < 0.7:
+			_poster.relampejar()
 	_relampago += delta
 	var flash := 0.0
 	if _relampago < 0.06:
@@ -468,14 +595,14 @@ func _animar_poster(delta: float) -> void:
 
 
 func _animar_rodape() -> void:
-	var s := 1.0 + 0.06 * (0.5 + 0.5 * sin(_t * 4.2))
+	var s := (1.0 + 0.06 * (0.5 + 0.5 * sin(_t * 4.2))) * _start_k
 	_start.scale = Vector2(s, s)
 	if _start.modulate.a > 0.0 and not _comecando:
 		var l := Arte.rotulo_de(_start)
 		tom(l, 0.82 + 0.18 * (0.5 + 0.5 * sin(_t * 4.2)))
 	for i in _bolas.size():
 		var b: Node2D = _bolas[i]
-		b.position.y = 1734.0 - abs(sin(_t * 3.6 + i * 1.57)) * 46.0
+		b.position.y = 1734.0 - abs(sin(_t * 3.6 + i * 1.57)) * 46.0 + _bolas_desce
 
 
 func _animar_icones() -> void:
@@ -524,19 +651,57 @@ func _mostrar_painel(p: Control) -> void:
 	_estado_t = 0.0
 	if p == _recordes:
 		_preencher_recordes()
-	# o painel entra subindo (sem ficar transparente)
+	if _tw_painel != null and _tw_painel.is_valid():
+		_tw_painel.kill()
+	# o cartão de vidro ABRE DO MEIO (recorte crescendo) e o pôster escurece
+	_painel_atual = p
 	p.visible = true
-	p.modulate.a = 1.0
-	p.rect_position.y = ALTURA
-	var tw := create_tween().set_parallel(true)
-	tw.tween_property(p, "rect_position:y", 0.0, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tw.tween_method(self, "_escurecer", 0.0, 1.0, 0.35)
+	_abertura_painel(0.0)
+	_tw_painel = create_tween().set_parallel(true)
+	_tw_painel.tween_method(self, "_abertura_painel", 0.0, 1.0, 0.55).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	_tw_painel.tween_method(self, "_escurecer", 0.0, 1.0, 0.45)
+	_tw_painel.tween_callback(p.get_meta("cartao"), "varrer").set_delay(0.45)
 	Sons.tocar("vento", -8.0)
+	# as linhas entram uma a uma (abrem da esquerda; os ícones saltam)
+	var linhas := []
+	if p == _como:
+		for l in _como_linhas:
+			linhas.append(l)
+	else:
+		for i in 5:
+			linhas.append([_rec_fundos[i], null, _rec_lista.get_child(i)])
+	for i in linhas.size():
+		var fundo: Control = linhas[i][0]
+		var icone = linhas[i][1]
+		var texto: Control = linhas[i][2]
+		var atraso: float = 0.22 + 0.08 * i
+		fundo.rect_scale = Vector2(0, 1)
+		texto.rect_scale = Vector2(0, 1)
+		_tw_painel.tween_property(fundo, "rect_scale", Vector2.ONE, 0.45).set_delay(atraso).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+		_tw_painel.tween_property(texto, "rect_scale", Vector2.ONE, 0.4).set_delay(atraso + 0.06).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+		if icone != null:
+			var e0: Vector2 = icone.get_meta("escala0")
+			icone.scale = Vector2.ZERO
+			_tw_painel.tween_property(icone, "scale", e0, 0.45).set_delay(atraso + 0.04).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	if p == _recordes:
-		var coroa: Node2D = _recordes.get_node("Coroa")
+		var coroa: Node2D = _recordes.get_meta("dentro").get_node("Coroa")
 		coroa.scale = Vector2(0.2, 0.2)
-		var tc := create_tween()
-		tc.tween_property(coroa, "scale", Vector2(0.9, 0.9), 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		_tw_painel.tween_property(coroa, "scale", Vector2(0.9, 0.9), 0.5).set_delay(0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+## O recorte do painel: k = 0 fechado (uma linha no meio), 1 aberto (o
+## cartão inteiro e o brilho em volta). O que vai dentro não se mexe.
+func _abertura_painel(k: float) -> void:
+	var p := _painel_atual
+	if p == null:
+		return
+	var caixa: Rect2 = p.get_meta("caixa")
+	var margem := 60.0
+	var cy := caixa.position.y + caixa.size.y * 0.5
+	var h := (caixa.size.y + margem * 2.0) * k
+	p.rect_position = Vector2(0, cy - h * 0.5)
+	p.rect_size = Vector2(LARGURA, h)
+	(p.get_meta("dentro") as Control).rect_position = Vector2(0, -(cy - h * 0.5))
 
 
 func _esconder_painel() -> void:
@@ -544,10 +709,15 @@ func _esconder_painel() -> void:
 	_estado_t = 0.0
 	for p in [_como, _recordes]:
 		if p.visible:
-			var tw = create_tween().set_parallel(true)
-			tw.tween_property(p, "rect_position:y", -ALTURA, 0.35).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-			tw.tween_method(self, "_escurecer", 1.0, 0.0, 0.35)
-			tw.chain().tween_callback(p, "set_visible", [false])
+			if _tw_painel != null and _tw_painel.is_valid():
+				_tw_painel.kill()
+			# fecha para o meio (o recorte encolhendo) e o pôster clareia
+			_painel_atual = p
+			var de: float = p.rect_size.y / (p.get_meta("caixa").size.y + 120.0)
+			_tw_painel = create_tween().set_parallel(true)
+			_tw_painel.tween_method(self, "_abertura_painel", de, 0.0, 0.38).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
+			_tw_painel.tween_method(self, "_escurecer", 1.0, 0.0, 0.38)
+			_tw_painel.chain().tween_callback(p, "set_visible", [false])
 
 
 func _escurecer(v: float) -> void:

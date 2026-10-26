@@ -12,6 +12,8 @@ fx_fumaca   nuvem macia de bordas irregulares
 fx_confete  papelzinho de confete
 fx_linha    perfil macio de linha (raio eletrico: borda lisa)
 fx_faixa    faixa cheia com a borda lisa (aneis de progresso nitidos)
+fx_raio     perfil do brilho do raio (curva de sino: some macio dos dois lados,
+            sem "quina" no meio - o brilho largo do raio fica liso)
 fx_ladrilho ladrilho de LED do piso (quadrado de cantos redondos: borda
             acesa, miolo suave e um ponto de luz no centro)
 coroa       coroa de ouro DETALHADA (metal com degrade e brilho, rubi, safiras,
@@ -105,6 +107,8 @@ def main():
     gravar("fx_linha", np.clip(1 - np.abs(x) / 31.5, 0, 1) ** 1.5)
     x, y = grade(64, 4)
     gravar("fx_faixa", suave((32 - np.abs(x)) / 9.0))
+    x, y = grade(64, 4)
+    gravar("fx_raio", np.exp(-(x / 13.0) ** 2))
     gerar_display7()
     gerar_coroa()
     gerar_medalhas()

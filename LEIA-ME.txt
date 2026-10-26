@@ -2,7 +2,7 @@ SLAM ARENA - BASQUETE ARCADE VERTICAL (1 JOGADOR, 3 FASES, SEM BOTAO)
 ======================================================================
 EDICAO OPENGL ES 2.0 - Godot 3.6.3 - para TV Box com Mali-400 / Mali-450
 (TX9 "comum": Amlogic S905X/S905W, Rockchip RK3229; MXQ, X96...).
-VERSAO 1.9.1-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
+VERSAO 2.0-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
 em Aplicativos > Slam Arena). VERSAO NOVA: aumente version/code e
 version/name no export_presets.cfg e o VERSAO do autoload/Ajustes.gd.
 
@@ -15,7 +15,7 @@ GERAR O APK (WINDOWS), PASSO A PASSO
   3. Dois cliques no GERAR_APK.bat. A 1a vez baixa o que faltar (5 a 20
      min); depois, 2 a 4 min.
   4. O APK sai em APK-Pronto\SlamArena-<versao>.apk (a pasta abre sozinha
-     no fim; ex.: SlamArena-1.9.1-gles2.apk): copie para o pendrive e
+     no fim; ex.: SlamArena-2.0-gles2.apk): copie para o pendrive e
      instale na TV Box (ele instala por cima da versao anterior).
   Se der erro, envie o arquivo build\android\GERACAO-COMPLETA.log.
   Onde ligar cada fio na maquina: docs\diagrama_montagem.png.
@@ -39,9 +39,14 @@ O JOGO
   * APRESENTACAO (abre o jogo e volta a cada 4 ciclos de espera): o anel
     do emblema explode e o LOGO DA LAZER & SPORT salta no lugar, com um
     reflexo dourado; GAMES bate letra por letra e APRESENTA; a quadra de
-    neon se desenha no escuro, a bola cai e quica (cada quique: onda de luz e a
-    parede de LED inteira treme), a cesta se desenha, a bola voa girando e passa
-    pela rede (a rede balanca), dois raios caem na cesta e o poster SLAM
+    neon se desenha no escuro e entra O JOGADOR DA CAPA (2.0), igualzinho
+    ao do poster - a regata, o short, o tenis, a bola de fogo (recortado da
+    propria arte em pecas: o corpo e os dois bracos giram no ombro): ele
+    QUICA A BOLA DE FOGO no chao (cada quique solta RAIO no piso, onda de
+    luz e faiscas; a parede de LED treme), a bola sobe, corte com clarao e
+    ele entra VOANDO com rastro de energia, camera lenta ate a pose da
+    capa e ENTERRA: o braco gira, a bola passa pela rede, o aro balanca,
+    raios e faiscas na cesta. Depois dois raios caem e o poster SLAM
     ARENA entra com impacto. Uma CESTA ja comeca a partida; START pula
     para a abertura.
   * ABERTURA VIVA: o poster respira e aproxima devagar, um brilho atravessa
@@ -49,6 +54,22 @@ O JOGO
     estrelas cintilam, dois holofotes varrem a arena. Ciclo de atracao:
     POSTER -> COMO JOGAR (com icones animados) -> POSTER -> RECORDES
     (recorde da arena + 5 melhores de hoje).
+  * POSTER VIVO EM FULL HD (2.0): a arte em 1080 x 1920 (nitida, sem a
+    placa esticar) com as coisas dela MEXENDO, como num video: as JANELAS
+    DOS PREDIOS acendem e apagam (cada luz no seu tempo), os refletores
+    da arena piscam, o NEON do telao SLAM e da coroa grafitada pulsa e de
+    vez em quando FALHA, uma faixa de luz corre o telao, o FOGO da bola,
+    do aro e do contorno do jogador tremula subindo e solta chamas, o
+    refletor grande pulsa com reflexo de lente, as luzes vermelhas no alto
+    das antenas piscam, a aura azul do jogador respira e FAISCAS de
+    energia estalam no contorno dele; no relampago um RAIO cai do ceu na
+    antena do predio. Na TV Box que nao segurar 60 quadros (ECONOMIA) o
+    poster volta ao desenho simples.
+  * ENTRADA DA ABERTURA SEM TRAVAR (2.0): a faixa escura sobe, a chamada
+    cresce com um clarao, as linhas abrem e as bolas sobem, cada peca no
+    seu tempo. COMO JOGAR e RECORDES sao CARTOES DE VIDRO que ABREM DO
+    MEIO, com uma faixa de luz atravessando e as linhas entrando uma a
+    uma (medalhas de ouro, prata e bronze no ranking).
   * NENHUM BOTAO: "ACERTE A CESTA!" - a primeira cesta ja comeca a
     partida (START tambem, para o operador). Sem escolher jogadores: e 1
     jogador por partida, como o Swish Arena.
@@ -116,10 +137,13 @@ O JOGO
     explode num acorde maior com pancada grave, chuva de moedas e
     brilhinhos - com flashes, bolas e ondas rosa. Ele volta a cada 6
     cestas; entre eles o sino do 12 continua subindo meio tom por cesta.
-  * RAIO DO MODO ENTERRADA: fino e com o brilho sutil; a forca varia ao
-    acaso pelo caminho, o brilho afina e SOME nas pontas (o fim nao
-    aparece cortado), galhos e sub-galhos mudam a cada tremida, em ritmo
-    irregular.
+  * RAIOS DE ENERGIA BRILHANTE (2.0): maiores, em quatro camadas - um
+    brilho largo e macio (sem "quina" nem "estrela" nas dobras), o brilho
+    da cor, o miolo quente e o fio branco - e um CLARAO onde o raio bate.
+    A forca varia ao acaso pelo caminho, o brilho SOME nas pontas, galhos
+    e sub-galhos mudam a cada tremida, em ritmo irregular. CADA CESTA solta
+    raios na caixa da fase (1, 2 ou 3 conforme a sequencia, na cor do
+    combo); o MODO ENTERRADA tem o raio maior.
   * A BOLA SAI DA CESTA E CAI PARA FORA DA TELA: cai na quadra la no
     fundo, quica vindo para a frente (cresce: perspectiva, com sombra e o
     "toc" no piso) e sai pela borda de baixo. Com muitas cestas saem
@@ -189,7 +213,10 @@ LISO NA TX9 (MALI-400/450) - O QUE FOI FEITO
     sao montadas e desenhadas uma vez (shaders prontos na placa) e cada
     fonte desenha todas as letras (as gigantes, so os numeros e "VAI!").
     Depois disso nenhuma tela carrega nada do disco: trocar de tela e so
-    mostrar/esconder.
+    mostrar/esconder. Sem travar (2.0): as pecas de cada tela aparecem
+    aos poucos (poucas por quadro, conforme a TV Box aguenta), as fontes
+    gigantes sao desenhadas com a bola da capa ainda parada e o anel enche
+    liso.
   * GRAVAR EM DISCO NUMA LINHA DE TRABALHO SEPARADA (recorde, fichas,
     ajustes): na memoria da TV Box gravar pode levar 20-80 ms - no meio da
     partida seria um tranco.
@@ -209,8 +236,10 @@ LISO NA TX9 (MALI-400/450) - O QUE FOI FEITO
     do relogio) sao faixas com textura de borda macia - o draw_arc da Mali
     sai em "escadinha".
   * Medido no PC (Godot 3.6.3, sem placa de video, so o processador):
-    uma cesta com todos os efeitos 0,5 ms; PASSOU 0,3 ms; aviso 0,13 ms;
-    bola de ouro 0,07 ms; abrir o resultado 0,45 ms.
+    uma cesta com todos os efeitos (e os raios) 1 ms; PASSOU 0,5 ms;
+    aviso 0,16 ms; bola de ouro 0,1 ms; abrir o resultado 0,8 ms; na
+    apresentacao um quique 0,4 ms e a enterrada 0,5 ms; uma faisca no
+    poster vivo 0,2 ms.
   NA TX9 NAO FOI TESTADO AQUI (nao ha TV Box neste computador): veja os
   quadros por segundo de verdade com "MOSTRAR DESEMPENHO" no menu (ou F3
   no PC).
@@ -388,13 +417,18 @@ PASTAS
   scripts/fx/ efeitos feitos a mao: grade (piso/parede de LED), onda_luz,
               anel_crono, display7, letreiro, bolas_caindo, holofotes,
               traco_neon,
-              raio_eletrico, rede, bola, barras, malhas
+              raio_eletrico, rede, bola, barras, malhas, poster_vivo (o
+              poster vivo), jogador_capa (o jogador da capa em pecas),
+              cartao_vidro (os cartoes de vidro da abertura)
   autoload/   Tela (giro e qualidade), Ajustes (ajustes, recorde, ranking,
               fichas), Arte (fontes, texturas, estilos), Sons, Controles
               (Zero Delay), Arduino (LEDs)
-  shaders/    fundo_vivo, moldura_cor, poster, piso, display7,
+  shaders/    fundo_vivo, moldura_cor, poster (o vivo), poster_leve
+              (ECONOMIA), piso, display7,
               placa_redonda, tracinhos, onda, anel, traco, barras, bola
-  imagens/    poster, fundo_jogo (o fundo sem o cronometro desenhado na
+  imagens/    poster (Full HD), poster_vivo (o mapa do que mexe: luzes,
+              neon, fogo) e poster_ruido, jogador_* (o jogador da capa em
+              pecas), fundo_jogo (o fundo sem o cronometro desenhado na
               arte), icones, aberturas, fx_* (texturas de efeito feitas a
               mao)
   sons/ musicas/ fontes/
@@ -406,7 +440,11 @@ PASTAS
   tools/      preparar_arte.py (fundo, poster, icones, aberturas, sons a
               partir das pastas images/ e songs/ do jogo antigo, que
               ficou no historico do repositorio: commit 1ba5184),
-              fundo_hd.py, gerar_sons.py, gerar_texturas.py, android/ (APK no Linux),
+              fundo_hd.py, gerar_sons.py, gerar_texturas.py,
+              poster_vivo.py (o poster em Full HD e o mapa do que mexe, a
+              partir de tools/arte/poster_original.png),
+              recortar_jogador.py (o jogador da capa em pecas, com a
+              mascara tools/arte/jogador_mascara.png), android/ (APK no Linux),
               diagrama/ (o diagrama de montagem), testes/ (conferir_scripts,
               roteiro, medir_funcoes, foto_rapida, gravar_splash - a
               imagem de abertura)

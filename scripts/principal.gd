@@ -5,7 +5,8 @@ extends Node
 ##
 ## PREPARAÇÃO (a "capa": o EMBLEMA - a bola com brilho - igual à imagem de
 ## abertura do app, com o anel enchendo): cada tela é montada e desenhada
-## pelo menos uma vez escondida
+## pelo menos uma vez escondida, AOS POUCOS (uma parte nova por quadro: o
+## custo da placa de vídeo dividido, a bola da capa não para de girar)
 ## (os shaders são preparados na placa, as letras de cada fonte entram no
 ## cache); só então a apresentação começa - e o primeiro quadro dela é a
 ## própria capa: do toque no ícone até o jogo, nenhuma tela preta. Na
@@ -31,6 +32,7 @@ var _emblema: Node2D
 var _fps: Label
 var _aviso: Label
 var _fps_t := 0.0
+var _progresso_alvo := 0.0
 
 
 func _ready() -> void:
@@ -79,12 +81,27 @@ func _montar_topo() -> void:
 	_capa.add_child(fundo)
 	_emblema = load("res://scripts/fx/emblema.gd").new()
 	_emblema.position = Vector2(540, 960)
-	_emblema.bola.velocidade = 2.5
+	# parada como a imagem de abertura do Android enquanto as telas são
+	# montadas (o processador fica ocupado: uma imagem parada não "engasga");
+	# a bola começa a girar quando a montagem acaba
+	_emblema.bola.velocidade = 0.0
 	_capa.add_child(_emblema)
 
 
+## O anel da capa anda liso até o passo novo (por tempo: mesmo com um
+## passo mais pesado ele não pula).
 func _capa_progresso(f: float) -> void:
-	_emblema.progresso = f
+	_progresso_alvo = f
+
+
+func _animar_capa(delta: float) -> void:
+	if _capa == null:
+		return
+	var p: float = _emblema.progresso
+	if p < _progresso_alvo:
+		# (o emblema ignora passos menores que 0,003: o último vai direto)
+		var novo: float = p + max(delta, 0.0) * 0.9
+		_emblema.progresso = _progresso_alvo if _progresso_alvo - novo < 0.012 else novo
 
 
 # ---------------------------------------------------------------- preparação
@@ -104,17 +121,42 @@ func _preparar() -> void:
 		yield(get_tree(), "idle_frame")
 	# a camada de cima continua por cima de todas as telas
 	move_child(_camada_topo, get_child_count() - 1)
-	# cada tela desenhada (escondida pela capa) por alguns quadros
+	# as letras GIGANTES (contagem 3-2-1, VAI!) são as mais pesadas de
+	# preparar: vão agora, com a capa ainda parada (não aparece)
+	var gigantes := Control.new()
+	gigantes.rect_size = Vector2(1080, 1920)
+	add_child(gigantes)
+	move_child(gigantes, 0)
+	for f in Arte.todas_as_fontes():
+		if f.size >= 150:
+			var lg = Label.new()
+			lg.add_font_override("font", f)
+			lg.add_color_override("font_outline_modulate", Color(1, 1, 1))
+			lg.text = Arte.letras_de(f)
+			gigantes.add_child(lg)
+	for i in 2:
+		yield(get_tree(), "idle_frame")
+	gigantes.queue_free()
+	var giro := create_tween()
+	giro.tween_property(_emblema.bola, "velocidade", 2.5, 0.8).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	# cada tela desenhada (escondida pela capa) AOS POUCOS: primeiro as
+	# partes que ela mostra sempre, uma por quadro; depois o "aquecer" dela
+	# (o que só aparece às vezes: avisos, painéis, efeitos), que também vai
+	# por partes e pode levar vários quadros
 	for nome in nomes:
 		var t: Control = telas[nome]
 		t.visible = true
-		t.aquecer()
-		for i in 4:
+		yield(_revelar_aos_poucos(t), "completed")
+		var aq = t.aquecer()
+		if aq is GDScriptFunctionState:
+			yield(aq, "completed")
+		for i in 3:
 			yield(get_tree(), "idle_frame")
 		t.visible = false
 		passo += 1
 		_capa_progresso(float(passo) / total)
-	# letras: cada fonte criada desenha todas as letras uma vez
+	# letras: cada fonte criada desenha todas as letras uma vez (uma fonte
+	# por quadro)
 	var letras := Control.new()
 	letras.rect_size = Vector2(1080, 1920)
 	add_child(letras)
@@ -128,10 +170,14 @@ func _preparar() -> void:
 		l.rect_position = Vector2(0, fmod(y, 1800.0))
 		y += 37.0
 		letras.add_child(l)
-	for i in 3:
+		yield(get_tree(), "idle_frame")
+	for i in 2:
 		yield(get_tree(), "idle_frame")
 	letras.queue_free()
 	_capa_progresso(1.0)
+	# o anel termina de encher (liso) antes de a apresentação começar
+	while _emblema.progresso < 0.996:
+		yield(get_tree(), "idle_frame")
 	yield(get_tree().create_timer(0.15), "timeout")
 	# começa: a apresentação (ou direto a abertura)
 	var primeira := "apresentacao" if Ajustes.apresentacao else "abertura"
@@ -152,6 +198,38 @@ func _preparar() -> void:
 		yield(tw, "finished")
 	_capa.queue_free()
 	_capa = null
+
+
+## As partes que a tela já mostra aparecem uma por quadro (um grupo grande
+## vai pelas partes dele). No fim tudo está como antes (só à mostra).
+func _revelar_aos_poucos(t: Node) -> void:
+	var partes := []
+	_juntar_partes(t, partes, 0)
+	for p in partes:
+		p.visible = false
+	# quadro leve: várias partes no próximo (a preparação não demora mais
+	# num aparelho rápido); quadro pesado: uma só
+	var lote := 1
+	var n := 0
+	for p in partes:
+		p.visible = true
+		n += 1
+		if n >= lote:
+			n = 0
+			var t0 := OS.get_ticks_msec()
+			yield(get_tree(), "idle_frame")
+			lote = int(clamp(40.0 / max(OS.get_ticks_msec() - t0, 1), 1, 6))
+	yield(get_tree(), "idle_frame")
+
+
+func _juntar_partes(no: Node, partes: Array, nivel: int) -> void:
+	for c in no.get_children():
+		if not (c is CanvasItem) or not c.visible:
+			continue
+		if nivel < 2 and c.get_child_count() >= 6:
+			_juntar_partes(c, partes, nivel + 1)
+		else:
+			partes.append(c)
 
 
 # ---------------------------------------------------------------- troca
@@ -183,6 +261,7 @@ func _aviso_android(texto: String) -> void:
 
 
 func _process(delta: float) -> void:
+	_animar_capa(delta)
 	if not Ajustes.mostrar_fps:
 		if _fps.text != "":
 			_fps.text = ""

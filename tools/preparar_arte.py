@@ -12,7 +12,9 @@ O que faz:
     do cronometro desenhados na arte (o cronometro de verdade e desenhado
     pelo jogo, aceso conforme o tempo, exatamente no mesmo lugar), depois
     limpo do granulado e ampliado para 1080 x 1920 (tools/fundo_hd.py);
-  * imagens/poster.png - a arte da abertura;
+  * imagens/poster.png - a arte da abertura, em Full HD, e o mapa do
+    poster vivo (tools/poster_vivo.py; a arte original fica em
+    tools/arte/poster_original.png);
   * icones do Android (192 e adaptativo 432), banner da TV (320x180) e as
     imagens de abertura da TV Box (uma para cada giro da tela);
   * sons/*.wav - os efeitos curtos em WAV (o Godot toca na hora, sem
@@ -86,8 +88,10 @@ def limpar_cronometro():
 
 
 def poster():
-    shutil.copy(os.path.join(ORIG_IMG, "basket_back.png"), os.path.join(P, "imagens", "poster.png"))
-    print("ok: imagens/poster.png")
+    shutil.copy(os.path.join(ORIG_IMG, "basket_back.png"), os.path.join(P, "tools", "arte", "poster_original.png"))
+    # em Full HD e o mapa do poster vivo (tools/poster_vivo.py)
+    import poster_vivo
+    poster_vivo.main()
 
 
 def logo_quadrado(lado):
