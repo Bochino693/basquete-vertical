@@ -1,22 +1,16 @@
-"""O JOGADOR DA CAPA EM PECAS, para a apresentacao animar (igualzinho ao
-do poster: regata, short, tenis, a bola de fogo):
+"""O RECORTE DO JOGADOR DA CAPA (igualzinho ao do poster: regata, short,
+tenis, a bola de fogo):
 
     python3 -I tools/recortar_jogador.py
 
 Le tools/arte/poster_original.png (a arte, 941 x 1672) e
-tools/arte/jogador_mascara.png (o recorte do
-jogador, feito uma vez com o BiRefNet - rembg, modelo "birefnet-general")
-e grava em imagens/:
-
-jogador_corpo    o corpo (cabeca, regata, short, pernas, os ombros)
-jogador_braco_e  o braco levantado (a mao que segura a bola), sem a bola
-jogador_braco_d  o outro braco (a mao aberta)
-jogador_bola     a bola de fogo (os dedos que ficavam na frente dela,
-                 preenchidos com a propria bola)
-jogador_aura     o brilho em volta do jogador inteiro (branco: o jogo pinta)
-
-e tools/arte/jogador_pecas.txt com onde cada peca fica no poster e os
-pontos de giro (ombros, centro da bola) - o jogo usa estes numeros.
+tools/arte/jogador_mascara.png (o recorte do jogador, feito uma vez com o
+BiRefNet - rembg, modelo "birefnet-general"). calcular() separa o
+jogador, os dois bracos e a bola de fogo (os dedos que ficavam na frente
+dela, preenchidos com a propria bola) - o tools/rig_jogador.py faz dali
+as pecas do boneco articulado da apresentacao. Rodado sozinho, grava
+imagens/jogador_aura.png: o brilho em volta do jogador inteiro (branco: o
+jogo pinta), do poster vivo e do rastro.
 Precisa de numpy e Pillow.
 """
 import os
@@ -97,7 +91,9 @@ def caixa_de(alfa, margem=4):
             min(int(xs.max()) + margem + 1, w), min(int(ys.max()) + margem + 1, h))
 
 
-def main():
+def calcular():
+    """As camadas do jogador (alfas e cores no poster original): o que o
+    main grava e o que o tools/quadros_jogador.py deforma."""
     poster = Image.open(os.path.join(ARTE, "poster_original.png")).convert("RGB")
     tam = poster.size
     rgb = np.asarray(poster).astype(np.float64) / 255
@@ -122,33 +118,22 @@ def main():
     buraco = borrar(mao, 2.0) * disco(tam, BOLA, RAIO_BOLA - 4, 1.0)
     bola_rgb = espelhar(rgb, buraco, BOLA)
     bola_a = np.maximum(bola_a, buraco * disco(tam, BOLA, 84, 2.0))
-    # a aura: o jogador inteiro borrado (o jogo pinta de azul e laranja) -
-    # inteira (o poster vivo) e em pecas que giram junto com os bracos (a
-    # apresentacao: o brilho do braco vai com o braco). Por dentro do
-    # jogador o brilho e mais fraco (o do jogador inteiro, nas pecas tambem)
+    return {"rgb": rgb, "mascara": m, "corpo": corpo, "braco_e": braco_e, "braco_d": braco_d,
+            "bola": bola_a, "bola_rgb": bola_rgb, "mao": mao}
+
+
+def main():
+    """O brilho em volta do jogador inteiro, na pose da capa (o poster vivo
+    da abertura e o rastro do jogador na apresentacao)."""
+    c = calcular()
+    rgb, m = c["rgb"], c["mascara"]
+    bola = disco(rgb.shape[1::-1], BOLA, RAIO_BOLA, 3.0) * m
     tudo = np.maximum(m, bola)
     dentro = 1 - 0.6 * np.clip(borrar(tudo, 3) * 2 - 1, 0, 1)
     aura = np.clip(borrar(tudo, 22) * 1.6, 0, 1) * dentro
-    def aura_de(a):
-        return np.clip(borrar(a, 22) * 1.6, 0, 1) * dentro
-    branco = np.ones_like(rgb)
-    pecas = []
-    for nome, cor, alfa in (("jogador_corpo", rgb, corpo), ("jogador_braco_e", rgb, braco_e),
-                            ("jogador_braco_d", rgb, braco_d), ("jogador_bola", bola_rgb, bola_a),
-                            ("jogador_aura", branco, aura),
-                            ("jogador_aura_corpo", branco, aura_de(corpo)),
-                            ("jogador_aura_braco_e", branco, aura_de(np.maximum(braco_e, bola_a))),
-                            ("jogador_aura_braco_d", branco, aura_de(braco_d))):
-        cx = caixa_de(alfa)
-        gravar(nome, cor, alfa, cx)
-        pecas.append((nome, cx))
-    with open(os.path.join(ARTE, "jogador_pecas.txt"), "w") as f:
-        for nome, cx in pecas:
-            f.write("%s %d %d %d %d\n" % (nome, cx[0], cx[1], cx[2] - cx[0], cx[3] - cx[1]))
-        f.write("ombro_e %d %d\nombro_d %d %d\nbola %d %d\n" % (OMBRO_E + OMBRO_D + BOLA))
-    print("ok: imagens/jogador_*.png")
-    for nome, cx in pecas:
-        print("  %s: x %d y %d  %d x %d" % (nome, cx[0], cx[1], cx[2] - cx[0], cx[3] - cx[1]))
+    cx = caixa_de(aura)
+    gravar("jogador_aura", np.ones_like(rgb), aura, cx)
+    print("ok: imagens/jogador_aura.png  x %d y %d  %d x %d" % (cx[0], cx[1], cx[2] - cx[0], cx[3] - cx[1]))
 
 
 if __name__ == "__main__":

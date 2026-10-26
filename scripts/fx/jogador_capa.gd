@@ -1,47 +1,77 @@
 extends Node2D
 
-## O JOGADOR DA CAPA, em peças (imagens/jogador_*.png, recortadas do pôster
-## por tools/recortar_jogador.py): igualzinho ao do pôster - a regata, o
-## short, o tênis, a bola de fogo. O nó usa as coordenadas do pôster (941 x
-## 1672): na escala 1080/941, na origem da tela, ele fica exatamente onde
-## está no pôster.
+## O JOGADOR DA CAPA COMO PERSONAGEM 2D ARTICULADO: o boneco inteiro, feito
+## da própria arte do pôster (tools/rig_jogador.py) em PEÇAS INTEIRAS E
+## RÍGIDAS - pernas com o calção, tronco, cabeça, o braço da bola em duas
+## partes (braço e antebraço com a mão) e a bola, o outro braço em duas
+## partes - presas a ossos que giram nas juntas (cintura, pescoço,
+## ombros, cotovelos, quadril). Nada é entortado: cada peça só gira e anda
+## inteira, e as juntas têm sobra macia (não abrem nem aparecem). O corpo
+## inteiro se move junto, a 60 quadros: a apresentação passa de uma POSE
+## para outra (pose_entre) - a decolagem, a pose da capa, a enterrada.
 ##
-## Os braços giram no ombro (braco_e: o levantado, com a bola; braco_d: o
-## da mão aberta); a bola fica na mão (na_mao) ou solta (o jogo a move:
-## posicao_bola). Em volta, a AURA (o jogador borrado, azul, como o brilho
-## da capa - em peças: o brilho de cada braço gira junto com ele) e um
-## RASTRO de aura das posições de antes (movimento rápido). Desenho leve:
-## quatro imagens e as três da aura; o rastro só nos movimentos rápidos.
+## Coordenadas do pôster original (941 x 1672): na escala 1080/941, na
+## origem da tela, a pose da capa fica exatamente onde está no pôster.
+## Em volta, a AURA (o brilho azul de cada peça, que vai junto com ela) e um
+## RASTRO de brilho das posições de antes (movimento rápido).
 
-const OMBRO_E := Vector2(352, 300)
-const OMBRO_D := Vector2(548, 392)
-const CENTRO_BOLA := Vector2(190, 112)
 const RASTRO := 2
+const AURA_TODA := Vector2(58, 0)         # imagens/jogador_aura.png (o rastro)
 
-var braco_e := 0.0 setget _set_braco_e      # giro do braço levantado (rad, 0 = pose da capa)
-var braco_d := 0.0 setget _set_braco_d
+# as juntas (tools/arte/jogador_pecas.txt)
+const JUNTAS := {
+	"cintura": Vector2(455, 545), "pescoco": Vector2(440, 305), "quadril": Vector2(400, 560),
+	"ombro_e": Vector2(362, 298), "cotovelo_e": Vector2(218, 266),
+	"ombro_d": Vector2(540, 398), "cotovelo_d": Vector2(603, 530),
+	"bola": Vector2(190, 112),
+}
+# onde cada peça (e o brilho dela) fica no pôster
+const PECAS := {
+	"pernas": Rect2(136, 492, 436, 416), "braco_e": Rect2(181, 229, 232, 143),
+	"bola": Rect2(82, 34, 197, 166), "antebraco_e": Rect2(99, 53, 157, 251),
+	"tronco": Rect2(295, 266, 280, 332), "tampa_ombro": Rect2(320, 253, 109, 119),
+	"cabeca": Rect2(369, 169, 153, 157), "braco_d": Rect2(521, 371, 120, 197),
+	"antebraco_d": Rect2(559, 493, 198, 214),
+}
+const BRILHOS := {
+	"pernas": Vector2(75, 431), "braco_e": Vector2(120, 168),
+	"antebraco_e": Vector2(38, -8), "tronco": Vector2(234, 205), "cabeca": Vector2(308, 108),
+	"braco_d": Vector2(460, 310), "antebraco_d": Vector2(498, 432),
+}
+
+# AS POSES (graus; + = sentido do relógio na tela; 0 = a pose da capa)
+const CAPA := {}
+const DECOLAGEM := {"pernas": 10, "tronco": -8, "cabeca": -4, "ombro_e": -35, "cotovelo_e": 20, "ombro_d": 20, "cotovelo_d": 10}
+const SUBINDO := {"pernas": 5, "tronco": -4, "cabeca": -2, "ombro_e": -18, "cotovelo_e": 10, "ombro_d": 10, "cotovelo_d": 5}
+const ENTERRADA := [
+	{},
+	{"pernas": -4, "tronco": 4, "cabeca": 3, "ombro_e": 40, "cotovelo_e": -25, "ombro_d": -10, "cotovelo_d": -5},
+	{"pernas": -7, "tronco": 8, "cabeca": 6, "ombro_e": 80, "cotovelo_e": -35, "ombro_d": -20, "cotovelo_d": -8},
+	{"pernas": -9, "tronco": 12, "cabeca": 9, "ombro_e": 118, "cotovelo_e": -30, "ombro_d": -28, "cotovelo_d": -10},
+	{"pernas": -10, "tronco": 15, "cabeca": 11, "ombro_e": 150, "cotovelo_e": -15, "ombro_d": -33, "cotovelo_d": -12},
+	{"pernas": -10, "tronco": 17, "cabeca": 12, "ombro_e": 172, "cotovelo_e": 5, "ombro_d": -36, "cotovelo_d": -14},
+]
+# pendurado no aro: o braço esticado segurando, o corpo balança para trás
+const PENDURADO := {"pernas": -2, "tronco": 9, "cabeca": 8, "ombro_e": 182, "cotovelo_e": 18, "ombro_d": -24, "cotovelo_d": -8}
+const OSSOS := ["pernas", "tronco", "cabeca", "ombro_e", "cotovelo_e", "ombro_d", "cotovelo_d"]
+
 var luz := 1.0 setget _set_luz              # o brilho em volta (aura)
 var rastro := 0.0                           # 0 sem rastro, 1 forte
 var na_mao := true setget _set_na_mao
 
-var _auras: Node2D           # as três peças da aura (a luz muda as três)
-var _aura_corpo: Sprite
-var _aura_e: Node2D           # giram com os braços
-var _aura_d: Node2D
-var _pivo_e: Node2D
-var _pivo_d: Node2D
+var _ossos := {}            # nome -> Node2D
 var _bola: Sprite
-var _corpo: Sprite
-var _rastros := []          # sprites da aura (o rastro)
+var _tampa: Sprite
+var _auras := []            # sprites do brilho (um por peça)
+var _rastros := []          # sprites do brilho inteiro nas posições de antes
 var _historico := []        # transformações de antes (globais)
 var _brasas: CPUParticles2D
 
 
 func _init() -> void:
-	var caixas := _ler_caixas()
-	var aura: Texture = load("res://imagens/jogador_aura_corpo.png")
-	# o rastro: a aura do corpo nas posições de antes (fica no mundo, não
-	# no jogador)
+	var aura: Texture = load("res://imagens/jogador_aura.png")
+	# o rastro: o brilho do jogador inteiro nas posições de antes (fica no
+	# mundo, não no jogador)
 	for i in RASTRO:
 		var r := Sprite.new()
 		r.texture = aura
@@ -51,36 +81,26 @@ func _init() -> void:
 		r.visible = false
 		add_child(r)
 		_rastros.append(r)
-	# a aura, atrás de tudo: o corpo e os braços (cada um no seu ombro)
-	_auras = Node2D.new()
-	_auras.modulate.a = 0.5
-	add_child(_auras)
-	_aura_corpo = _peca(aura, caixas["jogador_aura_corpo"])
-	_aura_e = _aura_braco("jogador_aura_braco_e", caixas, OMBRO_E)
-	_aura_d = _aura_braco("jogador_aura_braco_d", caixas, OMBRO_D)
-	for a in [_aura_corpo, _aura_e.get_child(0), _aura_d.get_child(0)]:
-		a.material = Arte.mat_aditivo
-		a.modulate = Color(0.35, 0.55, 1.0)
-	_auras.add_child(_aura_corpo)
-	# o braço levantado e a bola (atrás do corpo: é o braço de lá)
-	_pivo_e = Node2D.new()
-	_pivo_e.position = OMBRO_E
-	add_child(_pivo_e)
-	_bola = _peca(load("res://imagens/jogador_bola.png"), caixas["jogador_bola"])
-	_bola.position -= OMBRO_E
-	_pivo_e.add_child(_bola)
-	var be := _peca(load("res://imagens/jogador_braco_e.png"), caixas["jogador_braco_e"])
-	be.position -= OMBRO_E
-	_pivo_e.add_child(be)
-	_corpo = _peca(load("res://imagens/jogador_corpo.png"), caixas["jogador_corpo"])
-	add_child(_corpo)
-	# o braço da mão aberta (o de cá: na frente do corpo)
-	_pivo_d = Node2D.new()
-	_pivo_d.position = OMBRO_D
-	add_child(_pivo_d)
-	var bd := _peca(load("res://imagens/jogador_braco_d.png"), caixas["jogador_braco_d"])
-	bd.position -= OMBRO_D
-	_pivo_d.add_child(bd)
+	# os ossos: as pernas e o tronco no corpo; a cabeça e os braços no
+	# tronco; o antebraço no braço. A ordem dos filhos é a do desenho: o
+	# braço de lá (e a bola) atrás do tronco, o braço de cá na frente.
+	var pernas := _osso("pernas", self, "quadril")
+	_peca("pernas", pernas)
+	var tronco := _osso("tronco", self, "cintura")
+	var ombro_e := _osso("ombro_e", tronco, "ombro_e")
+	_peca("braco_e", ombro_e)
+	var cotovelo_e := _osso("cotovelo_e", ombro_e, "cotovelo_e")
+	_bola = _peca("bola", cotovelo_e)
+	_peca("antebraco_e", cotovelo_e)
+	_peca("tronco", tronco)
+	_tampa = _peca("tampa_ombro", tronco)
+	_tampa.modulate.a = 0.0
+	var cabeca := _osso("cabeca", tronco, "pescoco")
+	_peca("cabeca", cabeca)
+	var ombro_d := _osso("ombro_d", tronco, "ombro_d")
+	_peca("braco_d", ombro_d)
+	var cotovelo_d := _osso("cotovelo_d", ombro_d, "cotovelo_d")
+	_peca("antebraco_d", cotovelo_d)
 	# brasas soltando do corpo e da bola
 	_brasas = CPUParticles2D.new()
 	_brasas.texture = Arte.tex_brilho
@@ -101,59 +121,73 @@ func _init() -> void:
 	_brasas.color_ramp = Arte.rampa([Color(1.0, 0.85, 0.5, 0.0), Color(1.0, 0.6, 0.15, 0.95), Color(1.0, 0.3, 0.05, 0.0)], [0.0, 0.2, 1.0])
 	_brasas.emitting = false
 	add_child(_brasas)
+	_set_luz(luz)
 
 
-## As caixas das peças no pôster (tools/arte/jogador_pecas.txt, copiadas
-## aqui: o jogo não lê a pasta tools).
-static func _ler_caixas() -> Dictionary:
-	return {
-		"jogador_corpo": Rect2(135, 168, 440, 741),
-		"jogador_braco_e": Rect2(98, 52, 269, 321),
-		"jogador_braco_d": Rect2(520, 349, 238, 357),
-		"jogador_bola": Rect2(83, 34, 195, 167),
-		"jogador_aura_corpo": Rect2(96, 129, 521, 827),
-		"jogador_aura_braco_e": Rect2(56, 0, 355, 407),
-		"jogador_aura_braco_d": Rect2(480, 316, 308, 424),
-	}
+## Um osso: gira na junta (a posição é a junta, no espaço do pai).
+func _osso(nome: String, pai: Node2D, junta: String) -> Node2D:
+	var o := Node2D.new()
+	var p: Vector2 = JUNTAS[junta]
+	var origem := Vector2.ZERO
+	if pai != self:
+		origem = pai.get_meta("junta")
+	o.position = p - origem
+	o.set_meta("junta", p)
+	pai.add_child(o)
+	_ossos[nome] = o
+	return o
 
 
-## A aura de um braço, num pivô no ombro (gira com o braço).
-func _aura_braco(nome: String, caixas: Dictionary, ombro: Vector2) -> Node2D:
-	var pivo := Node2D.new()
-	pivo.position = ombro
-	var s := _peca(load("res://imagens/%s.png" % nome), caixas[nome])
-	s.position -= ombro
-	pivo.add_child(s)
-	_auras.add_child(pivo)
-	return pivo
-
-
-static func _peca(tex: Texture, caixa: Rect2) -> Sprite:
+## Uma peça no osso (com o brilho dela, atrás).
+func _peca(nome: String, osso: Node2D) -> Sprite:
+	var junta: Vector2 = osso.get_meta("junta")
+	if BRILHOS.has(nome):
+		var b := Sprite.new()
+		b.texture = load("res://imagens/jogador_%s_aura.png" % nome)
+		b.centered = false
+		b.scale = Vector2(2, 2)
+		b.position = BRILHOS[nome] - junta
+		b.material = Arte.mat_aditivo
+		b.modulate = Color(0.35, 0.55, 1.0)
+		osso.add_child(b)
+		_auras.append(b)
 	var s := Sprite.new()
-	s.texture = tex
+	s.texture = load("res://imagens/jogador_%s.png" % nome)
 	s.centered = false
-	s.position = caixa.position
+	s.position = PECAS[nome].position - junta
+	osso.add_child(s)
 	return s
 
 
-func _set_braco_e(v: float) -> void:
-	braco_e = v
-	if _pivo_e != null:
-		_pivo_e.rotation = v
-		_aura_e.rotation = v
+## A pose (graus por osso; o que faltar é 0 = a capa).
+func pose(p: Dictionary) -> void:
+	for nome in OSSOS:
+		_ossos[nome].rotation_degrees = float(p.get(nome, 0.0))
+	# o ombro de lá fecha (a silhueta preta) conforme o braço sai da capa
+	_tampa.modulate.a = clamp(abs(float(p.get("ombro_e", 0.0))) / 40.0, 0.0, 1.0)
 
 
-func _set_braco_d(v: float) -> void:
-	braco_d = v
-	if _pivo_d != null:
-		_pivo_d.rotation = v
-		_aura_d.rotation = v
+## A mistura de duas poses (k = 0: a, 1: b).
+static func misturar(a: Dictionary, b: Dictionary, k: float) -> Dictionary:
+	var r := {}
+	for nome in OSSOS:
+		r[nome] = lerp(float(a.get(nome, 0.0)), float(b.get(nome, 0.0)), k)
+	return r
+
+
+## Ao longo de uma lista de poses (k = 0: a primeira, 1: a última), liso.
+func pose_entre(lista: Array, k: float) -> void:
+	var n := lista.size() - 1
+	var x: float = clamp(k, 0.0, 1.0) * n
+	var i := int(min(floor(x), n - 1))
+	var f := x - i
+	pose(misturar(lista[i], lista[i + 1], f * f * (3.0 - 2.0 * f)))
 
 
 func _set_luz(v: float) -> void:
 	luz = v
-	if _auras != null:
-		_auras.modulate.a = 0.5 * clamp(v, 0.0, 2.0)
+	for a in _auras:
+		a.modulate.a = 0.5 * clamp(v, 0.0, 2.0)
 
 
 func _set_na_mao(v: bool) -> void:
@@ -168,8 +202,13 @@ func brasas(ligar: bool) -> void:
 
 ## O centro da bola na mão, no espaço do pai (onde ela está agora).
 func bola_na_mao() -> Vector2:
-	var local := OMBRO_E + (CENTRO_BOLA - OMBRO_E).rotated(braco_e)
-	return transform.xform(local)
+	var o: Node2D = _ossos["cotovelo_e"]
+	var t := Transform2D.IDENTITY
+	var n: Node = o
+	while n != self:
+		t = n.transform * t
+		n = n.get_parent()
+	return transform.xform(t.xform(JUNTAS["bola"] - JUNTAS["cotovelo_e"]))
 
 
 ## O raio da bola (no espaço do pai).
@@ -178,7 +217,7 @@ func raio_bola() -> float:
 
 
 func _process(_delta: float) -> void:
-	# o rastro: a aura nas últimas posições (some quando o jogador para)
+	# o rastro: o brilho nas últimas posições (some quando o jogador para)
 	_historico.push_front(get_global_transform())
 	if _historico.size() > RASTRO + 1:
 		_historico.pop_back()
@@ -190,6 +229,6 @@ func _process(_delta: float) -> void:
 			continue
 		var t: Transform2D = _historico[k]
 		r.visible = true
-		r.global_transform = t.translated(_aura_corpo.position)
+		r.global_transform = t.translated(AURA_TODA)
 		var f: float = rastro * 0.22 * (1.0 - float(k) / (RASTRO + 1))
 		r.modulate = Color(0.45, 0.65, 1.0, f).linear_interpolate(Color(1.0, 0.5, 0.1, f), float(k) / RASTRO)

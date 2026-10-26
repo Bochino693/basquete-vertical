@@ -1,11 +1,27 @@
-jogador_corpo 135 168 440 741
-jogador_braco_e 98 52 269 321
-jogador_braco_d 520 349 238 357
-jogador_bola 83 34 195 167
-jogador_aura 58 0 730 956
-jogador_aura_corpo 96 129 521 827
-jogador_aura_braco_e 56 0 355 407
-jogador_aura_braco_d 480 316 308 424
-ombro_e 352 300
-ombro_d 548 392
-bola 190 112
+pernas 136 492 436 416
+braco_e 181 229 232 143
+bola 82 34 197 166
+antebraco_e 99 53 157 251
+tronco 295 266 280 332
+tampa_ombro 320 253 109 119
+cabeca 369 169 153 157
+braco_d 521 371 120 197
+antebraco_d 559 493 198 214
+pernas_aura 75 431 558 538
+braco_e_aura 120 168 354 264
+bola_aura 21 -27 318 288
+antebraco_e_aura 38 -8 278 372
+tronco_aura 234 205 402 454
+cabeca_aura 308 108 274 278
+braco_d_aura 460 310 242 318
+antebraco_d_aura 498 432 320 336
+cintura 455.0 545.0
+pescoco 440.0 305.0
+quadril 400.0 560.0
+ombro_e 362.0 298.0
+cotovelo_e 218.0 266.0
+pulso_e 148.0 182.0
+ombro_d 540.0 398.0
+cotovelo_d 603.0 530.0
+pulso_d 670.0 626.0
+bola 190.0 112.0

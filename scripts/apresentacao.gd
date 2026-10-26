@@ -44,7 +44,7 @@ const QUIQUES := [[0.42, 300.0, 0.6], [1.0, 450.0, 0.85], [1.52, 590.0, 1.25]]  
 const T_CORTE := 1.86           # o corte (clarão) e o jogador entra
 const T_ENTRA := 0.42           # entra voando
 const T_LENTO := 0.95           # câmera lenta até a pose da capa
-const T_ENTERRA := 0.2          # o braço gira e a bola entra
+const T_ENTERRA := 0.32         # a enterrada: o braço passa por cima e a bola entra
 const T_IMPACTO := T_CORTE + T_ENTRA + T_LENTO + T_ENTERRA
 const ESCALA_CAPA := 1080.0 / 941.0
 # depois do corte a câmera enquadra como o pôster: o aro onde ele fica na
@@ -363,8 +363,7 @@ func _preparar_cena() -> void:
 	_jog.rastro = 0.0
 	_jog.brasas(false)
 	_jog.na_mao = true
-	_jog.braco_e = 0.0
-	_jog.braco_d = 0.0
+	_jog.pose(JogadorCapa.CAPA)
 	_jog.rotation = 0.0
 	_jog_sombra.visible = false
 	_bola_fogo.visible = false
@@ -617,8 +616,10 @@ func _animar_jogador(delta: float) -> void:
 		_pos = pos
 		# a sombra do jogador: deitada no chão, correndo atrás da bola
 		_sombra_jogador(t / T_CORTE)
-		_jog_sombra.braco_d = -0.5 + 0.5 * abs(sin(t * 6.0))
-		_jog_sombra.braco_e = -0.3 + 0.2 * sin(t * 6.0)
+		# (a sombra corre: as pernas e os braços balançam)
+		var passo := sin(t * 6.0)
+		_jog_sombra.pose({"pernas": 10.0 * passo, "tronco": -4.0, "ombro_e": -20.0 + 15.0 * passo,
+			"cotovelo_e": 15.0, "ombro_d": 18.0 * abs(passo), "cotovelo_d": 10.0})
 		return
 	if _jparte == "":
 		_corte()
@@ -630,9 +631,9 @@ func _animar_jogador(delta: float) -> void:
 		var e := 1.0 - pow(1.0 - k, 3.0)
 		_jog.position = hero_pos + _da_tela(Vector2(-420, 980)).linear_interpolate(_da_tela(Vector2(-70, 110)), e) - _da_tela(Vector2.ZERO)
 		_jog.scale = Vector2.ONE * hero_esc * lerp(0.86, 0.98, e)
-		_jog.rotation = lerp(-0.22, -0.05, e)
-		_jog.braco_e = lerp(-0.55, -0.14, e)
-		_jog.braco_d = lerp(-0.35, -0.08, e)
+		_jog.rotation = lerp(-0.12, -0.03, e)
+		# o corpo inteiro: decolando, subindo e chegando na pose da capa
+		_jog.pose_entre([JogadorCapa.DECOLAGEM, JogadorCapa.SUBINDO, JogadorCapa.CAPA], min(e * 1.15, 1.0))
 		_jog.rastro = 1.0
 		_jog.luz = lerp(1.6, 1.0, e)
 	elif t < T_IMPACTO - T_ENTERRA:
@@ -649,9 +650,8 @@ func _animar_jogador(delta: float) -> void:
 		var e := _suave(k)
 		_jog.position = _jq0.linear_interpolate(hero_pos, e)
 		_jog.scale = Vector2.ONE * hero_esc * lerp(0.98, 1.0, e)
-		_jog.rotation = lerp(-0.05, 0.0, e)
-		_jog.braco_e = lerp(-0.14, 0.0, e)
-		_jog.braco_d = lerp(-0.08, 0.0, e)
+		_jog.rotation = lerp(-0.03, 0.0, e)
+		_jog.pose(JogadorCapa.CAPA)
 		_jog.rastro = lerp(0.6, 0.0, k)
 		_jog.luz = 1.0 + 0.25 * sin(k * PI)
 		# a energia: raios pequenos em volta da bola, de vez em quando
@@ -672,9 +672,10 @@ func _animar_jogador(delta: float) -> void:
 			Sons.tocar("vento", -2.0, 1.5)
 		var k: float = (t - (T_IMPACTO - T_ENTERRA)) / T_ENTERRA
 		var e := k * k
-		_jog.rotation = lerp(0.0, 0.14, e)
-		_jog.braco_e = lerp(0.0, 2.45, e)
-		_jog.braco_d = lerp(0.0, -0.35, e)
+		_jog.rotation = lerp(0.0, 0.05, e)
+		# o corpo inteiro na enterrada: o braço passa por cima da cabeça,
+		# o tronco vem para a frente, o outro braço vai para trás
+		_jog.pose_entre(JogadorCapa.ENTERRADA, e)
 		# o corpo vai junto até a bola chegar no aro
 		var alvo := ARO + Vector2(4, 12)
 		_jog.position = Vector2.ZERO
@@ -689,8 +690,8 @@ func _animar_jogador(delta: float) -> void:
 			_jq0 = _jog.position
 			_impacto_enterrada()
 		var k: float = min((t - T_IMPACTO) / 0.6, 1.0)
-		_jog.braco_e = lerp(2.45, 2.75, _suave(k))
-		_jog.rotation = lerp(0.14, 0.05, _suave(k)) + sin((t - T_IMPACTO) * 9.0) * 0.03 * (1.0 - k)
+		_jog.pose(JogadorCapa.misturar(JogadorCapa.ENTERRADA[JogadorCapa.ENTERRADA.size() - 1], JogadorCapa.PENDURADO, _suave(k)))
+		_jog.rotation = lerp(0.05, 0.02, _suave(k)) + sin((t - T_IMPACTO) * 9.0) * 0.03 * (1.0 - k)
 		_jog.position = _jq0 + Vector2(-18, 46) * _suave(k)
 		_jog.rastro = max(0.0, 1.0 - (t - T_IMPACTO) * 4.0)
 		_jog.luz = 1.0 + 0.8 * max(0.0, 1.0 - (t - T_IMPACTO) * 3.0)

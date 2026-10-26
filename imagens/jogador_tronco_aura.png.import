@@ -2,15 +2,15 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/jogador_corpo.png-10af158a4b9c4477bb4967f048946ea2.stex"
+path="res://.import/jogador_tronco_aura.png-552ff3fcaa80125b192e53cb03153346.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://imagens/jogador_corpo.png"
-dest_files=[ "res://.import/jogador_corpo.png-10af158a4b9c4477bb4967f048946ea2.stex" ]
+source_file="res://imagens/jogador_tronco_aura.png"
+dest_files=[ "res://.import/jogador_tronco_aura.png-552ff3fcaa80125b192e53cb03153346.stex" ]
 
 [params]
 
