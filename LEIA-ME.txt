@@ -2,7 +2,7 @@ SLAM ARENA - BASQUETE ARCADE VERTICAL (1 JOGADOR, 3 FASES, SEM BOTAO)
 ======================================================================
 EDICAO OPENGL ES 2.0 - Godot 3.6.3 - para TV Box com Mali-400 / Mali-450
 (TX9 "comum": Amlogic S905X/S905W, Rockchip RK3229; MXQ, X96...).
-VERSAO 2.3-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
+VERSAO 2.4-gles2 (aparece no rodape da tela de CONFIGURACAO e no Android
 em Aplicativos > Slam Arena). VERSAO NOVA: aumente version/code e
 version/name no export_presets.cfg e o VERSAO do autoload/Ajustes.gd.
 
@@ -15,7 +15,7 @@ GERAR O APK (WINDOWS), PASSO A PASSO
   3. Dois cliques no GERAR_APK.bat. A 1a vez baixa o que faltar (5 a 20
      min); depois, 2 a 4 min.
   4. O APK sai em APK-Pronto\SlamArena-<versao>.apk (a pasta abre sozinha
-     no fim; ex.: SlamArena-2.3-gles2.apk): copie para o pendrive e
+     no fim; ex.: SlamArena-2.4-gles2.apk): copie para o pendrive e
      instale na TV Box (ele instala por cima da versao anterior).
   Se der erro, envie o arquivo build\android\GERACAO-COMPLETA.log.
   Onde ligar cada fio na maquina: docs\diagrama_montagem.png.
@@ -39,24 +39,9 @@ O JOGO
   * APRESENTACAO (abre o jogo e volta a cada 4 ciclos de espera): o anel
     do emblema explode e o LOGO DA LAZER & SPORT salta no lugar, com um
     reflexo dourado; GAMES bate letra por letra e APRESENTA; a quadra de
-    neon se desenha no escuro e entra O JOGADOR DA CAPA, igualzinho ao do
-    poster - a regata, o short, o tenis, a bola de fogo - CORRENDO E
-    QUICANDO A BOLA DE FOGO no chao (cada quique solta RAIO no piso, onda
-    de luz e faiscas; a parede de LED treme); o ultimo quique manda a bola
-    la para o alto, ele SALTA, PEGA A BOLA LA EM CIMA, a camera chega perto
-    e fica LENTA ate a POSE DA CAPA, o braco passa por cima da cabeca e ele
-    ENTERRA: o aro balanca, raios e faiscas na cesta, ele fica PENDURADO
-    NO ARO e a mesma bola cai pela rede e quica no chao.
-    QUADRO A QUADRO (2.3): o jogador e um DESENHO ANIMADO de verdade - cada
-    quadro e ELE INTEIRO numa imagem so, renderizado da propria arte da
-    capa (tools/quadros_jogador.py): correndo, juntando, saltando, na pose
-    da capa, enterrando, pendurado. As pernas e o resto do corpo que o
-    letreiro da capa esconde foram desenhados com a textura da propria
-    arte; os pes nao escorregam no chao; o brilho azul sai do corpo
-    inteiro. A BOLA E UMA SO do comeco ao fim (a da capa, com o fogo):
-    quica, voa, vai para a mao, entra no aro e cai pela rede sem trocar e
-    sem corte; os dedos que seguram ficam por cima dela. Na
-    pose da capa tudo fica igualzinho a arte. Depois dois raios caem e o poster SLAM
+    neon se desenha no escuro, a bola cai e quica (cada quique: onda de luz e a
+    parede de LED inteira treme), a cesta se desenha, a bola voa girando e passa
+    pela rede (a rede balanca), dois raios caem na cesta e o poster SLAM
     ARENA entra com impacto. Uma CESTA ja comeca a partida; START pula
     para a abertura.
   * ABERTURA VIVA: o poster respira e aproxima devagar, um brilho atravessa
@@ -428,8 +413,7 @@ PASTAS
               anel_crono, display7, letreiro, bolas_caindo, holofotes,
               traco_neon,
               raio_eletrico, rede, bola, barras, malhas, poster_vivo (o
-              poster vivo), jogador_quadros (o jogador da capa quadro a
-              quadro; o roteiro dele em jogador_quadros_dados, gerado),
+              poster vivo),
               cartao_vidro (os cartoes de vidro da abertura)
   autoload/   Tela (giro e qualidade), Ajustes (ajustes, recorde, ranking,
               fichas), Arte (fontes, texturas, estilos), Sons, Controles
@@ -438,8 +422,8 @@ PASTAS
               (ECONOMIA), piso, display7,
               placa_redonda, tracinhos, onda, anel, traco, barras, bola
   imagens/    poster (Full HD), poster_vivo (o mapa do que mexe: luzes,
-              neon, fogo) e poster_ruido, jogador_quadros_* (os quadros do
-              jogador da capa) e jogador_bola (a bola de fogo), fundo_jogo (o fundo sem o cronometro desenhado na
+              neon, fogo) e poster_ruido, jogador_aura (o brilho do
+              jogador do poster), fundo_jogo (o fundo sem o cronometro desenhado na
               arte), icones, aberturas, fx_* (texturas de efeito feitas a
               mao)
   sons/ musicas/ fontes/
@@ -455,10 +439,7 @@ PASTAS
               poster_vivo.py (o poster em Full HD e o mapa do que mexe, a
               partir de tools/arte/poster_original.png),
               recortar_jogador.py (o recorte do jogador, com a mascara
-              tools/arte/jogador_mascara.png), rig_jogador.py e
-              pernas_jogador.py (as pecas do jogador, em tools/arte/pecas:
-              a materia-prima) e quadros_jogador.py (os QUADROS do jogador e
-              o roteiro da apresentacao; "previa PASTA" desenha o filme),
+              tools/arte/jogador_mascara.png: o brilho dele no poster vivo),
               android/ (APK no Linux),
               diagrama/ (o diagrama de montagem), testes/ (conferir_scripts,
               roteiro, medir_funcoes, foto_rapida, gravar_splash - a

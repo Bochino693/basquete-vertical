@@ -7,10 +7,8 @@ Le tools/arte/poster_original.png (a arte, 941 x 1672) e
 tools/arte/jogador_mascara.png (o recorte do jogador, feito uma vez com o
 BiRefNet - rembg, modelo "birefnet-general"). calcular() separa o
 jogador, os dois bracos e a bola de fogo (os dedos que ficavam na frente
-dela, preenchidos com a propria bola) - o tools/rig_jogador.py faz dali
-as pecas do boneco articulado da apresentacao. Rodado sozinho, grava
-imagens/jogador_aura.png: o brilho em volta do jogador inteiro (branco: o
-jogo pinta), do poster vivo e do rastro.
+dela, preenchidos com a propria bola). Grava imagens/jogador_aura.png: o
+brilho em volta do jogador inteiro (branco: o jogo pinta), do poster vivo.
 Precisa de numpy e Pillow.
 """
 import os
@@ -92,8 +90,7 @@ def caixa_de(alfa, margem=4):
 
 
 def calcular():
-    """As camadas do jogador (alfas e cores no poster original): o que o
-    main grava e o que o tools/quadros_jogador.py deforma."""
+    """As camadas do jogador (alfas e cores no poster original)."""
     poster = Image.open(os.path.join(ARTE, "poster_original.png")).convert("RGB")
     tam = poster.size
     rgb = np.asarray(poster).astype(np.float64) / 255
@@ -124,7 +121,7 @@ def calcular():
 
 def main():
     """O brilho em volta do jogador inteiro, na pose da capa (o poster vivo
-    da abertura e o rastro do jogador na apresentacao)."""
+    da abertura)."""
     c = calcular()
     rgb, m = c["rgb"], c["mascara"]
     bola = disco(rgb.shape[1::-1], BOLA, RAIO_BOLA, 3.0) * m
